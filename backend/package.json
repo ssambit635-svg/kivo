@@ -1,0 +1,29 @@
+{
+  "name": "medtwin-ai-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MedTwin AI - AI-Powered Digital Health Twin backend (cost-free MVP, hackathon prototype)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "seed:admin": "node scripts/create-admin.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.4.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "supertest": "^7.1.0",
+    "vitest": "^2.1.9"
+  }
+}
