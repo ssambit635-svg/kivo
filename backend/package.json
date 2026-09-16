@@ -12,7 +12,8 @@
     "dev": "node --watch src/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed:admin": "node scripts/create-admin.js"
+    "seed:admin": "node scripts/create-admin.js",
+    "seed:demo": "node scripts/seed-demo.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

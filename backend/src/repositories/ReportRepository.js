@@ -32,6 +32,40 @@ export class ReportRepository extends BaseRepository {
     return Report.fromRow(this.db.get('SELECT * FROM reports WHERE id = ?', id));
   }
 
+  /** Oldest report of any status — used by milestones ("first report added"). */
+  earliestForMember(memberId) {
+    const row = this.db.get(
+      `SELECT * FROM reports WHERE member_id = ? ORDER BY created_at ASC LIMIT 1`,
+      memberId,
+    );
+    return Report.fromRow(row);
+  }
+
+  /** First report the user verified — used by milestones ("first report verified"). */
+  firstVerifiedForMember(memberId) {
+    const row = this.db.get(
+      `SELECT * FROM reports WHERE member_id = ? AND status = 'verified'
+       ORDER BY COALESCE(verified_at, updated_at) ASC LIMIT 1`,
+      memberId,
+    );
+    return Report.fromRow(row);
+  }
+
+  /**
+   * Verified reports that actually carry verified numeric values, oldest
+   * first — the anchor points of the Health Score timeline.
+   */
+  verifiedWithValuesForMember(memberId) {
+    const rows = this.db.all(
+      `SELECT DISTINCT r.* FROM reports r
+       JOIN lab_results l ON l.report_id = r.id AND l.verified = 1 AND l.value IS NOT NULL
+       WHERE r.member_id = ? AND r.status = 'verified'
+       ORDER BY COALESCE(r.report_date, r.created_at) ASC`,
+      memberId,
+    );
+    return rows.map(Report.fromRow);
+  }
+
   listByMember(memberId, { page = 1, pageSize = 20, status = null } = {}) {
     const offset = (page - 1) * pageSize;
     const params = [memberId];

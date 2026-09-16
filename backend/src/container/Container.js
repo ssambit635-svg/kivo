@@ -22,6 +22,8 @@ import { ObservationService } from '../services/ObservationService.js';
 import { TrendService } from '../services/TrendService.js';
 import { RiskModelService } from '../services/RiskModelService.js';
 import { DoctorSummaryService } from '../services/DoctorSummaryService.js';
+import { HealthScoreService } from '../services/HealthScoreService.js';
+import { MilestoneService } from '../services/MilestoneService.js';
 import { AdminService } from '../services/AdminService.js';
 import { LabExtractionService } from '../services/labs/LabExtractionService.js';
 import { OcrService } from '../services/ocr/OcrService.js';
@@ -88,6 +90,15 @@ export class Container {
       riskModelService: this.riskModelService,
       llmGateway: this.llmGateway,
     });
+    this.healthScoreService = new HealthScoreService({
+      labResultRepository: this.labResultRepository,
+      reportRepository: this.reportRepository,
+    });
+    this.milestoneService = new MilestoneService({
+      reportRepository: this.reportRepository,
+      labResultRepository: this.labResultRepository,
+      auditLogRepository: this.auditLogRepository,
+    });
 
     // --- domain services ---
     this.memberService = new MemberService({
@@ -128,8 +139,11 @@ export class Container {
       riskModelService: this.riskModelService,
       observationService: this.observationService,
       doctorSummaryService: this.doctorSummaryService,
+      healthScoreService: this.healthScoreService,
+      milestoneService: this.milestoneService,
       policyService: this.policyService,
       llmGateway: this.llmGateway,
+      auditService: this.auditService,
     });
     this.adminController = new AdminController(this.adminService);
 

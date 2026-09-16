@@ -84,6 +84,8 @@ export function buildApiRouter(c) {
   secure('get', '/members/:memberId/trends', validate({ params: healthSchemas.memberParams, query: healthSchemas.trendsQuery }), c.healthIntelController.getTrends);
   secure('post', '/members/:memberId/risk/diabetes', validate({ params: healthSchemas.memberParams, body: healthSchemas.riskAssess }), c.healthIntelController.assessRisk);
   secure('get', '/members/:memberId/doctor-summary', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getDoctorSummary);
+  secure('get', '/members/:memberId/health-score', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getHealthScore);
+  secure('get', '/members/:memberId/milestones', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getMilestones);
 
   // admin
   secure('get', '/admin/users', validate({ query: adminSchemas.listUsersQuery }), c.adminController.listUsers);

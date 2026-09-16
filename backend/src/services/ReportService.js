@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { newId } from '../utils/id.js';
 import { ConflictError, UnprocessableError, UnsupportedMediaError, ValidationError } from '../common/errors.js';
+import { deriveReportBadge } from '../domain/reportBadge.js';
 
 const ALLOWED_MIME = new Set([
   'text/plain', 'text/markdown', 'text/csv', 'application/json',
@@ -89,7 +90,7 @@ export class ReportService {
         userId: actor.id, action: 'report.ocr_failed', resourceType: 'report', resourceId: report.id,
         outcome: 'failure', metadata: { reason: err.code || 'ocr_error' }, ctx,
       });
-      return { report: updated.toJSON(), preview: { extracted: [], needsManualEntry: true, note: err.message } };
+      return { report: this.withBadge(updated), preview: { extracted: [], needsManualEntry: true, note: err.message } };
     }
 
     const { extracted, detectedReportDate } = this.extractor.extract(ocrResult.text);
@@ -126,7 +127,7 @@ export class ReportService {
     });
 
     return {
-      report: updated.toJSON(),
+      report: this.withBadge(updated),
       preview: {
         extracted: created.map((r) => r.toJSON()),
         needsManualEntry: created.length === 0,
@@ -140,7 +141,7 @@ export class ReportService {
 
   getForActor(actor, reportId) {
     const { report, access } = this.policy.loadReportWithAccess(actor, this.reports, reportId);
-    return { report: report.toJSON({ includeOcrText: true }), access, results: this.labs.listByReport(reportId).map((r) => r.toJSON()) };
+    return { report: this.withBadge(report, { includeOcrText: true }), access, results: this.labs.listByReport(reportId).map((r) => r.toJSON()) };
   }
 
   listForMember(actor, memberId, query) {
@@ -148,7 +149,7 @@ export class ReportService {
     this.policy.assertRead(actor, member);
     const { items, total, page, pageSize } = this.reports.listByMember(memberId, query);
     return {
-      items: items.map((r) => ({ ...r.toJSON(), labResultCount: this.labs.listByReport(r.id).length })),
+      items: items.map((r) => ({ ...r.toJSON(), badge: deriveReportBadge(r), labResultCount: this.labs.listByReport(r.id).length })),
       total,
       page,
       pageSize,
@@ -254,6 +255,11 @@ export class ReportService {
       markers: results,
     });
     return { reportId, results, explanation: narration };
+  }
+
+  /** Serialized report + its confidence badge (derived, never stored). */
+  withBadge(report, toJsonOpts = {}) {
+    return { ...report.toJSON(toJsonOpts), badge: deriveReportBadge(report) };
   }
 
   clip(text, max) {

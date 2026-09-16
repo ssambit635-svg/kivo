@@ -28,16 +28,19 @@ export const healthSchemas = {
 
 /**
  * Health-intelligence endpoints: trends, risk assessment + what-if,
- * observations/journal, doctor summary.
+ * observations/journal, doctor summary, health score timeline, milestones.
  */
 export class HealthIntelController {
-  constructor({ trendService, riskModelService, observationService, doctorSummaryService, policyService, llmGateway }) {
+  constructor({ trendService, riskModelService, observationService, doctorSummaryService, healthScoreService, milestoneService, policyService, llmGateway, auditService }) {
     this.trends = trendService;
     this.risk = riskModelService;
     this.observations = observationService;
     this.summaries = doctorSummaryService;
+    this.healthScore = healthScoreService;
+    this.milestones = milestoneService;
     this.policy = policyService;
     this.llm = llmGateway;
+    this.audit = auditService;
   }
 
   loadReadableMember(req) {
@@ -101,7 +104,37 @@ export class HealthIntelController {
   getDoctorSummary = async (req, res, next) => {
     try {
       const member = this.loadReadableMember(req);
-      res.json(await this.summaries.build(member));
+      const summary = await this.summaries.build(member);
+      // Audited event — it unlocks the "Doctor summary generated" milestone
+      // (milestones are computed from the audit trail, not from stored flags).
+      this.audit?.record({
+        userId: req.actor.id,
+        action: 'summary.doctor_generated',
+        resourceType: 'member',
+        resourceId: member.id,
+        ctx: ctxFromReq(req),
+      });
+      res.json(summary);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  /** Health Score Timeline: "Jan → 68 | Mar → 72 | Jun → 76" from verified data only. */
+  getHealthScore = (req, res, next) => {
+    try {
+      const member = this.loadReadableMember(req);
+      res.json(this.healthScore.timelineFor(member.id));
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  /** Health Milestones: achievements computed from reports, verified values and the audit trail. */
+  getMilestones = (req, res, next) => {
+    try {
+      const member = this.loadReadableMember(req);
+      res.json(this.milestones.evaluate(member.id));
     } catch (e) {
       next(e);
     }
