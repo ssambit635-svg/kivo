@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>MedTwin AI — Digital Health Twin</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span id="brand-logo" class="brand-logo" aria-hidden="true"></span>
+        <div class="brand-text">
+          <h1>MedTwin AI</h1>
+          <p>Your living digital health twin</p>
+        </div>
+      </div>
+      <div id="userbox" class="userbox hidden">
+        <span id="user-icon" class="user-icon" aria-hidden="true"></span>
+        <span id="user-email" class="user-email"></span>
+        <button id="btn-logout" class="btn ghost sm" type="button">
+          <span id="logout-icon" class="btn-ic" aria-hidden="true"></span>Sign out
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- ================= AUTH ================= -->
+      <section id="auth-view" class="card auth-card">
+        <h2 id="auth-heading">Welcome back</h2>
+        <p class="muted">Sign in to see your health twin come alive.</p>
+
+        <div class="tabs" role="tablist">
+          <button id="tab-login" class="tab active" type="button" role="tab">Sign in</button>
+          <button id="tab-register" class="tab" type="button" role="tab">Create account</button>
+        </div>
+
+        <form id="auth-form" novalidate>
+          <label id="row-name" class="field hidden">
+            <span>Display name</span>
+            <input id="in-name" type="text" autocomplete="name" placeholder="Ada" />
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input id="in-email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input id="in-password" type="password" autocomplete="current-password" placeholder="••••••••••••" required />
+          </label>
+          <p id="auth-error" class="error hidden" role="alert"></p>
+          <button class="btn primary block" type="submit" id="auth-submit">Sign in</button>
+        </form>
+        <p class="hint">Seeded demo account: <code>demo@medtwin.dev</code> — see <code>backend/scripts/seed-demo.js</code>.</p>
+      </section>
+
+      <!-- ================= DASHBOARD ================= -->
+      <section id="dash-view" class="hidden">
+        <div class="member-strip card">
+          <span class="avatar" id="member-icon" aria-hidden="true"></span>
+          <div class="member-info">
+            <strong id="member-name">—</strong>
+            <span class="muted" id="member-sub">health twin</span>
+          </div>
+          <button id="btn-refresh" class="btn ghost sm icon-btn" type="button" title="Refresh data" aria-label="Refresh data">
+            <span id="refresh-icon" class="btn-ic" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="grid">
+          <!-- ============ 1. HEALTH SCORE TIMELINE ============ -->
+          <section class="card widget widget-score" aria-labelledby="score-h">
+            <div class="widget-head">
+              <span id="score-head-ic" class="widget-ic ic-teal" aria-hidden="true"></span>
+              <div>
+                <h2 id="score-h">Health Score Timeline</h2>
+                <p class="muted">How verified markers move over time</p>
+              </div>
+            </div>
+            <div id="score-body"></div>
+          </section>
+
+          <!-- ============ 2. HEALTH MILESTONES ============ -->
+          <section class="card widget widget-miles" aria-labelledby="mile-h">
+            <div class="widget-head">
+              <span id="mile-head-ic" class="widget-ic ic-gold" aria-hidden="true"></span>
+              <div>
+                <h2 id="mile-h">Health Milestones</h2>
+                <p class="muted" id="mile-sub">Your journey so far</p>
+              </div>
+            </div>
+            <div id="miles-body"></div>
+          </section>
+
+          <!-- ============ 3. REPORTS + CONFIDENCE BADGE ============ -->
+          <section class="card widget widget-reports" aria-labelledby="rep-h">
+            <div class="widget-head">
+              <span id="rep-head-ic" class="widget-ic ic-indigo" aria-hidden="true"></span>
+              <div>
+                <h2 id="rep-h">Reports</h2>
+                <p class="muted">Every report shows its confidence badge</p>
+              </div>
+            </div>
+
+            <form id="upload-form" class="upload" novalidate>
+              <label class="field">
+                <span>Add a report (paste its text)</span>
+                <textarea id="in-report-text" rows="3" placeholder="HbA1c 5.9 % (4.0 - 5.6)&#10;Fasting Blood Sugar 108 mg/dL 70 - 100"></textarea>
+              </label>
+              <div class="upload-row">
+                <label class="field-inline">
+                  <span>Report date</span>
+                  <input id="in-report-date" type="date" />
+                </label>
+                <button class="btn secondary" type="submit" id="btn-upload">
+                  <span id="upload-icon" class="btn-ic" aria-hidden="true"></span>Scan report
+                </button>
+              </div>
+              <p id="upload-error" class="error hidden" role="alert"></p>
+            </form>
+
+            <div id="reports-body"></div>
+          </section>
+        </div>
+
+        <footer class="foot">
+          <p>
+            MedTwin AI is a hackathon prototype for risk awareness and understanding — not a medical device and not a
+            diagnosis engine. Always discuss your results with a qualified healthcare professional.
+          </p>
+        </footer>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden" role="status"></div>
+
+    <script src="./icons.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

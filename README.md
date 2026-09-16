@@ -16,8 +16,9 @@ doctor-visit preparation.
 | Backend API | ✅ Built & tested — see [`backend/README.md`](backend/README.md) |
 | AuthN/AuthZ | ✅ scrypt + JWT access (rotating refresh tokens w/ reuse detection), RBAC + member-isolation policies |
 | AI pipeline | ✅ OCR (plugged), extraction, trends, explainable risk prototype, grounded local LLM, doctor summary |
-| Tests | ✅ **183 passing** (`cd backend && npm test`) |
-| Frontend | ⬜ next up |
+| Engagement widgets | ✅ Health Score Timeline · Report Confidence Badges · Health Milestones (icon keys, no emojis) |
+| Tests | ✅ **220 passing** (`cd backend && npm test`) |
+| Frontend | ✅ Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
 
 ## Quick start (cost-free)
 
@@ -25,7 +26,9 @@ doctor-visit preparation.
 cd backend
 npm install
 npm start          # API on :8080 — SQLite file DB, zero external services
+                   # demo dashboard: http://localhost:8080/app/
 npm test           # full unit + integration suite, in-memory DB
+npm run seed:demo  # demo@medtwin.dev — 3 verified reports, 5/5 milestones
 node scripts/create-admin.js admin@clinic.dev 'Admin' 'Str0ng!Passw0rd#x'
 ```
 

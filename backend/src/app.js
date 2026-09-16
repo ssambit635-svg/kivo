@@ -1,10 +1,19 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildApiRouter } from './routes/api.js';
 import { requestId } from './middleware/requestId.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { ForbiddenError } from './common/errors.js';
+
+/** Absolute path of the bundled demo dashboard, or null when it isn't shipped. */
+function resolveFrontendDir() {
+  const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../frontend');
+  return fs.existsSync(path.join(dir, 'index.html')) ? dir : null;
+}
 
 /**
  * Creates the Express app. Pure function of a container — tests build the
@@ -32,14 +41,24 @@ export function createApp(container) {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
+  // Cost-free demo dashboard (vanilla HTML/CSS/JS, zero build step, real SVG
+  // icons). Served only when the frontend directory is present in the repo.
+  const frontendDir = resolveFrontendDir();
+
   app.get('/', (_req, res) => {
     res.json({
       name: 'MedTwin AI Backend',
       version: container.config.appVersion,
       docs: 'See backend/README.md',
       health: '/api/health',
+      ...(frontendDir ? { dashboard: '/app/' } : {}),
     });
   });
+
+  if (frontendDir) {
+    // express.static redirects /app → /app/ itself (directory redirect).
+    app.use('/app', express.static(frontendDir, { index: 'index.html', maxAge: '5m' }));
+  }
 
   app.use('/api', buildApiRouter(container));
 

@@ -118,6 +118,29 @@ export class LabResultRepository extends BaseRepository {
     return LabResult.fromRow(row);
   }
 
+  /** Every verified numeric value for a member, oldest first (Health Score timeline input). */
+  verifiedValuesForMember(memberId) {
+    const rows = this.db.all(
+      `SELECT * FROM lab_results
+       WHERE member_id = ? AND verified = 1 AND value IS NOT NULL
+       ORDER BY measured_at ASC`,
+      memberId,
+    );
+    return rows.map(LabResult.fromRow);
+  }
+
+  /** Distinct measurement dates of verified values, oldest first (milestone span input). */
+  verifiedMeasuredDates(memberId) {
+    return this.db
+      .all(
+        `SELECT DISTINCT measured_at AS d FROM lab_results
+         WHERE member_id = ? AND verified = 1 AND value IS NOT NULL
+         ORDER BY d ASC`,
+        memberId,
+      )
+      .map((r) => r.d);
+  }
+
   codesWithVerifiedData(memberId, minPoints = 2) {
     return this.db
       .all(

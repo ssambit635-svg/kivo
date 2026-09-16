@@ -21,9 +21,10 @@ Backend for **MedTwin AI — AI-Powered Digital Health Twin** (iQOO Hackathon 20
 cd backend
 npm install
 cp .env.example .env      # optional; safe dev defaults baked in
-npm start                 # http://0.0.0.0:8080
-npm test                  # 182 tests: unit + integration (in-memory DB)
+npm start                 # http://0.0.0.0:8080  (demo dashboard at /app/)
+npm test                  # 220 tests: unit + integration (in-memory DB)
 npm run dev               # same, with --watch
+npm run seed:demo         # demo@medtwin.dev with a full 3-report journey
 node scripts/create-admin.js admin@clinic.dev 'Admin' 'Str0ng!Passw0rd#x'
 ```
 
@@ -79,6 +80,29 @@ upload (.txt / image / PDF / pasted text)
   → LlmGateway 'grounded-local' (narrates ONLY from the structured outputs above)
 ```
 
+## Engagement widgets (living-twin features)
+
+**1. Health Score Timeline** — `GET /api/members/:id/health-score`  
+A snapshot score (0–100) per verified report: *Jan → 53 | Mar → 63 | Jun → 95* on the seeded demo.
+Transparent, deterministic, **verified-values-only**: each marker scores 100 in range, 70 with no range
+context, and 60/45/25 when out of range within 10%/25%/beyond (overshoot measured against the crossed
+bound; the report's own reference range always wins). One "living twin" rule: a marker omitted from the
+latest panel keeps its last known verified value. Every snapshot ships its full per-marker breakdown,
+`delta` vs the previous snapshot, `methodology`, and a not-a-clinical-score disclaimer in-payload.
+
+**2. Report Confidence Badge** — `badge` field on report list/get/ingest payloads  
+Derived (never stored) from state the pipeline already tracks: `status` + `ocr_confidence` + `ocr_error`.
+`verified` (green, `shield-check`) · `needs_review` (amber, `alert-triangle`) · `ocr_issue` (red,
+`scan-line` — OCR failed, or confidence below the 0.6 review floor). Ships an icon **key**, never an
+emoji — frontends map keys to real SVG art (see `frontend/icons.js`).
+
+**3. Health Milestones** — `GET /api/members/:id/milestones`  
+Five achievements computed from real events (nothing stored, nothing fakeable): first report added,
+first report verified, first health trend detected (second verified point of any marker), doctor summary
+generated (tracked via the audited `summary.doctor_generated` event), and 3-month health history
+(≥92 days of verified data — carries live progress `{daysCovered, requiredDays}` while locked).
+Response includes `earned/total`, the `next` milestone to pursue, and icon keys per milestone.
+
 ## API map
 
 | Method | Path | Notes |
@@ -94,7 +118,9 @@ upload (.txt / image / PDF / pasted text)
 | GET | `/api/members/:id/trends[?code=]` | series + stats + narrative |
 | POST | `/api/members/:id/risk/diabetes` | `overrides` = labeled what-if scenario |
 | GET/POST/DELETE | `/api/members/:id/observations` | weight/bp/activity/sleep/symptom/note/medication |
-| GET | `/api/members/:id/doctor-summary` | sections + disclaimers |
+| GET | `/api/members/:id/doctor-summary` | sections + disclaimers (audited → milestone) |
+| GET | `/api/members/:id/health-score` | verified-only score timeline + breakdowns |
+| GET | `/api/members/:id/milestones` | achievement evaluation + progress |
 | GET | `/api/admin/users`, POST `/api/admin/users/:uid/status`, GET `/api/admin/audit` | admin role |
 | GET | `/api/health`, `/api/meta/lab-dictionary` | public |
 
@@ -113,11 +139,13 @@ helmet headers • CORS allowlist (dev: localhost + `*.e2b.app` previews; prod v
 ```
 tests/
 ├── unit/        password·token·lab-extraction·trend·risk-model·policy
+│                health-score·milestones·report-badge
 └── integration/ auth (rotation/reuse/lockout/password-change)
                  authorization (isolation/viewer/editor/admin/self-admin)
                  reports (ingest→review→verify→immutability→explain)
                  health-intel (trends/risk/what-if/summary)
+                 engagement (score timeline/milestones/badges/viewer+stranger authz)
                  security (headers/CORS/rate-limit/JSON/SQLi/413/404)
 ```
 
-`npm test` — **182 passing assertions**, each with an in-memory DB and low-cost scrypt parameters.
+`npm test` — **220 passing assertions**, each with an in-memory DB and low-cost scrypt parameters.

@@ -26,6 +26,22 @@ export class AuditLogRepository extends BaseRepository {
     return id;
   }
 
+  /** Earliest matching audit event (e.g. "was a doctor summary ever generated for this member?"). */
+  firstForAction({ action, resourceType = null, resourceId = null }) {
+    const params = [action];
+    let where = 'action = ?';
+    if (resourceType) {
+      where += ' AND resource_type = ?';
+      params.push(resourceType);
+    }
+    if (resourceId) {
+      where += ' AND resource_id = ?';
+      params.push(resourceId);
+    }
+    const row = this.db.get(`SELECT * FROM audit_log WHERE ${where} ORDER BY created_at ASC LIMIT 1`, ...params);
+    return AuditEvent.fromRow(row);
+  }
+
   list({ userId = null, action = null, page = 1, pageSize = 50 } = {}) {
     const params = [];
     let where = '1=1';
