@@ -189,6 +189,267 @@ const MIGRATIONS = [
         WHERE consented_at IS NULL;
     `,
   },
+  {
+    version: 4,
+    name: 'doctor-network-and-subscriptions',
+    sql: `
+      -- ============================================================
+      -- RBAC: roles are granted by the platform, never self-declared.
+      -- users.role keeps its legacy meaning (admin vs non-admin); this
+      -- table carries the product roles a console is built around.
+      -- ============================================================
+      CREATE TABLE user_roles (
+        user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role       TEXT NOT NULL CHECK (role IN ('patient','doctor','admin')),
+        status     TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','revoked')),
+        granted_by TEXT,
+        granted_at TEXT NOT NULL,
+        revoked_at TEXT,
+        PRIMARY KEY (user_id, role)
+      );
+      CREATE INDEX idx_user_roles_role ON user_roles(role, status);
+
+      -- ============================================================
+      -- Doctor identity. A doctor profile is a credential-bound public
+      -- identity ("Dr Mohan Charan — bone & joint specialist") with a
+      -- mock KYC record. Patient data is NEVER reachable from here:
+      -- that requires an explicit consultation consent grant below.
+      -- ============================================================
+      CREATE TABLE doctor_profiles (
+        id                    TEXT PRIMARY KEY,
+        user_id               TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        slug                  TEXT NOT NULL UNIQUE,
+        full_name             TEXT NOT NULL,
+        headline              TEXT NOT NULL,            -- "Bone & joint specialist"
+        specialty             TEXT NOT NULL,            -- canonical key from the specialty catalog
+        sub_specialties       TEXT NOT NULL DEFAULT '[]',  -- JSON array
+        qualifications        TEXT NOT NULL DEFAULT '[]',  -- JSON array
+        registration_no       TEXT NOT NULL,
+        registration_council  TEXT,
+        experience_years      INTEGER NOT NULL DEFAULT 0 CHECK (experience_years BETWEEN 0 AND 70),
+        languages             TEXT NOT NULL DEFAULT '[]',  -- JSON array
+        clinic_name           TEXT,
+        city                  TEXT,
+        bio                   TEXT,
+        consult_fee_inr       INTEGER NOT NULL DEFAULT 0 CHECK (consult_fee_inr BETWEEN 0 AND 100000),
+        status                TEXT NOT NULL DEFAULT 'pending_verification'
+                                CHECK (status IN ('pending_verification','active','suspended')),
+        -- MOCK verification (hackathon): no real KYC/registry check happens.
+        kyc_status            TEXT NOT NULL DEFAULT 'not_started'
+                                CHECK (kyc_status IN ('not_started','mock_verified','rejected')),
+        kyc_ref               TEXT,
+        kyc_verified_at       TEXT,
+        identity_card_no      TEXT NOT NULL UNIQUE,     -- MT-DOC-XXXXXXXX
+        rating_avg            REAL NOT NULL DEFAULT 0,
+        rating_count          INTEGER NOT NULL DEFAULT 0,
+        video_count           INTEGER NOT NULL DEFAULT 0,
+        consult_count         INTEGER NOT NULL DEFAULT 0,
+        created_at            TEXT NOT NULL,
+        updated_at            TEXT NOT NULL
+      );
+      CREATE INDEX idx_doctor_status ON doctor_profiles(status, specialty);
+
+      -- ============================================================
+      -- Subscription catalog + mock billing. No gateway is contacted:
+      -- every payment row is explicitly flagged as mock.
+      -- ============================================================
+      CREATE TABLE subscription_plans (
+        id                        TEXT PRIMARY KEY,
+        code                      TEXT NOT NULL UNIQUE,
+        name                      TEXT NOT NULL,
+        tagline                   TEXT,
+        price_inr                 INTEGER NOT NULL CHECK (price_inr >= 0),
+        interval                  TEXT NOT NULL CHECK (interval IN ('month','year')),
+        consultations_per_month   INTEGER NOT NULL DEFAULT 0,
+        video_access              TEXT NOT NULL CHECK (video_access IN ('preview','full')),
+        features                  TEXT NOT NULL DEFAULT '[]',   -- JSON array of display strings
+        is_active                 INTEGER NOT NULL DEFAULT 1,
+        sort_order                INTEGER NOT NULL DEFAULT 0,
+        created_at                TEXT NOT NULL,
+        updated_at                TEXT NOT NULL
+      );
+
+      CREATE TABLE subscriptions (
+        id                 TEXT PRIMARY KEY,
+        user_id            TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        plan_id            TEXT NOT NULL REFERENCES subscription_plans(id),
+        status             TEXT NOT NULL DEFAULT 'active'
+                             CHECK (status IN ('active','expired','cancelled')),
+        started_at         TEXT NOT NULL,
+        current_period_end TEXT NOT NULL,
+        auto_renew         INTEGER NOT NULL DEFAULT 0,
+        cancelled_at       TEXT,
+        created_at         TEXT NOT NULL,
+        updated_at         TEXT NOT NULL
+      );
+      CREATE INDEX idx_subscriptions_user ON subscriptions(user_id, status, current_period_end);
+
+      -- MOCK payment intents. provider is always 'mock-gateway'; no PAN,
+      -- no UPI credentials are ever stored — only the chosen method label.
+      CREATE TABLE payment_intents (
+        id              TEXT PRIMARY KEY,
+        user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        purpose         TEXT NOT NULL CHECK (purpose IN ('subscription','consultation')),
+        plan_id         TEXT REFERENCES subscription_plans(id),
+        consultation_id TEXT,
+        amount_inr      INTEGER NOT NULL CHECK (amount_inr >= 0),
+        currency        TEXT NOT NULL DEFAULT 'INR',
+        provider        TEXT NOT NULL DEFAULT 'mock-gateway',
+        provider_ref    TEXT,
+        method          TEXT CHECK (method IN ('upi','card','netbanking','wallet') OR method IS NULL),
+        status          TEXT NOT NULL DEFAULT 'created'
+                          CHECK (status IN ('created','succeeded','failed','refunded')),
+        failure_reason  TEXT,
+        is_mock         INTEGER NOT NULL DEFAULT 1,
+        metadata        TEXT NOT NULL DEFAULT '{}',
+        created_at      TEXT NOT NULL,
+        completed_at    TEXT
+      );
+      CREATE INDEX idx_payment_user ON payment_intents(user_id, status, created_at);
+
+      -- Revenue ledger: every paise is attributed (doctor share, video-pool
+      -- share, platform fee). Month-period statements are computed from here.
+      CREATE TABLE payout_ledger (
+        id                    TEXT PRIMARY KEY,
+        doctor_id             TEXT REFERENCES doctor_profiles(id) ON DELETE SET NULL,
+        payment_intent_id     TEXT REFERENCES payment_intents(id) ON DELETE SET NULL,
+        consultation_id       TEXT,
+        entry_type            TEXT NOT NULL
+                                CHECK (entry_type IN ('consult_share','video_pool_share','video_pool_accrual','consult_pool_accrual','platform_fee')),
+        amount_paise          INTEGER NOT NULL,
+        period                TEXT NOT NULL,           -- YYYY-MM
+        description           TEXT,
+        status                TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid')),
+        created_at            TEXT NOT NULL
+      );
+      CREATE INDEX idx_ledger_doctor_period ON payout_ledger(doctor_id, period);
+      CREATE INDEX idx_ledger_period_type ON payout_ledger(period, entry_type);
+
+      -- ============================================================
+      -- Async doctor consultation. The patient books, the doctor answers
+      -- with the full chart in front of them. Payment is mock.
+      -- ============================================================
+      CREATE TABLE consultations (
+        id                 TEXT PRIMARY KEY,
+        member_id          TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+        patient_user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        doctor_id          TEXT NOT NULL REFERENCES doctor_profiles(id) ON DELETE CASCADE,
+        subject            TEXT NOT NULL,
+        question           TEXT NOT NULL,
+        status             TEXT NOT NULL DEFAULT 'payment_pending'
+                             CHECK (status IN ('payment_pending','requested','in_review','answered','closed','cancelled')),
+        fee_inr            INTEGER NOT NULL DEFAULT 0,
+        included_in_plan   INTEGER NOT NULL DEFAULT 0,
+        payment_intent_id  TEXT REFERENCES payment_intents(id) ON DELETE SET NULL,
+        consent_scope      TEXT NOT NULL DEFAULT '[]',   -- JSON array of granted data scopes
+        consent_granted_at TEXT,
+        consent_expires_at TEXT,
+        doctor_reply       TEXT,
+        doctor_replied_at  TEXT,
+        closed_at          TEXT,
+        created_at         TEXT NOT NULL,
+        updated_at         TEXT NOT NULL
+      );
+      CREATE INDEX idx_consult_doctor ON consultations(doctor_id, status, created_at);
+      CREATE INDEX idx_consult_patient ON consultations(patient_user_id, status, created_at);
+      CREATE INDEX idx_consult_member ON consultations(member_id, created_at);
+
+      CREATE TABLE consultation_messages (
+        id              TEXT PRIMARY KEY,
+        consultation_id TEXT NOT NULL REFERENCES consultations(id) ON DELETE CASCADE,
+        author_user_id  TEXT REFERENCES users(id) ON DELETE SET NULL,
+        author_role     TEXT NOT NULL CHECK (author_role IN ('patient','doctor','system')),
+        kind            TEXT NOT NULL
+                          CHECK (kind IN ('text','medicine_plan','video_link','care_note','status')),
+        body            TEXT NOT NULL,
+        metadata        TEXT NOT NULL DEFAULT '{}',
+        created_at      TEXT NOT NULL
+      );
+      CREATE INDEX idx_consult_messages ON consultation_messages(consultation_id, created_at);
+
+      -- AI-drafted medicine suggestions for a consultation. They are drafts
+      -- ONLY: nothing reaches the patient until a doctor edits/approves and
+      -- the acknowledgements are recorded here.
+      CREATE TABLE medicine_plans (
+        id                TEXT PRIMARY KEY,
+        consultation_id   TEXT NOT NULL REFERENCES consultations(id) ON DELETE CASCADE,
+        member_id         TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+        doctor_id         TEXT NOT NULL REFERENCES doctor_profiles(id) ON DELETE CASCADE,
+        status            TEXT NOT NULL DEFAULT 'draft'
+                            CHECK (status IN ('draft','approved','rejected')),
+        ai_draft          TEXT NOT NULL DEFAULT '{}',   -- JSON: suggestions + evidence
+        final_items       TEXT NOT NULL DEFAULT '[]',   -- JSON: what the doctor actually approved
+        doctor_note       TEXT,
+        acknowledgements  TEXT NOT NULL DEFAULT '[]',   -- JSON: safety checklist ticked by the doctor
+        approved_at       TEXT,
+        created_at        TEXT NOT NULL,
+        updated_at        TEXT NOT NULL
+      );
+      CREATE INDEX idx_medplans_consult ON medicine_plans(consultation_id);
+
+      -- Scoped, expiring patient-data consent for ONE doctor and ONE member.
+      -- Every doctor read of a chart is checked against this table.
+      CREATE TABLE doctor_access_grants (
+        id              TEXT PRIMARY KEY,
+        doctor_id       TEXT NOT NULL REFERENCES doctor_profiles(id) ON DELETE CASCADE,
+        member_id       TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+        consultation_id TEXT REFERENCES consultations(id) ON DELETE CASCADE,
+        scope           TEXT NOT NULL DEFAULT '[]',   -- JSON array
+        granted_by      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        granted_at      TEXT NOT NULL,
+        expires_at      TEXT NOT NULL,
+        revoked_at      TEXT
+      );
+      CREATE INDEX idx_grants_doctor_member ON doctor_access_grants(doctor_id, member_id, revoked_at);
+
+      -- ============================================================
+      -- Short-video library ("Doubt shorts"). media_kind 'upload' stores a
+      -- file served through an HMAC-signed, expiring URL; 'note' is a
+      -- caption-style short (key points) that needs no binary asset.
+      -- ============================================================
+      CREATE TABLE doctor_videos (
+        id                   TEXT PRIMARY KEY,
+        doctor_id            TEXT NOT NULL REFERENCES doctor_profiles(id) ON DELETE CASCADE,
+        title                TEXT NOT NULL,
+        summary              TEXT,
+        topic                TEXT NOT NULL,
+        tags                 TEXT NOT NULL DEFAULT '[]',
+        key_points           TEXT NOT NULL DEFAULT '[]',
+        duration_sec         INTEGER NOT NULL DEFAULT 45 CHECK (duration_sec BETWEEN 5 AND 600),
+        language             TEXT NOT NULL DEFAULT 'en',
+        media_kind           TEXT NOT NULL DEFAULT 'note' CHECK (media_kind IN ('note','upload')),
+        media_path           TEXT,
+        media_mime           TEXT,
+        media_bytes          INTEGER,
+        is_preview           INTEGER NOT NULL DEFAULT 0,
+        status               TEXT NOT NULL DEFAULT 'published'
+                               CHECK (status IN ('draft','published','archived')),
+        view_count           INTEGER NOT NULL DEFAULT 0,
+        watch_seconds_total  INTEGER NOT NULL DEFAULT 0,
+        published_at         TEXT,
+        created_at           TEXT NOT NULL,
+        updated_at           TEXT NOT NULL
+      );
+      CREATE INDEX idx_videos_feed ON doctor_videos(status, topic, published_at);
+      CREATE INDEX idx_videos_doctor ON doctor_videos(doctor_id, status);
+
+      -- One row per watch session. Feeds both doctor analytics and the
+      -- monthly video-pool payout split (paid per watched second).
+      CREATE TABLE video_views (
+        id              TEXT PRIMARY KEY,
+        video_id        TEXT NOT NULL REFERENCES doctor_videos(id) ON DELETE CASCADE,
+        doctor_id       TEXT NOT NULL REFERENCES doctor_profiles(id) ON DELETE CASCADE,
+        user_id         TEXT REFERENCES users(id) ON DELETE SET NULL,
+        member_id       TEXT REFERENCES members(id) ON DELETE SET NULL,
+        seconds_watched INTEGER NOT NULL DEFAULT 0,
+        completed       INTEGER NOT NULL DEFAULT 0,
+        period          TEXT NOT NULL,     -- YYYY-MM, so payouts never re-scan raw dates
+        created_at      TEXT NOT NULL
+      );
+      CREATE INDEX idx_views_video ON video_views(video_id, created_at);
+      CREATE INDEX idx_views_doctor_period ON video_views(doctor_id, period);
+    `,
+  },
 ];
 
 export function runMigrations(database) {

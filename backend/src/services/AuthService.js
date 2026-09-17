@@ -21,8 +21,9 @@ import {
  * - Every meaningful event is written to the audit log.
  */
 export class AuthService {
-  constructor({ config, userRepository, refreshTokenRepository, memberRepository, passwordService, tokenService, auditService }) {
+  constructor({ config, userRepository, refreshTokenRepository, memberRepository, passwordService, tokenService, auditService, roleRepository = null }) {
     this.config = config;
+    this.roleRepo = roleRepository;
     this.users = userRepository;
     this.refreshTokens = refreshTokenRepository;
     this.members = memberRepository;
@@ -144,6 +145,7 @@ export class AuthService {
       this.refreshTokens.revokeFamily(stored.family_id);
       throw new UnauthorizedError('Account no longer exists', 'UNAUTHORIZED');
     }
+    user.roles = this.rolesFor(user);
 
     // Rotate atomically: old token revoked and linked to its replacement.
     const { token, tokenHash } = this.tokens.generateRefreshToken();
@@ -226,11 +228,26 @@ export class AuthService {
     if (user.token_version !== payload.tv) {
       throw new UnauthorizedError('Session revoked — please log in again', 'SESSION_REVOKED');
     }
+    user.roles = this.rolesFor(user);
     return user;
+  }
+
+  // ------------------------------------------------------------------ roles
+  /**
+   * RBAC roles are resolved from the DATABASE on every request, never carried
+   * in the token: `users.role` gives admin/patient, `user_roles` adds granted
+   * product roles (doctor). Suspending a doctor therefore takes effect on the
+   * next request instead of when their access token expires.
+   */
+  rolesFor(user) {
+    const base = user.role === 'admin' ? ['admin'] : ['patient'];
+    const granted = this.roleRepo ? this.roleRepo.rolesFor(user.id) : [];
+    return [...new Set([...base, ...granted])];
   }
 
   // ---------------------------------------------------------------- internal
   issueSession(user, ctx, { familyId }) {
+    user.roles = this.rolesFor(user);
     const accessToken = this.tokens.signAccessToken({
       userId: user.id,
       role: user.role,

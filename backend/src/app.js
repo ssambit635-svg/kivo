@@ -69,13 +69,21 @@ export function createApp(container) {
       version: container.config.appVersion,
       docs: 'See backend/README.md',
       health: '/api/health',
-      ...(frontendDir ? { dashboard: '/app/' } : {}),
+      ...(frontendDir ? { dashboard: '/app/', doctorConsole: '/doctor/' } : {}),
     });
   });
 
   if (frontendDir) {
     // express.static redirects /app → /app/ itself (directory redirect).
     app.use('/app', express.static(frontendDir, { index: 'index.html', maxAge: '5m' }));
+
+    // The doctor console is a SEPARATE frontend for a separate role. It lives
+    // in frontend/doctor/ and reuses the patient app's design tokens/icons via
+    // /app/… so the two consoles never drift apart visually.
+    const doctorDir = path.join(frontendDir, 'doctor');
+    if (fs.existsSync(path.join(doctorDir, 'index.html'))) {
+      app.use('/doctor', express.static(doctorDir, { index: 'index.html', maxAge: '5m' }));
+    }
   }
 
   // /api is never cacheable — health data must not persist in browser/proxy caches.

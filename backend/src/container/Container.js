@@ -12,6 +12,11 @@ import { LabResultRepository } from '../repositories/LabResultRepository.js';
 import { ObservationRepository } from '../repositories/ObservationRepository.js';
 import { ReminderRepository } from '../repositories/ReminderRepository.js';
 import { AuditLogRepository } from '../repositories/AuditLogRepository.js';
+import { RoleRepository } from '../repositories/RoleRepository.js';
+import { DoctorRepository } from '../repositories/DoctorRepository.js';
+import { SubscriptionRepository } from '../repositories/SubscriptionRepository.js';
+import { ConsultationRepository } from '../repositories/ConsultationRepository.js';
+import { VideoRepository } from '../repositories/VideoRepository.js';
 
 import { PasswordService } from '../services/PasswordService.js';
 import { TokenService } from '../services/TokenService.js';
@@ -51,6 +56,17 @@ import { AdminController } from '../controllers/AdminController.js';
 import { IntelligenceController } from '../controllers/IntelligenceController.js';
 import { AskTwinController } from '../controllers/AskTwinController.js';
 import { AskTwinService } from '../services/AskTwinService.js';
+import { SubscriptionService } from '../services/care/SubscriptionService.js';
+import { PayoutService } from '../services/care/PayoutService.js';
+import { DoctorService } from '../services/care/DoctorService.js';
+import { MediaLinkService } from '../services/care/MediaLinkService.js';
+import { VideoService } from '../services/care/VideoService.js';
+import { ClinicalBriefService } from '../services/care/ClinicalBriefService.js';
+import { MedicineSuggestionService } from '../services/care/MedicineSuggestionService.js';
+import { ConsultationService } from '../services/care/ConsultationService.js';
+import { CareController } from '../controllers/CareController.js';
+import { DoctorConsoleController, CareAdminController } from '../controllers/DoctorConsoleController.js';
+import { patientOnly, requireDoctorRole } from '../middleware/accessControl.js';
 
 /**
  * Dependency-injection container — manual, explicit, test-friendly.
@@ -78,6 +94,11 @@ export class Container {
     this.observationRepository = new ObservationRepository(this.db);
     this.reminderRepository = new ReminderRepository(this.db);
     this.auditLogRepository = new AuditLogRepository(this.db);
+    this.roleRepository = new RoleRepository(this.db);
+    this.doctorRepository = new DoctorRepository(this.db);
+    this.subscriptionRepository = new SubscriptionRepository(this.db);
+    this.consultationRepository = new ConsultationRepository(this.db);
+    this.videoRepository = new VideoRepository(this.db);
 
     // --- core services ---
     this.passwordService = new PasswordService(config);
@@ -93,6 +114,7 @@ export class Container {
       passwordService: this.passwordService,
       tokenService: this.tokenService,
       auditService: this.auditService,
+      roleRepository: this.roleRepository,
     });
     this.authService.selfTest();
 
@@ -203,6 +225,70 @@ export class Container {
       auditService: this.auditService,
     });
 
+    // --- care network: subscriptions, doctor console, consultations, shorts ---
+    this.payoutService = new PayoutService({
+      subscriptionRepository: this.subscriptionRepository,
+      videoRepository: this.videoRepository,
+      doctorRepository: this.doctorRepository,
+      consultationRepository: this.consultationRepository,
+      auditService: this.auditService,
+    });
+    this.subscriptionService = new SubscriptionService({
+      config,
+      subscriptionRepository: this.subscriptionRepository,
+      consultationRepository: this.consultationRepository,
+      payoutService: this.payoutService,
+      auditService: this.auditService,
+    });
+    this.mediaLinkService = new MediaLinkService({ config });
+    this.doctorService = new DoctorService({
+      config,
+      doctorRepository: this.doctorRepository,
+      videoRepository: this.videoRepository,
+      consultationRepository: this.consultationRepository,
+      userRepository: this.userRepository,
+      roleRepository: this.roleRepository,
+      passwordService: this.passwordService,
+      authService: this.authService,
+      policyService: this.policyService,
+      auditService: this.auditService,
+    });
+    this.videoService = new VideoService({
+      config,
+      videoRepository: this.videoRepository,
+      doctorRepository: this.doctorRepository,
+      subscriptionService: this.subscriptionService,
+      mediaLinkService: this.mediaLinkService,
+      auditService: this.auditService,
+    });
+    this.medicineSuggestionService = new MedicineSuggestionService({
+      consultationRepository: this.consultationRepository,
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      auditService: this.auditService,
+    });
+    this.clinicalBriefService = new ClinicalBriefService({
+      memberRepository: this.memberRepository,
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      reportRepository: this.reportRepository,
+      trendService: this.trendService,
+      riskModelService: this.riskModelService,
+      doctorSummaryService: this.doctorSummaryService,
+    });
+    this.consultationService = new ConsultationService({
+      config,
+      consultationRepository: this.consultationRepository,
+      doctorRepository: this.doctorRepository,
+      memberRepository: this.memberRepository,
+      policyService: this.policyService,
+      subscriptionService: this.subscriptionService,
+      payoutService: this.payoutService,
+      briefService: this.clinicalBriefService,
+      medicineService: this.medicineSuggestionService,
+      auditService: this.auditService,
+    });
+
     // --- domain services ---
     this.memberService = new MemberService({
       memberRepository: this.memberRepository,
@@ -261,11 +347,32 @@ export class Container {
     this.askTwinController = new AskTwinController({
       askTwinService: this.askTwinService,
     });
+    this.careController = new CareController({
+      subscriptionService: this.subscriptionService,
+      doctorService: this.doctorService,
+      consultationService: this.consultationService,
+      videoService: this.videoService,
+    });
+    this.doctorConsoleController = new DoctorConsoleController({
+      doctorService: this.doctorService,
+      consultationService: this.consultationService,
+      medicineService: this.medicineSuggestionService,
+      videoService: this.videoService,
+      payoutService: this.payoutService,
+    });
+    this.careAdminController = new CareAdminController({
+      doctorService: this.doctorService,
+      payoutService: this.payoutService,
+      policyService: this.policyService,
+    });
 
     this.authenticateMw = authenticate({
       tokenService: this.tokenService,
       authService: this.authService,
     });
+    // Role gates (roles are re-read from the DB on every request).
+    this.patientOnlyMw = patientOnly();
+    this.requireDoctorMw = requireDoctorRole();
   }
 
   close() {

@@ -147,6 +147,17 @@ async function main() {
     expectStatus(r.status, 200, 'dashboard');
     if (!r.text.includes('<html')) throw new Error('no html');
   });
+  // The Care tab is a separate file pair on purpose: a silent 404 here would
+  // strip the whole subscription/consultation UI out of the patient app.
+  await check('GET /app/care.js (Care tab module served)', async () => {
+    const r = await req('GET', '/app/care.js');
+    expectStatus(r.status, 200, 'care.js');
+    if (!r.text.includes('MtApp')) throw new Error('care.js does not bind to the shell bridge');
+  });
+  await check('GET /app/care.css (Care tab styles served)', async () => {
+    const r = await req('GET', '/app/care.css');
+    expectStatus(r.status, 200, 'care.css');
+  });
 
   // ---------------- auth lifecycle ----------------
   const email = `smoke+${Date.now()}@medtwin.dev`;
@@ -632,6 +643,233 @@ async function main() {
   await check('existence-hiding: stranger member id → 404', async () => {
     const r = await req('GET', `/api/members/${crypto.randomUUID()}/trends`, { token: sess.accessToken });
     expectStatus(r.status, 404, 'stranger member');
+  });
+
+  // ---------------- care network: subscriptions + doctor console + shorts ----------------
+  let doctorTok, doctorId, careConsultationId, careVideoId, carePaidVideoId;
+  await check('GET /api/public/plans (mock billing catalog)', async () => {
+    const r = await req('GET', '/api/public/plans');
+    expectStatus(r.status, 200, 'plans');
+    if (!r.json.plans.some((p) => p.code === 'care_monthly')) throw new Error('care plan missing');
+    if (r.json.billing.mode !== 'mock') throw new Error('billing not marked mock');
+    return `${r.json.plans.length} plans`;
+  });
+  await check('GET /doctor/doctor.js (console module served)', async () => {
+    const r = await req('GET', '/doctor/doctor.js');
+    expectStatus(r.status, 200, 'doctor.js');
+    if (!r.text.includes('mt.doctor.tokens')) throw new Error('doctor.js is not the console module');
+  });
+  await check('GET /doctor/ (doctor console served)', async () => {
+    const r = await req('GET', '/doctor/');
+    expectStatus(r.status, 200, 'doctor console');
+    if (!r.text.includes('<html')) throw new Error('no html');
+  });
+  await check('POST /api/doctor/apply (mock KYC + doctor role)', async () => {
+    const r = await req('POST', '/api/doctor/apply', {
+      body: {
+        email: `dr.smoke+${Date.now()}@medtwin.dev`,
+        displayName: 'Dr Smoke Charan',
+        password: PASSWORD,
+        specialty: 'orthopaedics',
+        headline: 'Bone & joint specialist',
+        registrationNo: `MCI-SMOKE-${Date.now()}`,
+        experienceYears: 11,
+        city: 'Pune',
+        consultFeeInr: 400,
+        qualifications: ['MBBS', 'MS Ortho'],
+      },
+    });
+    expectStatus(r.status, 201, 'doctor apply');
+    doctorTok = r.json.accessToken;
+    doctorId = r.json.doctor.id;
+    if (!r.json.user.roles.includes('doctor')) throw new Error('role not granted');
+    if (r.json.doctor.kyc.status !== 'mock_verified') throw new Error('kyc not mock-verified');
+  });
+  await check('GET /api/doctor/overview', async () => {
+    const r = await req('GET', '/api/doctor/overview', { token: doctorTok });
+    expectStatus(r.status, 200, 'overview');
+    if (r.json.doctor.specialty !== 'orthopaedics') throw new Error('wrong specialty');
+  });
+  await check('RBAC: doctor account blocked from the patient API', async () => {
+    const r = await req('GET', '/api/members', { token: doctorTok });
+    expectStatus(r.status, 403, 'doctor on patient api');
+    if (r.json?.error?.code !== 'DOCTOR_ACCOUNT') throw new Error(`code ${r.json?.error?.code}`);
+  });
+  await check('RBAC: patient blocked from the doctor console', async () => {
+    const r = await req('GET', '/api/doctor/overview', { token: sess.accessToken });
+    expectStatus(r.status, 403, 'patient on doctor api');
+    if (r.json?.error?.code !== 'DOCTOR_ROLE_REQUIRED') throw new Error(`code ${r.json?.error?.code}`);
+  });
+  await check('POST /api/doctor/videos (preview short)', async () => {
+    const r = await req('POST', '/api/doctor/videos', {
+      token: doctorTok,
+      body: {
+        title: 'Knee pain: three red flags',
+        summary: 'When a knee needs a scan.',
+        topic: 'orthopaedics',
+        durationSec: 48,
+        keyPoints: ['Swelling that persists', 'Locking', 'Night pain'],
+        isPreview: true,
+      },
+    });
+    expectStatus(r.status, 201, 'publish');
+    careVideoId = r.json.video.id;
+  });
+  await check('content claim-lint rejects "guaranteed cure"', async () => {
+    const r = await req('POST', '/api/doctor/videos', {
+      token: doctorTok,
+      body: { title: 'Guaranteed cure for arthritis', topic: 'orthopaedics' },
+    });
+    expectStatus(r.status, 400, 'claim lint');
+    if (!r.json.error.details.some((d) => d.code === 'CLAIM_LINT')) throw new Error('no CLAIM_LINT detail');
+  });
+  await check('POST /api/doctor/videos (paid short)', async () => {
+    const r = await req('POST', '/api/doctor/videos', {
+      token: doctorTok,
+      body: { title: 'ACL recovery week by week', topic: 'orthopaedics', durationSec: 90 },
+    });
+    expectStatus(r.status, 201, 'publish paid');
+    carePaidVideoId = r.json.video.id;
+  });
+  await check('GET /api/care/videos (paid short locked for free patient)', async () => {
+    const r = await req('GET', '/api/care/videos', { token: sess.accessToken });
+    expectStatus(r.status, 200, 'feed');
+    const paid = r.json.items.find((v) => v.id === carePaidVideoId);
+    if (!paid?.locked) throw new Error('paid short not locked');
+  });
+  await check('paywall: playback of a paid short → 402', async () => {
+    const r = await req('POST', `/api/care/videos/${carePaidVideoId}/playback`, { token: sess.accessToken, body: {} });
+    expectStatus(r.status, 402, 'paywall');
+    if (r.json?.error?.code !== 'SUBSCRIPTION_REQUIRED') throw new Error(`code ${r.json?.error?.code}`);
+  });
+  await check('POST /api/care/subscription (mock payment activates Care+)', async () => {
+    const r = await req('POST', '/api/care/subscription', { token: sess.accessToken, body: { planCode: 'care_monthly', method: 'upi' } });
+    expectStatus(r.status, 201, 'subscribe');
+    if (r.json.payment.mode !== 'mock') throw new Error('not mock');
+    if (r.json.entitlements.videoAccess !== 'full') throw new Error('entitlements not upgraded');
+    if (JSON.stringify(r.json.payment).match(/cardNumber|cvv|vpaId/i)) throw new Error('credential-ish field present');
+  });
+  await check('GET /api/care/entitlements (plan quota)', async () => {
+    const r = await req('GET', '/api/care/entitlements', { token: sess.accessToken });
+    expectStatus(r.status, 200, 'entitlements');
+    if (r.json.entitlements.consultationsRemaining !== 4) throw new Error(`remaining ${r.json.entitlements.consultationsRemaining}`);
+  });
+  await check('playback + watch tracking after subscribing', async () => {
+    const p = await req('POST', `/api/care/videos/${carePaidVideoId}/playback`, { token: sess.accessToken, body: {} });
+    expectStatus(p.status, 200, 'playback');
+    const w = await req('POST', `/api/care/videos/${carePaidVideoId}/views`, { token: sess.accessToken, body: { secondsWatched: 45 } });
+    expectStatus(w.status, 200, 'watch');
+    if (w.json.secondsWatched !== 45) throw new Error('watch not recorded');
+  });
+  await check('POST /api/care/consultations (plan-funded consult)', async () => {
+    const r = await req('POST', '/api/care/consultations', {
+      token: sess.accessToken,
+      body: {
+        memberId,
+        doctorId,
+        subject: 'Knee pain for three weeks',
+        question: 'My knee hurts when climbing stairs for three weeks. Do I need an X-ray?',
+        shareHealthData: true,
+      },
+    });
+    expectStatus(r.status, 201, 'book');
+    if (!r.json.consultation.includedInPlan) throw new Error('not plan-funded');
+    if (r.json.payment !== null) throw new Error('plan-funded consult asked for payment');
+    careConsultationId = r.json.consultation.id;
+  });
+  await check('GET /api/doctor/consultations (inbox with consent grant)', async () => {
+    const r = await req('GET', '/api/doctor/consultations', { token: doctorTok });
+    expectStatus(r.status, 200, 'inbox');
+    if (!r.json.items.some((c) => c.id === careConsultationId && c.chartAccess.granted)) {
+      throw new Error('consultation missing or no chart access');
+    }
+  });
+  await check('GET /api/doctor/consultations/:id (one-screen clinical brief)', async () => {
+    const r = await req('GET', `/api/doctor/consultations/${careConsultationId}`, { token: doctorTok });
+    expectStatus(r.status, 200, 'detail');
+    if (!r.json.brief) throw new Error('no brief');
+    if (!r.json.summaryLine.problemCount) throw new Error('brief has no problems');
+    if (!r.json.brief.gapsToAsk.length) throw new Error('no gap list');
+  });
+  await check('POST /api/doctor/consultations/:id/medicine-draft (AI draft, no doses)', async () => {
+    const r = await req('POST', `/api/doctor/consultations/${careConsultationId}/medicine-draft`, { token: doctorTok, body: {} });
+    expectStatus(r.status, 200, 'draft');
+    if (!r.json.medicinePlan.aiDraft.aiGenerated) throw new Error('not flagged AI-generated');
+    if (r.json.medicinePlan.aiDraft.patientVisible) throw new Error('draft marked patient-visible');
+  });
+  await check('medicine approval is blocked without the safety checklist', async () => {
+    const r = await req('POST', `/api/doctor/consultations/${careConsultationId}/medicine-plan/approve`, {
+      token: doctorTok,
+      body: { items: [{ code: 'ldl', decision: 'edit' }], acknowledgements: ['allergies'] },
+    });
+    expectStatus(r.status, 400, 'ack gate');
+  });
+  await check('POST …/medicine-plan/approve (doctor approves edit)', async () => {
+    const r = await req('POST', `/api/doctor/consultations/${careConsultationId}/medicine-plan/approve`, {
+      token: doctorTok,
+      body: {
+        items: [{ code: 'ldl', decision: 'edit', product: 'Statin class (as discussed)', instructions: 'Night dose; recheck lipids in 12 weeks' }],
+        doctorNote: 'Lifestyle first; medicine only if lipids stay high at review.',
+        acknowledgements: ['allergies', 'interactions', 'organ_function', 'dose_omitted'],
+      },
+    });
+    expectStatus(r.status, 200, 'approve');
+    if (r.json.medicinePlan.status !== 'approved') throw new Error('not approved');
+  });
+  await check('POST /api/doctor/consultations/:id/reply (with attached short)', async () => {
+    const r = await req('POST', `/api/doctor/consultations/${careConsultationId}/reply`, {
+      token: doctorTok,
+      body: { body: 'X-ray is not needed yet — start loading advice and review in two weeks.', videoIds: [carePaidVideoId] },
+    });
+    expectStatus(r.status, 201, 'reply');
+    if (r.json.consultation.status !== 'answered') throw new Error('status not answered');
+  });
+  await check('GET /api/care/consultations/:id (patient sees reply + plan + shorts)', async () => {
+    const r = await req('GET', `/api/care/consultations/${careConsultationId}`, { token: sess.accessToken });
+    expectStatus(r.status, 200, 'patient view');
+    if (!r.json.doctorReply) throw new Error('no reply');
+    if (r.json.medicinePlan?.status !== 'approved') throw new Error('approved plan not visible');
+    if (!r.json.recommendedVideos.length) throw new Error('no recommended shorts');
+  });
+  await check('consent revocation immediately blocks the doctor', async () => {
+    const revoke = await req('POST', `/api/care/consultations/${careConsultationId}/consent/revoke`, { token: sess.accessToken, body: {} });
+    expectStatus(revoke.status, 200, 'revoke');
+    const after = await req('GET', `/api/doctor/consultations/${careConsultationId}`, { token: doctorTok });
+    expectStatus(after.status, 200, 'after revoke');
+    if (after.json.brief !== null) throw new Error('brief still served after revocation');
+    const reply = await req('POST', `/api/doctor/consultations/${careConsultationId}/reply`, { token: doctorTok, body: { body: 'One more thing to check.' } });
+    expectStatus(reply.status, 403, 'reply after revoke');
+    if (reply.json?.error?.code !== 'CONSENT_REQUIRED') throw new Error(`code ${reply.json?.error?.code}`);
+  });
+  await check('GET /api/doctor/earnings (split arithmetic, mock ledger)', async () => {
+    const r = await req('GET', '/api/doctor/earnings', { token: doctorTok });
+    expectStatus(r.status, 200, 'earnings');
+    if (r.json.totals.consultationSharePaise !== 28000) throw new Error(`consult share ${r.json.totals.consultationSharePaise}`);
+    if (r.json.pools.shorts.accrualPaise !== 4975) throw new Error(`pool ${r.json.pools.shorts.accrualPaise}`);
+    if (r.json.payoutNote.search(/mock/i) === -1) throw new Error('missing mock payout note');
+    return `₹${r.json.totals.totalInr} this period`;
+  });
+  await check('GET /api/admin/doctors (verification queue)', async () => {
+    const r = await req('GET', '/api/admin/doctors', { token: adminTok });
+    expectStatus(r.status, 200, 'admin doctors');
+    if (r.json.total < 1) throw new Error('no doctors listed');
+  });
+  await check('POST /api/admin/payouts/settle (idempotent)', async () => {
+    const period = new Date().toISOString().slice(0, 7);
+    const r = await req('POST', '/api/admin/payouts/settle', { token: adminTok, body: { period } });
+    expectStatus(r.status, 200, 'settle');
+    if (r.json.result.settled) throw new Error('pool settled twice');
+  });
+  await check('GET /api/media/videos/:id (tampered signature → 403)', async () => {
+    const r = await req('GET', `/api/media/videos/${carePaidVideoId}?v=1&uid=someone&exp=9999999999&sig=deadbeef`);
+    expectStatus(r.status, 403, 'bad signature');
+    if (r.json?.error?.code !== 'PLAYBACK_LINK_INVALID') throw new Error(`code ${r.json?.error?.code}`);
+  });
+  await check('GET /api/public/doctors?specialty=orthopaedics (public directory)', async () => {
+    const r = await req('GET', '/api/public/doctors?specialty=orthopaedics');
+    expectStatus(r.status, 200, 'directory');
+    if (!r.json.items.length) throw new Error('no doctors');
+    if (r.json.verification.mode !== 'mock') throw new Error('verification not labelled mock');
   });
 
   // ---------------- summary ----------------

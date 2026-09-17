@@ -2,11 +2,14 @@
 /**
  * Demo seed — builds the demo journey from the product spec end-to-end:
  *
- *   demo@medtwin.dev / Dem0!MedTwin#2026  (printed on stdout)
+ *   demo@medtwin.dev / Dem0!MedTwin#2026        (patient app, /app)
+ *   dr.mohan@medtwin.dev / MedTwin!Doctor#2026  (doctor console, /doctor)
  *   ├── 3 synthetic lab reports (Jan → Mar → Jun, clearly improving)
  *   ├── all extracted values USER-VERIFIED (the trust gate)
  *   ├── lifestyle observations (weight / bp / activity)
- *   └── doctor summary generated once (audited → unlocks that milestone)
+ *   ├── doctor summary generated once (audited → unlocks that milestone)
+ *   ├── the care plan catalogue (free / care_monthly / care_yearly)
+ *   └── one verified doctor + two published shorts (one free preview)
  *
  * Result: GET /health-score shows a real rising timeline, /milestones shows
  * 5/5 earned, and every report carries a confidence badge.
@@ -19,6 +22,10 @@ import { Container } from '../src/container/Container.js';
 const EMAIL = 'demo@medtwin.dev';
 const PASSWORD = 'Dem0!MedTwin#2026';
 const NAME = 'Demo User';
+
+// Doctor demo — the "doc Mohan Charan is a bone specialist" identity card.
+const DOCTOR_EMAIL = 'dr.mohan@medtwin.dev';
+const DOCTOR_PASSWORD = 'MedTwin!Doctor#2026';
 
 const REPORT_JAN = [
   'CITY DIAGNOSTICS CENTER - DEMO LAB',
@@ -134,10 +141,68 @@ async function main() {
     reportDate: '2026-09-05',
   });
 
+  // 6) the care plan catalogue (idempotent upsert)
+  c.subscriptionService.ensureCatalog();
+  console.log('care plans: free / care_monthly (₹199) / care_yearly (₹1499) ready');
+
+  // 7) a verified doctor + two shorts, so the console and the Care tab have content
+  if (c.userRepository.emailExists(DOCTOR_EMAIL)) {
+    console.log(`doctor account already exists (${DOCTOR_EMAIL}) — leaving it as is.`);
+  } else {
+    const { doctor } = c.doctorService.apply(
+      {
+        email: DOCTOR_EMAIL,
+        displayName: 'Dr Mohan Charan',
+        password: DOCTOR_PASSWORD,
+        specialty: 'orthopaedics',
+        headline: 'Bone & joint specialist',
+        qualifications: ['MBBS', 'MS Orthopaedics'],
+        registrationNo: 'MCI-DEMO-4471',
+        registrationCouncil: 'Maharashtra Medical Council',
+        experienceYears: 12,
+        languages: ['English', 'Hindi', 'Marathi'],
+        clinicName: 'Charan Bone & Joint Clinic',
+        city: 'Pune',
+        bio: 'Knees, backs, fractures and sports injuries. I explain the scan before I explain the medicine.',
+        consultFeeInr: 400,
+      },
+      { ip: 'seed', userAgent: 'seed-demo' },
+    );
+    // apply() returns the JSON view; the entity is what the services take.
+    const doctorEntity = c.doctorRepository.findByUserId(doctor.userId);
+    const shorts = [
+      {
+        title: 'Knee pain: three red flags',
+        summary: 'When knee pain needs a scan instead of a massage.',
+        topic: 'orthopaedics',
+        keyPoints: ['Locking or giving way', 'Night pain that wakes you', 'Swelling that will not settle in a week'],
+        tags: ['knee', 'pain', 'red flags'],
+        durationSec: 45,
+        isPreview: true,
+        status: 'published',
+      },
+      {
+        title: 'Sitting all day: the 20-minute back rule',
+        summary: 'Why your lower back stiffens at a desk and what to do about it.',
+        topic: 'orthopaedics',
+        keyPoints: ['Stand every 20 minutes', 'Hips above knees', 'Walk 2 minutes, not 10'],
+        tags: ['back', 'desk', 'posture'],
+        durationSec: 58,
+        isPreview: false,
+        status: 'published',
+      },
+    ];
+    for (const short of shorts) {
+      c.videoService.publish(doctorEntity, short, null, { ip: 'seed', userAgent: 'seed-demo' });
+    }
+    console.log(`doctor seeded: ${DOCTOR_EMAIL} / ${DOCTOR_PASSWORD} (${doctor.identityCardNo}, status ${doctor.status}, 2 shorts)`);
+  }
+
   const score = c.healthScoreService.timelineFor(member.id);
   const miles = c.milestoneService.evaluate(member.id);
   console.log('\nseed complete:');
-  console.log(`  login          ${EMAIL} / ${PASSWORD}`);
+  console.log(`  patient login  ${EMAIL} / ${PASSWORD}          → open /app/`);
+  console.log(`  doctor login   ${DOCTOR_EMAIL} / ${DOCTOR_PASSWORD} → open /doctor/`);
   console.log(`  score timeline ${score.timeline.map((s) => `${s.label} → ${s.score}`).join(' | ')}`);
   console.log(`  milestones     ${miles.earned}/${miles.total} earned (next: ${miles.next?.key ?? 'none'})`);
   c.close();
