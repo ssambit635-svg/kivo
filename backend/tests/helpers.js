@@ -1,6 +1,7 @@
 import { Container } from '../src/container/Container.js';
 import { Config } from '../src/config/Config.js';
 import { createApp } from '../src/app.js';
+import { OcrService, PlainTextOcrProvider } from '../src/services/ocr/OcrService.js';
 
 export const STRONG_PASSWORD = 'Str0ng!Passw0rd#2026';
 
@@ -10,10 +11,19 @@ export const STRONG_PASSWORD = 'Str0ng!Passw0rd#2026';
  * real Tesseract provider needs vendored language data, so image-path tests
  * inject a stand-in OCR *engine* while still exercising the genuine
  * ingest → extract → verify → trend pipeline.
+ *
+ * The DEFAULT is plain-text OCR only (no image engine). The real Tesseract
+ * provider probes the language-data CDN when nothing is vendored, so
+ * including it here would make image-upload tests behave differently
+ * offline (fail fast with guidance) vs online (attempt real OCR) — the
+ * suite must behave identically with or without internet.
  */
 export function makeTestContext(configOverrides = {}, { ocrService = null } = {}) {
   const config = new Config({ NODE_ENV: 'test', JWT_SECRET: 'test-secret-not-for-prod', ...configOverrides });
-  const container = new Container({ config, ocrService });
+  const container = new Container({
+    config,
+    ocrService: ocrService || new OcrService([new PlainTextOcrProvider()]),
+  });
   const app = createApp(container);
   return { config, container, app };
 }

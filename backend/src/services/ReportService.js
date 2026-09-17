@@ -12,6 +12,24 @@ const ALLOWED_MIME = new Set([
 ]);
 
 /**
+ * OCR failures arrive in many shapes — Error objects, plain strings
+ * (tesseract.js rejects with `err.toString()`), even worker payloads. The
+ * pipeline must never persist an empty `ocr_error` or return an empty
+ * `preview.note`: both feed the red badge + manual-entry guidance.
+ */
+function ocrFailureMessage(err) {
+  if (typeof err === 'string' && err.trim()) return err;
+  if (err?.message) return err.message;
+  try {
+    const s = String(err);
+    if (s && s !== '[object Object]') return s;
+  } catch {
+    /* fall through to the default */
+  }
+  return 'OCR failed to read this file — paste the report text into the upload dialog, or run `npm run ocr:setup` to enable image OCR.';
+}
+
+/**
  * Report pipeline (Layers 1–2 of the AI architecture):
  *   upload → safe storage → OCR → extraction → needs_review → user verifies → verified
  *
@@ -82,15 +100,18 @@ export class ReportService {
     try {
       ocrResult = await this.ocr.extractText({ buffer, mimeType: finalMime });
     } catch (err) {
+      // err can be a non-Error (tesseract.js rejects with plain strings) —
+      // never persist an empty ocr_error or return an empty preview note.
+      const message = ocrFailureMessage(err);
       const updated = this.reports.setOcrResult(report.id, {
         status: 'ocr_failed',
-        ocrError: err.message,
+        ocrError: message,
       });
       this.audit.record({
         userId: actor.id, action: 'report.ocr_failed', resourceType: 'report', resourceId: report.id,
-        outcome: 'failure', metadata: { reason: err.code || 'ocr_error' }, ctx,
+        outcome: 'failure', metadata: { reason: err?.code || 'ocr_error' }, ctx,
       });
-      return { report: this.withBadge(updated), preview: { extracted: [], needsManualEntry: true, note: err.message } };
+      return { report: this.withBadge(updated), preview: { extracted: [], needsManualEntry: true, note: message } };
     }
 
     const { extracted, detectedReportDate } = this.extractor.extract(ocrResult.text);

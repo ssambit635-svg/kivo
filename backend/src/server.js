@@ -15,8 +15,8 @@ function boot() {
   const shutdown = (signal) => {
     console.log(`\n${signal} received — shutting down gracefully`);
     server.close(() => {
-      container.close();
-      process.exit(0);
+      // shutdown() releases the cached Tesseract worker, then the DB.
+      container.shutdown().finally(() => process.exit(0));
     });
     // hard exit guard
     setTimeout(() => process.exit(1), 5000).unref();
