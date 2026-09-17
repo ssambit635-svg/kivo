@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { buildApiRouter } from './routes/api.js';
 import { requestId } from './middleware/requestId.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { apiNoStore, permissionsPolicy } from './middleware/securityHeaders.js';
 import { ForbiddenError } from './common/errors.js';
 
 /** Absolute path of the bundled demo dashboard, or null when it isn't shipped. */
@@ -39,6 +40,7 @@ export function createApp(container) {
       },
     }),
   );
+  app.use(permissionsPolicy());
   app.use(
     cors({
       origin(origin, cb) {
@@ -50,6 +52,9 @@ export function createApp(container) {
       maxAge: 600,
     }),
   );
+  // Automated abuse detection: blocks IPs with many cross-endpoint 401/403
+  // failures (audit-alerted). Runs before rate limiting and every route.
+  app.use(container.securityMonitor.middleware());
   app.use(container.globalRateLimiter.middleware());
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
@@ -73,7 +78,8 @@ export function createApp(container) {
     app.use('/app', express.static(frontendDir, { index: 'index.html', maxAge: '5m' }));
   }
 
-  app.use('/api', buildApiRouter(container));
+  // /api is never cacheable — health data must not persist in browser/proxy caches.
+  app.use('/api', apiNoStore(), buildApiRouter(container));
 
   app.use(notFoundHandler());
   app.use(errorHandler());
