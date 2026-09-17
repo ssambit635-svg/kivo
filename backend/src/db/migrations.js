@@ -138,6 +138,23 @@ const MIGRATIONS = [
       CREATE INDEX idx_audit_action ON audit_log(action, created_at);
     `,
   },
+  {
+    version: 2,
+    name: 'lab-review-signals',
+    sql: `
+      -- Signals produced by the clinical knowledge layer when a report is read:
+      -- whether the value is physically implausible (usually an OCR misread),
+      -- and the marker's LOINC identity + panel for grouping in the UI. They are
+      -- review aids on a DRAFT row: nothing here changes trend/risk inputs, which
+      -- still read verified rows only.
+      ALTER TABLE lab_results ADD COLUMN suspicious INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE lab_results ADD COLUMN suspicious_reason TEXT;
+      ALTER TABLE lab_results ADD COLUMN loinc TEXT;
+      ALTER TABLE lab_results ADD COLUMN panel TEXT;
+      ALTER TABLE lab_results ADD COLUMN heuristic_confidence REAL;
+      ALTER TABLE lab_results ADD COLUMN range_source TEXT;
+    `,
+  },
 ];
 
 export function runMigrations(database) {

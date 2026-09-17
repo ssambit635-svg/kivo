@@ -139,6 +139,13 @@ export class ReportService {
       rawLine: e.rawLine,
       measuredAt,
       verified: 0,
+      // Knowledge-layer review signals travel with the draft row.
+      suspicious: e.suspicious ? 1 : 0,
+      suspiciousReason: e.suspiciousReason ?? null,
+      loinc: e.loinc ?? null,
+      panel: e.panel ?? null,
+      heuristicConfidence: e.heuristicConfidence ?? null,
+      rangeSource: e.rangeSource ?? null,
     }));
     const created = drafts.length > 0 ? this.labs.createBatch(drafts) : [];
 
@@ -152,10 +159,16 @@ export class ReportService {
       preview: {
         extracted: created.map((r) => r.toJSON()),
         needsManualEntry: created.length === 0,
-        note:
-          created.length === 0
-            ? 'No lab values were recognized — please review the text and add values manually.'
-            : `${created.length} value(s) extracted. Review and correct them, then verify — nothing enters trends until you do.`,
+        note: (() => {
+          if (created.length === 0) {
+            return 'No lab values were recognized — please review the text and add values manually.';
+          }
+          const flagged = created.filter((r) => r.suspicious).length;
+          const base = `${created.length} value(s) extracted. Review and correct them, then verify — nothing enters trends until you do.`;
+          return flagged > 0
+            ? `${base} ${flagged} value(s) look physically implausible for that test — check them against the report image first.`
+            : base;
+        })(),
       },
     };
   }

@@ -7,14 +7,20 @@ export class LabResultRepository extends BaseRepository {
     this.table = 'lab_results';
   }
 
-  create({ reportId, memberId, code, testName, value = null, valueText = null, unit = null, refLow = null, refHigh = null, confidence = null, rawLine = null, measuredAt, verified = 0 }) {
+  create({
+    reportId, memberId, code, testName, value = null, valueText = null, unit = null,
+    refLow = null, refHigh = null, confidence = null, rawLine = null, measuredAt, verified = 0,
+    suspicious = 0, suspiciousReason = null, loinc = null, panel = null,
+    heuristicConfidence = null, rangeSource = null,
+  }) {
     const id = this.id();
     const now = this.now();
     this.db.run(
       `INSERT INTO lab_results
         (id, report_id, member_id, code, test_name, value, value_text, unit, ref_low, ref_high,
-         confidence, raw_line, measured_at, verified, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         confidence, raw_line, measured_at, verified, suspicious, suspicious_reason, loinc, panel,
+         heuristic_confidence, range_source, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       id,
       reportId,
       memberId,
@@ -29,6 +35,12 @@ export class LabResultRepository extends BaseRepository {
       rawLine,
       measuredAt,
       verified ? 1 : 0,
+      suspicious ? 1 : 0,
+      suspiciousReason,
+      loinc,
+      panel,
+      heuristicConfidence,
+      rangeSource,
       now,
       now,
     );
