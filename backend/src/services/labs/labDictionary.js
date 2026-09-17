@@ -46,7 +46,10 @@ export function generatedLabMarkers() {
     if (CURATED_CODES.has(m.code)) continue;
     out[m.code] = {
       name: m.name,
-      aliases: m.aliases,
+      // A marker the build marked non-extractable (qualitative finding, or only
+      // ambiguous short aliases) stays catalogued for display but is offered
+      // with NO aliases, so the numeric extractor can never match it.
+      aliases: m.extractable === false ? [] : m.aliases,
       defaultUnit: m.defaultUnit,
       units: m.units ?? [],
       typicalRange: null, // INVARIANT: never fabricated for a generated marker
@@ -69,10 +72,40 @@ export function generatedLabMarkers() {
 }
 
 /**
+ * Curated entries win on the fields this product was designed around (aliases,
+ * typical ranges, units), but they still carry the knowledge-base fields —
+ * LOINC, panel, specimen, prevalence prior, plausibility bounds and the
+ * patient-education narrative — so a core marker is documented as richly as a
+ * generated one.
+ */
+function curatedLayerWithKnowledge() {
+  const knowledge = loadClinicalKnowledge();
+  const out = {};
+  for (const [code, def] of Object.entries(CURATED_LAB_DICTIONARY)) {
+    if (!def) continue;
+    const m = knowledge.markers[code] ?? null;
+    out[code] = {
+      ...def,
+      loinc: m?.loinc ?? null,
+      panel: m?.panel ?? null,
+      specimen: m?.specimen ?? 'Blood',
+      tier: m?.tier ?? 'core',
+      prevalence: m?.prevalence ?? null,
+      plausibilityBounds: m?.plausibilityBounds ?? null,
+      narrative: m?.narrative?.text ?? null,
+      narrativeStatus: m?.narrative?.status ?? 'none',
+      related: m?.narrative?.related ?? [],
+      provenance: m?.provenance ?? 'curated',
+    };
+  }
+  return out;
+}
+
+/**
  * The single dictionary every service reads. Curated entries are merged last so
  * a curated marker can never be shadowed by a generated one.
  */
-export const LAB_DICTIONARY = Object.freeze({ ...generatedLabMarkers(), ...CURATED_LAB_DICTIONARY });
+export const LAB_DICTIONARY = Object.freeze({ ...generatedLabMarkers(), ...curatedLayerWithKnowledge() });
 
 /** Sorted alias list (longest-first) so 'fasting glucose' beats 'glucose'. */
 export function aliasEntries({ includeQualitative = false } = {}) {

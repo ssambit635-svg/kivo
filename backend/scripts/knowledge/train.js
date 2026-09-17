@@ -98,6 +98,68 @@ export function fitIsotonic(pairs) {
   return out;
 }
 
+/**
+ * Isotonic calibration with Beta-prior shrinkage.
+ *
+ * Raw PAV on a finite sample is noisy at the extremes: a bin whose point
+ * estimate is 0 or 1 is usually over-fit, and blowing a confidence up to 1.0
+ * *increases* Brier error even though it looks perfectly calibrated on the
+ * training split. Here each equal-count bin's rate is shrunk toward the base
+ * rate with a Beta(priorStrength) prior and the monotone constraint is then
+ * re-applied over the bins, which keeps ranking, fixes the calibration curve
+ * and does not detonate the Brier score.
+ */
+export function fitSmoothedIsotonic(pairs, { minBin = 40, priorStrength = 25 } = {}) {
+  if (pairs.length === 0) return [[0, 0.5], [1, 0.5]];
+  const base = pairs.reduce((s, [, y]) => s + y, 0) / pairs.length;
+  const sorted = [...pairs].sort((a, b) => a[0] - b[0]);
+  const binCount = Math.max(1, Math.min(Math.floor(sorted.length / minBin), 50));
+  const bins = [];
+  for (let i = 0; i < binCount; i += 1) {
+    const from = Math.floor((i * sorted.length) / binCount);
+    const to = Math.floor(((i + 1) * sorted.length) / binCount);
+    const slice = sorted.slice(from, to);
+    if (slice.length === 0) continue;
+    const x = slice.reduce((s, [p]) => s + p, 0) / slice.length;
+    const y = slice.reduce((s, [, v]) => s + v, 0);
+    bins.push({ x, rate: (y + priorStrength * base) / (slice.length + priorStrength), n: slice.length });
+  }
+  // Pool adjacent violators over the smoothed bins so the curve stays monotone.
+  const blocks = [];
+  for (const b of bins) {
+    blocks.push({ x0: b.x, x1: b.x, sum: b.rate * b.n, n: b.n });
+    while (blocks.length > 1) {
+      const b2 = blocks[blocks.length - 1];
+      const b1 = blocks[blocks.length - 2];
+      if (b1.sum / b1.n <= b2.sum / b2.n) break;
+      blocks.pop();
+      blocks.pop();
+      blocks.push({ x0: b1.x0, x1: b2.x1, sum: b1.sum + b2.sum, n: b1.n + b2.n });
+    }
+  }
+  const points = blocks.map((b) => {
+    const x = (b.x0 + b.x1) / 2;
+    return [Math.round(x * 1e6) / 1e6, Math.round((b.sum / b.n) * 1e6) / 1e6];
+  });
+  const out = [];
+  for (const p of points) {
+    if (out.length && p[0] <= out[out.length - 1][0]) continue;
+    out.push(p);
+  }
+  if (out.length === 0) out.push([0, base], [1, base]);
+  return out;
+}
+
+/** Area under the ROC curve (rank quality); unchanged by any monotone recalibration. */
+export function auc(pairs) {
+  const pos = pairs.filter(([, y]) => y === 1).map(([p]) => p);
+  const neg = pairs.filter(([, y]) => y === 0).map(([p]) => p);
+  if (pos.length === 0 || neg.length === 0) return 0.5;
+  let wins = 0;
+  for (const p of pos) for (const q of neg) wins += p > q ? 1 : p === q ? 0.5 : 0;
+  return wins / (pos.length * neg.length);
+}
+
 /** Logistic regression by full-batch gradient descent with L2. */
 export function fitLogistic(rows, { epochs = 400, lr = 0.35, l2 = 1e-3 } = {}) {
   const weights = new Array(FEATURE_NAMES.length).fill(0);
@@ -206,7 +268,7 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
 
   // ── model A: isotonic on the transparent heuristic
   const isoPairsTrain = withNormalize.map((r) => [r.features.heuristicConfidence, r.correct ? 1 : 0]);
-  const iso = fitIsotonic(isoPairsTrain);
+  const iso = fitSmoothedIsotonic(isoPairsTrain);
   const interp = (score, points) => {
     if (score <= points[0][0]) return points[0][1];
     const last = points[points.length - 1];
@@ -231,13 +293,14 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
     for (let i = 0; i < x.length; i += 1) z += weights[i] * x[i];
     return [sigmoid(z), r.correct ? 1 : 0];
   });
-  const isoOnLogistic = fitIsotonic(logisticScoresTrain);
+  const isoOnLogistic = fitSmoothedIsotonic(logisticScoresTrain);
 
   const evalTest = (predict) => {
     const pairs = testWithNormalize.map((r) => [predict(r), r.correct ? 1 : 0]);
     return {
       brier: round4(brier(pairs)),
       ece: round4(expectedCalibrationError(pairs)),
+      auc: round4(auc(pairs)),
       accuracy: round4(ratio(pairs.filter(([p, y]) => (p >= 0.5 ? 1 : 0) === y).length, pairs.length)),
       thresholds: [0.5, 0.6, 0.8].map((t) => accuracyAt(pairs, t)),
     };
@@ -256,7 +319,11 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
     { kind: 'isotonic', metrics: isoOnly },
     { kind: 'logistic+isotonic', metrics: logisticPlusIso },
   ];
-  const chosen = candidates.slice().sort((a, b) => a.metrics.brier - b.metrics.brier)[0];
+  // Choose by Brier score first (a proper scoring rule: it punishes both
+  // miscalibration *and* useless over-confidence), then by ECE.
+  const chosen = candidates
+    .slice()
+    .sort((a, b) => a.metrics.brier - b.metrics.brier || a.metrics.ece - b.metrics.ece)[0];
 
   const params = {
     schema: 'medtwin.extractionCalibration/1',
@@ -326,7 +393,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   );
   console.log(
     `  Brier  baseline ${m.baseline.brier} → isotonic ${m.isoOnly.brier} → logistic+isotonic ${m.logisticPlusIso.brier}\n` +
-      `  ECE    baseline ${m.baseline.ece} → isotonic ${m.isoOnly.ece} → logistic+isotonic ${m.logisticPlusIso.ece}`,
+      `  ECE    baseline ${m.baseline.ece} → isotonic ${m.isoOnly.ece} → logistic+isotonic ${m.logisticPlusIso.ece}\n` +
+      `  AUC    baseline ${m.baseline.auc} → isotonic ${m.isoOnly.auc} → logistic+isotonic ${m.logisticPlusIso.auc}`,
   );
   console.log(
     `  normalization: raw ${(m.doc.normalization.rawAccuracy * 100).toFixed(1)}% → normalized ${(m.doc.normalization.normalizedAccuracy * 100).toFixed(1)}% correct`,

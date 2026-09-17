@@ -15,7 +15,12 @@
     "test:watch": "vitest",
     "seed:admin": "node scripts/create-admin.js",
     "seed:demo": "node scripts/seed-demo.js",
-    "ocr:setup": "node scripts/ocr-setup.js"
+    "ocr:setup": "node scripts/ocr-setup.js",
+    "knowledge:vendor": "node scripts/knowledge/vendor.js",
+    "knowledge:build": "node scripts/knowledge/build.js",
+    "knowledge:train": "node scripts/knowledge/train.js",
+    "knowledge:verify": "node scripts/knowledge/verify.js",
+    "knowledge:all": "npm run knowledge:build && npm run knowledge:train"
   },
   "dependencies": {
     "cors": "^2.8.5",

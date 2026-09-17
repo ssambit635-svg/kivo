@@ -118,12 +118,19 @@ export function calibrateExtraction(input) {
     // about the reading quality.
     return clamp(Math.min(0.25, round3(heuristicConfidence) * 0.5));
   }
-  const x = featurize(input);
-  const w = params.model.weights;
-  let z = 0;
-  for (let i = 0; i < x.length; i += 1) z += w[i] * x[i];
-  const logistic = sigmoid(z);
-  const calibrated = interpolateIsotonic(logistic, params.model.isotonic);
+  // Two trained shapes are supported; the training run picks whichever
+  // calibrates better on held-out data and records it in `model.kind`.
+  let score;
+  if (params.model.kind === 'logistic+isotonic' && params.model.weights) {
+    const x = featurize(input);
+    const w = params.model.weights;
+    let z = 0;
+    for (let i = 0; i < x.length; i += 1) z += w[i] * x[i];
+    score = sigmoid(z);
+  } else {
+    score = Number(heuristicConfidence) || 0.5;
+  }
+  const calibrated = interpolateIsotonic(score, params.model.isotonic);
   // Guard rail: never report a *lower* confidence than the transparent rule
   // score for a row the rule considers strong, and never inflate a weak read
   // beyond what the corpus supports.

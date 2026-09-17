@@ -1,0 +1,267 @@
+{
+  "schema": "medtwin.extractionCalibration/1",
+  "model": {
+    "kind": "isotonic",
+    "featureNames": [
+      "bias",
+      "heuristicConfidence",
+      "hasUnit",
+      "hasReferenceRange",
+      "aliasIsLong",
+      "aliasAtLineStart",
+      "suspicious"
+    ],
+    "weights": null,
+    "isotonic": [
+      [
+        0.5,
+        0.126774
+      ],
+      [
+        0.566372,
+        0.611363
+      ],
+      [
+        0.6,
+        0.864
+      ],
+      [
+        0.611283,
+        0.874685
+      ],
+      [
+        0.714732,
+        0.879815
+      ],
+      [
+        0.8,
+        0.88315
+      ],
+      [
+        0.85,
+        0.886094
+      ]
+    ],
+    "suspiciousBranch": "short-circuits to <=0.25 (an implausible value is never \"probably correct\")"
+  },
+  "metrics": {
+    "chosen": "isotonic",
+    "test": {
+      "baseline": {
+        "brier": 0.1568,
+        "ece": 0.2755,
+        "auc": 0.902,
+        "accuracy": 0.6905,
+        "thresholds": [
+          {
+            "threshold": 0.5,
+            "coverage": 1,
+            "accuracy": 0.6904952076677316,
+            "n": 2504
+          },
+          {
+            "threshold": 0.6,
+            "coverage": 0.7507987220447284,
+            "accuracy": 0.9154255319148936,
+            "n": 1880
+          },
+          {
+            "threshold": 0.8,
+            "coverage": 0.1365814696485623,
+            "accuracy": 0.9502923976608187,
+            "n": 342
+          }
+        ]
+      },
+      "isotonic": {
+        "brier": 0.0657,
+        "ece": 0.058,
+        "auc": 0.902,
+        "accuracy": 0.9333,
+        "thresholds": [
+          {
+            "threshold": 0.5,
+            "coverage": 0.7507987220447284,
+            "accuracy": 0.9154255319148936,
+            "n": 1880
+          },
+          {
+            "threshold": 0.6,
+            "coverage": 0.7507987220447284,
+            "accuracy": 0.9154255319148936,
+            "n": 1880
+          },
+          {
+            "threshold": 0.8,
+            "coverage": 0.7507987220447284,
+            "accuracy": 0.9154255319148936,
+            "n": 1880
+          }
+        ]
+      },
+      "logisticPlusIso": {
+        "brier": 0.0659,
+        "ece": 0.0655,
+        "auc": 0.9052,
+        "accuracy": 0.9333,
+        "thresholds": [
+          {
+            "threshold": 0.5,
+            "coverage": 0.75,
+            "accuracy": 0.9158679446219382,
+            "n": 1878
+          },
+          {
+            "threshold": 0.6,
+            "coverage": 0.7356230031948882,
+            "accuracy": 0.9169381107491856,
+            "n": 1842
+          },
+          {
+            "threshold": 0.8,
+            "coverage": 0.7336261980830671,
+            "accuracy": 0.9172563962983125,
+            "n": 1837
+          }
+        ]
+      }
+    },
+    "trainSize": 5608,
+    "testSize": 2504
+  },
+  "diagnostics": {
+    "examples": 8112,
+    "train": 5608,
+    "test": 2504,
+    "markers": 1014,
+    "byIntensity": [
+      {
+        "intensity": 0,
+        "n": 626,
+        "codeRecovery": 0.9968051118210862,
+        "valueRecovery": 0.9968051118210862
+      },
+      {
+        "intensity": 1,
+        "n": 626,
+        "codeRecovery": 0.805111821086262,
+        "valueRecovery": 0.7428115015974441
+      },
+      {
+        "intensity": 2,
+        "n": 626,
+        "codeRecovery": 0.6837060702875399,
+        "valueRecovery": 0.5814696485623003
+      },
+      {
+        "intensity": 3,
+        "n": 626,
+        "codeRecovery": 0.536741214057508,
+        "valueRecovery": 0.44089456869009586
+      }
+    ],
+    "normalization": {
+      "normalizedAccuracy": 0.6904952076677316,
+      "rawAccuracy": 0.645367412140575,
+      "linesChanged": 414
+    },
+    "byCorruptionType": {
+      "decimal-comma": {
+        "n": 443,
+        "normalizedAccuracy": 0.6433408577878104,
+        "rawAccuracy": 0.5417607223476298
+      },
+      "letter-glyph": {
+        "n": 458,
+        "normalizedAccuracy": 0.28820960698689957,
+        "rawAccuracy": 0.2663755458515284
+      },
+      "decimal-drop": {
+        "n": 450,
+        "normalizedAccuracy": 0.5711111111111111,
+        "rawAccuracy": 0.5377777777777778
+      },
+      "digit-glyph": {
+        "n": 438,
+        "normalizedAccuracy": 0.4794520547945205,
+        "rawAccuracy": 0.3561643835616438
+      },
+      "column-merge": {
+        "n": 402,
+        "normalizedAccuracy": 0.10945273631840796,
+        "rawAccuracy": 0.10199004975124377
+      },
+      "space-noise": {
+        "n": 442,
+        "normalizedAccuracy": 0.6447963800904978,
+        "rawAccuracy": 0.5294117647058824
+      },
+      "flag-glyph": {
+        "n": 447,
+        "normalizedAccuracy": 0.6666666666666666,
+        "rawAccuracy": 0.6174496644295302
+      },
+      "unit-mangle": {
+        "n": 411,
+        "normalizedAccuracy": 0.6788321167883211,
+        "rawAccuracy": 0.6399026763990268
+      },
+      "range-dash": {
+        "n": 400,
+        "normalizedAccuracy": 0.675,
+        "rawAccuracy": 0.63
+      }
+    },
+    "plausibilityGuard": {
+      "wrongReads": 163,
+      "flaggedSuspicious": 3,
+      "flagRate": 0.018404907975460124,
+      "falseFlagRateOnCorrect": 0.000578368999421631
+    }
+  },
+  "corpus": {
+    "name": "synthetic-lab-reading-v1",
+    "description": "Marker names/units/values sampled from the committed knowledge catalogue, corrupted with the documented OCR noise model in scripts/knowledge/corruptor.js.",
+    "seed": 20260917,
+    "perMarker": 2,
+    "intensities": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "patientsUsed": 0,
+    "note": "No patient records are used or redistributed. This measures OCR reading reliability, not clinical accuracy."
+  },
+  "sources": [
+    {
+      "id": "mimic-code",
+      "repo": "MIT-LCP/mimic-code",
+      "commit": "303d26c623dcc9c49cc0f204468d4acc2f063797",
+      "licence": "MIT"
+    },
+    {
+      "id": "ocr-for-medical-laboratory-reports",
+      "repo": "xuewenyuan/OCR-for-Medical-Laboratory-Reports",
+      "commit": "44504ee7a1d27c605e7e0e5d811026f297f876f6",
+      "licence": "MIT (detection fork: MIT, endernewton/tf-faster-rcnn) · MIT (recognition: MIT, meijieru/crnn.pytorch)"
+    },
+    {
+      "id": "blood-report-parser",
+      "repo": "garg-tejas/blood-report-parser",
+      "commit": "a3cf5be2a71d8b8505ea0a6c43ac6baa5f898744",
+      "licence": "NONE DECLARED — reference only, nothing vendored"
+    }
+  ],
+  "modelCard": {
+    "intendedUse": "Rank and gate DRAFT extracted lab rows for review; never a clinical decision, never a diagnosis.",
+    "trainedOn": "Synthetic readings derived from the committed marker catalogue + documented OCR noise model.",
+    "notTrainedOn": "Patient data (MIMIC-IV itself is credentialed and is NOT used or shipped — only its public item↔LOINC mapping tables and concept SQL are vendored).",
+    "limitations": [
+      "Synthetic noise cannot cover every scanner, camera, font or paper condition.",
+      "Calibration is per-reading quality, not clinical meaningfulness.",
+      "Markers absent from the catalogue are never recovered, so coverage, not confidence, is the limiting factor for exotic tests."
+    ],
+    "reproduce": "npm run knowledge:train"
+  }
+}

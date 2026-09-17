@@ -1,7 +1,42 @@
 import { aliasEntries, LAB_DICTIONARY } from './labDictionary.js';
-import { checkPlausibility } from '../../knowledge/clinicalKnowledge.js';
+import { checkPlausibility, loadClinicalKnowledge } from '../../knowledge/clinicalKnowledge.js';
 import { normalizeOcrText } from '../../knowledge/textNormalizer.js';
 import { calibrateExtraction } from '../../knowledge/calibration.js';
+
+/** Canonical spelling for a unit token ("mmol/l" → "mmol/L", "k/ul" → "10^3/µL"). */
+function canonicalUnit(unit) {
+  if (!unit) return unit;
+  const map = loadClinicalKnowledge().unitEquivalences || {};
+  return map[unit.toLowerCase()] || map[unit.toLowerCase().replace(/^\//, '')] || unit;
+}
+
+/** True when a trailing fragment looks like a unit ("ng/mL", "k/uL", "%"). */
+function isUnitLikeSuffix(text) {
+  const t = text.replace(/^\//, '').trim();
+  if (!t) return false;
+  if (/^[a-zµμ%][a-z0-9µμ^.]*\/[a-z0-9µμ^.]{1,5}$/i.test(t)) return true;
+  return /^(%|fl|pg|mg|g|kg|ml|l|dl|ul|ng|ug|µg|µl|mmol|nmol|umol|µmol|pmol|meq|mol|iu|miu|uiu|k|m)$/i.test(t);
+}
+
+/** "(4.0 - 5.6)", "<200", "70-100" — a reference range, never a result. */
+function isNumericRangeToken(token) {
+  const cleaned = token.replace(/[[\]():,;]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!/\d/.test(cleaned)) return false;
+  return /^[<>]?\s*[-+]?\d+(?:\.\d+)?(?:\s*[-–—]\s*[<>]?\s*[-+]?\d+(?:\.\d+)?)?$/.test(cleaned)
+    || /^[-+]?\d+(?:\.\d+)?\s*[-–—]\s*[-+]?\d+(?:\.\d+)?$/.test(cleaned);
+}
+
+/** "25-OH", "1,25-dihydroxy", "25(oh)d": a number glued into the TEST NAME. */
+function isNameNumberToken(token) {
+  if (!/\d/.test(token)) return false;
+  const m = token.match(/^[-+]?[\d.,]+(.*)$/);
+  if (!m) return false;
+  const rest = m[1];
+  if (!rest) return false;
+  if (/^[-–—(]/.test(rest)) return true;                       // 25-OH, 25(oh)d, 1,25-dihydroxy
+  if (/^[a-z]{2,}/i.test(rest)) return !isUnitLikeSuffix(rest); // 25hydroxy vs 18ng/mL
+  return false;
+}
 
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -19,6 +54,18 @@ const NUMBER_RE = /[-+]?\d{1,5}(?:[.,]\d{1,3})?(?:\.\d+)?/g;
  * ~50× cheaper. Verified by the extraction test suite, which asserts identical
  * behaviour on the demo report and on adversarial lines.
  */
+/**
+ * Builds the separator-flexible matcher for an alias: alphanumeric runs stay
+ * literal, separators between them become "one to three non-alphanumerics".
+ * So "bilirubin total" matches "Bilirubin, Total", "24 hr calcium urine"
+ * matches "24 Hr Calcium (Urine)", while short tokens like "hdl" stay exact.
+ */
+function aliasSeparatorPattern(alias) {
+  const runs = alias.split(/[^a-z0-9]+/).filter(Boolean).map(escapeRegex);
+  if (runs.length === 0) return '$^';
+  return `(^|[^a-z0-9])(${runs.join('[^a-z0-9]{1,3}')})($|[^a-z0-9])`;
+}
+
 let PATTERN_INDEX = null;
 
 function patternIndex() {
@@ -30,6 +77,11 @@ function patternIndex() {
     alias: entry.alias,
     def: entry.def,
     len: entry.alias.length,
+    // Separators are flexible: a report prints "Bilirubin, Total" or
+    // "Albumin, Body Fluid (Other Body Fluid)" while the alias stores word
+    // runs separated by single spaces. The literal path is tried first (fast);
+    // this regex is the fallback that keeps those labels matchable.
+    re: new RegExp(aliasSeparatorPattern(entry.alias), 'i'),
   }));
   const byPrefix = new Map();
   const shortAliases = [];
@@ -100,7 +152,14 @@ function findHits(lowerLine, index) {
   for (let i = 0; i < n; i += 1) {
     const p = candidates[i];
     const at = boundaryMatch(lowerLine, p.alias);
-    if (at >= 0) hits.push({ code: p.code, alias: p.alias, def: p.def, index: at, endIndex: at + p.len });
+    if (at >= 0) {
+      hits.push({ code: p.code, alias: p.alias, def: p.def, index: at, endIndex: at + p.len });
+      continue;
+    }
+    const m = lowerLine.match(p.re);
+    if (m) {
+      hits.push({ code: p.code, alias: p.alias, def: p.def, index: m.index + m[1].length, endIndex: m.index + m[1].length + m[2].length });
+    }
   }
   return hits;
 }
@@ -249,18 +308,25 @@ export class LabExtractionService {
     //    only a range, and the range top must never be misread as the value.
     for (let i = 0; i < tokens.length && value == null; i += 1) {
       const t = tokens[i];
-      if (t.startsWith('(') || /^\d+(?:\.\d+)?[-–—]\d+(?:\.\d+)?$/.test(t)) break;
+      if (t.startsWith('(') || t.startsWith('[')) {
+        // "(SGPT)" / "(Urine)" / "(25-OH)" are part of the test NAME: skipped.
+        // A parenthesised RANGE ends the scan — the top of a range must never
+        // be misread as the result.
+        const inner = t.replace(/^[(\[]+/, '').replace(/[)\]]:?,?$/, '');
+        if (isNumericRangeToken(inner)) break;
+        continue;
+      }
       if (t.endsWith(')')) continue;
       // A number glued to a name-like suffix is part of the TEST NAME, not the
       // result: "25-OH Vitamin D 18 ng/mL" must read 18, not 25.
-      if (/^\d+(?:\.\d+)?\s*[-–—]\s*[a-z]{1,6}$/i.test(t)) continue;
-      const m = t.match(/^([-+]?\d+(?:\.\d+)?)\/?([A-Za-zµ%/^]*)/);
+      if (isNameNumberToken(t)) continue;
+      const m = t.match(/^([-+]?(?:\d+(?:\.\d+)?|\.\d+))\/?([A-Za-zµ%/^]*)/);
       if (m) {
         const num = Number(m[1]);
         if (Number.isFinite(num)) {
           value = num;
-          const attached = (m[2] || '').toLowerCase();
-          if (attached && attached.length > 1) unit = attached.replace(/^\//, '');
+          const attached = m[2] || '';
+          if (attached.length > 1) unit = attached.replace(/^\//, '');
         }
       }
     }
@@ -270,7 +336,9 @@ export class LabExtractionService {
     const unitMatch = rest.match(
       /(?:^|[^a-z0-9])(mg\/dl|mmol\/l|ug\/dl|µg\/dl|g\/dl|g\/l|u\/l|iu\/l|uiu\/ml|µiu\/ml|miu\/l|miu\/ml|ng\/ml|pg\/ml|pmol\/l|nmol\/l|umol\/l|µmol\/l|mmol\/mol|10\^3\/ul|x10\^3\/ul|k\/ul|m\/ul|ml\/min\/1\.73m2|ml\/min|mm\/hr|meq\/l|fl|pg|%)/i,
     );
-    if (unitMatch) unit = unitMatch[1].toLowerCase();
+    if (unitMatch) unit = unitMatch[1];
+
+    unit = canonicalUnit(unit);
 
     // 3) reference range patterns, in priority order:
     const rangePatterns = [

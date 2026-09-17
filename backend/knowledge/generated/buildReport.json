@@ -27,17 +27,17 @@
     }
   ],
   "counts": {
-    "markers": 1163,
+    "markers": 1231,
     "curatedMarkers": 17,
-    "generatedMarkers": 1146,
-    "coreMarkers": 244,
-    "withLoinc": 1156,
+    "generatedMarkers": 1214,
+    "coreMarkers": 247,
+    "withLoinc": 1224,
     "withCuratedNarrative": 127,
     "withAuthoredRange": 17,
-    "numericMarkers": 961,
-    "qualitativeMarkers": 202,
+    "numericMarkers": 1014,
+    "qualitativeMarkers": 217,
     "upstreamItemsFolded": 33,
-    "upstreamItemsExcluded": 359
+    "upstreamItemsExcluded": 311
   },
   "transport": "vendored (offline)",
   "conceptItemsRecognized": 89,
@@ -1047,28 +1047,14 @@
   "excludedByReason": {
     "non-analyte label (blocklist)": 40,
     "no unit and no LOINC identity": 262,
-    "no usable alias after collision resolution": 57
+    "no usable alias after collision resolution": 8,
+    "analyte name reduces to nothing usable": 1
   },
   "aliasCollisions": [
     {
       "alias": "erythrocyte distribution width",
       "keptBy": "rdw",
       "droppedFrom": "rdw_sd"
-    },
-    {
-      "alias": "leukocytes",
-      "keptBy": "wbc",
-      "droppedFrom": "leukocytes_urine"
-    },
-    {
-      "alias": "glucose",
-      "keptBy": "glucose",
-      "droppedFrom": "glucose_urine"
-    },
-    {
-      "alias": "bilirubin.total",
-      "keptBy": "bilirubin_total",
-      "droppedFrom": "bilirubin_urine"
     },
     {
       "alias": "neutrophils",
@@ -1096,13 +1082,673 @@
       "droppedFrom": "absolute_lymphocyte_count"
     },
     {
+      "alias": "potassium",
+      "keptBy": "potassium",
+      "droppedFrom": "potassium_whole_blood"
+    },
+    {
+      "alias": "sodium",
+      "keptBy": "sodium",
+      "droppedFrom": "sodium_whole_blood"
+    },
+    {
+      "alias": "hematocrit",
+      "keptBy": "hematocrit",
+      "droppedFrom": "hematocrit_calculated"
+    },
+    {
+      "alias": "oxygen",
+      "keptBy": "po2",
+      "droppedFrom": "oxygen"
+    },
+    {
+      "alias": "chloride",
+      "keptBy": "chloride",
+      "droppedFrom": "chloride_whole_blood"
+    },
+    {
+      "alias": "lymphocytes/100 leukocytes in blood by automated count",
+      "keptBy": "lymphocytes",
+      "droppedFrom": "lymphocytes_percent"
+    },
+    {
+      "alias": "reticulocytes",
+      "keptBy": "reticulocyte_count_automated",
+      "droppedFrom": "reticulocyte_count_absolute"
+    },
+    {
+      "alias": "bicarbonate",
+      "keptBy": "bicarbonate",
+      "droppedFrom": "calculated_bicarbonate_whole_blood"
+    },
+    {
+      "alias": "inhaled oxygen concentration",
+      "keptBy": "oxygen",
+      "droppedFrom": "required_o2"
+    },
+    {
+      "alias": "nuclear ab",
+      "keptBy": "anti_nuclear_antibody",
+      "droppedFrom": "anti_nuclear_antibody_titer"
+    },
+    {
+      "alias": "leukocytes other/100 leukocytes in blood",
+      "keptBy": "other_cells",
+      "droppedFrom": "wbcp"
+    },
+    {
+      "alias": "reticulocytes",
+      "keptBy": "reticulocyte_count_automated",
+      "droppedFrom": "reticulocyte_count_manual"
+    },
+    {
+      "alias": "creatinine",
+      "keptBy": "creatinine",
+      "droppedFrom": "creatinine_whole_blood"
+    },
+    {
+      "alias": "treponema pallidum ab",
+      "keptBy": "treponema_pallidum_ab",
+      "droppedFrom": "treponema_pallidum_value"
+    },
+    {
+      "alias": "testosterone free",
+      "keptBy": "calculated_free_testosterone",
+      "droppedFrom": "testosterone_free"
+    },
+    {
+      "alias": "cholesterol in ldl",
+      "keptBy": "ldl",
+      "droppedFrom": "rfxldlm"
+    },
+    {
+      "alias": "cd3 cells",
+      "keptBy": "absolute_cd3_count",
+      "droppedFrom": "cd3_absolute_count"
+    },
+    {
+      "alias": "cd3 cells/100 cells in blood",
+      "keptBy": "cd3_cells_percent",
+      "droppedFrom": "cd3"
+    },
+    {
+      "alias": "varicella zoster virus igg ab",
+      "keptBy": "vzv_igg_ab_value",
+      "droppedFrom": "vzv_igg_ab"
+    },
+    {
+      "alias": "rubella virus igg ab",
+      "keptBy": "rubiggv",
+      "droppedFrom": "rubella_igg_ab"
+    },
+    {
+      "alias": "cytomegalovirus igg ab",
+      "keptBy": "cmv_igg_ab",
+      "droppedFrom": "cmv_igg_ab_value"
+    },
+    {
+      "alias": "sickle cells",
+      "keptBy": "sickle_cells",
+      "droppedFrom": "sickle_cell_preparation"
+    },
+    {
+      "alias": "cytomegalovirus igg ab",
+      "keptBy": "cmv_igg_ab",
+      "droppedFrom": "cmv_interpretation"
+    },
+    {
+      "alias": "epstein barr virus nuclear igg ab",
+      "keptBy": "epstein_barr_virus_ebna_igg_ab",
+      "droppedFrom": "epstein_barr_virus_igg_ab_value"
+    },
+    {
+      "alias": "measles virus igg ab",
+      "keptBy": "rubeola_igg_ab_value",
+      "droppedFrom": "rubeola_igg_ab"
+    },
+    {
+      "alias": "hemoglobin a1c",
+      "keptBy": "hba1c",
+      "droppedFrom": "absolute_a1c"
+    },
+    {
+      "alias": "eosinophils",
+      "keptBy": "eosinophils",
+      "droppedFrom": "eosinophil_count"
+    },
+    {
+      "alias": "mumps virus igg ab",
+      "keptBy": "mumps_igg_ab_value",
+      "droppedFrom": "mumps_igg_ab"
+    },
+    {
+      "alias": "cd16+cd56+ cells",
+      "keptBy": "cd16_56_absolute_count",
+      "droppedFrom": "cd15_56"
+    },
+    {
+      "alias": "toxoplasma gondii igg ab",
+      "keptBy": "toxoplasma_igg_ab",
+      "droppedFrom": "toxoplasma_igg_ab_value"
+    },
+    {
+      "alias": "potassium",
+      "keptBy": "potassium",
+      "droppedFrom": "k"
+    },
+    {
+      "alias": "hemoglobin f/hemoglobin.total in blood",
+      "keptBy": "hemoglobin_f",
+      "droppedFrom": "fetal_hemoglobin"
+    },
+    {
+      "alias": "hemoglobin",
+      "keptBy": "hemoglobin",
+      "droppedFrom": "hemoglobin_calculated"
+    },
+    {
+      "alias": "carbon dioxide, total",
+      "keptBy": "calculated_total_co2",
+      "droppedFrom": "total_co2"
+    },
+    {
+      "alias": "helicobacter pylori igg ab",
+      "keptBy": "h_pylori_igg_ab",
+      "droppedFrom": "h_pylori_igg_ab_value"
+    },
+    {
+      "alias": "hiv 1 ab",
+      "keptBy": "hiv_antibody",
+      "droppedFrom": "hiv_1_ab_confirmation"
+    },
+    {
+      "alias": "c reactive protein",
+      "keptBy": "c_reactive_protein",
+      "droppedFrom": "high_sensitivity_crp"
+    },
+    {
+      "alias": "toxoplasma gondii igm ab",
+      "keptBy": "toxoplasma_igm_ab",
+      "droppedFrom": "toxoplasma_igm_ab_value"
+    },
+    {
+      "alias": "neutrophil cytoplasmic ab",
+      "keptBy": "anti_neutrophil_cytoplasmic_antibody",
+      "droppedFrom": "anca_titer"
+    },
+    {
+      "alias": "normalized silica clotting time of platelet poor plasma",
+      "keptBy": "sct_screen",
+      "droppedFrom": "sct_confirmation"
+    },
+    {
+      "alias": "normalized silica clotting time of platelet poor plasma",
+      "keptBy": "sct_screen",
+      "droppedFrom": "sct_normalized_ratio"
+    },
+    {
+      "alias": "monocytes",
+      "keptBy": "monocytes",
+      "droppedFrom": "monocyte_count"
+    },
+    {
+      "alias": "schistocytes",
+      "keptBy": "schistocytes",
+      "droppedFrom": "red_blood_cell_fragments"
+    },
+    {
+      "alias": "hemoglobin f",
+      "keptBy": "hemoglobin_f",
+      "droppedFrom": "apt_test"
+    },
+    {
+      "alias": "oxygen",
+      "keptBy": "po2",
+      "droppedFrom": "p50_of_hemoglobin"
+    },
+    {
+      "alias": "triiodothyronine t3",
+      "keptBy": "triiodothyronine",
+      "droppedFrom": "3t"
+    },
+    {
+      "alias": "thyroxine t4",
+      "keptBy": "thyroxine",
+      "droppedFrom": "4t"
+    },
+    {
+      "alias": "cd19 cells",
+      "keptBy": "cd19_absolute_count",
+      "droppedFrom": "absolute_cd19_count"
+    },
+    {
+      "alias": "cd20 cells",
+      "keptBy": "cd20_absolute_count",
+      "droppedFrom": "absolute_cd20_count"
+    },
+    {
+      "alias": "cd56 cells",
+      "keptBy": "cd56_absolute_count",
+      "droppedFrom": "absolute_cd56_count"
+    },
+    {
+      "alias": "neutrophils",
+      "keptBy": "neutrophils",
+      "droppedFrom": "absolute_neutrophil"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "acid_phosphatase_stain"
+    },
+    {
+      "alias": "urate",
+      "keptBy": "uric_acid",
+      "droppedFrom": "acidserum"
+    },
+    {
+      "alias": "alpha-1-fetoprotein",
+      "keptBy": "alpha_fetoprotein",
+      "droppedFrom": "afp_maternal_screen"
+    },
+    {
+      "alias": "alpha-1-fetoprotein",
+      "keptBy": "alpha_fetoprotein",
+      "droppedFrom": "afp_mom"
+    },
+    {
+      "alias": "hepatitis a virus ab",
+      "keptBy": "hepatitis_a_virus_antibody",
+      "droppedFrom": "anti_hav"
+    },
+    {
+      "alias": "hepatitis b virus core ab",
+      "keptBy": "hepatitis_b_virus_core_antibody",
+      "droppedFrom": "anti_hbc"
+    },
+    {
+      "alias": "hepatitis b virus surface ab",
+      "keptBy": "hepatitis_b_surface_antibody",
+      "droppedFrom": "anti_hbs"
+    },
+    {
+      "alias": "thyroperoxidase ab",
+      "keptBy": "thyroid_peroxidase_antibodies",
+      "droppedFrom": "anti_microsomal_antibodies"
+    },
+    {
+      "alias": "mitochondria ab",
+      "keptBy": "anti_mitochondrial_antibody",
+      "droppedFrom": "anti_microsomal_antibody"
+    },
+    {
+      "alias": "smooth muscle ab",
+      "keptBy": "anti_smooth_muscle_antibody",
+      "droppedFrom": "anti_sm"
+    },
+    {
+      "alias": "antithrombin actual/normal in platelet poor plasma by chromogenic method",
+      "keptBy": "antithrombin",
+      "droppedFrom": "antithrombin_iii"
+    },
+    {
+      "alias": "basophils",
+      "keptBy": "basophils",
+      "droppedFrom": "basoflg"
+    },
+    {
+      "alias": "bilirubin.indirect",
+      "keptBy": "bilirubin_indirect",
+      "droppedFrom": "bilirubin_neonatal_indirect"
+    },
+    {
+      "alias": "blasts",
+      "keptBy": "blasts",
+      "droppedFrom": "blasflg"
+    },
+    {
+      "alias": "bleeding time",
+      "keptBy": "bleeding_time",
+      "droppedFrom": "bleed_tm"
+    },
+    {
+      "alias": "albumin",
+      "keptBy": "albumin",
+      "droppedFrom": ""
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "chloroacetate"
+    },
+    {
+      "alias": "cytomegalovirus igm ab",
+      "keptBy": "cmv_igm_ab",
+      "droppedFrom": "cmv_igm_ab_value"
+    },
+    {
+      "alias": "bilirubin.direct",
+      "keptBy": "bilirubin_direct",
+      "droppedFrom": "conj_bili"
+    },
+    {
+      "alias": "creatinine",
+      "keptBy": "creatinine",
+      "droppedFrom": "cr"
+    },
+    {
+      "alias": "creatinine",
+      "keptBy": "creatinine",
+      "droppedFrom": "creatinine_0"
+    },
+    {
+      "alias": "burr cells",
+      "keptBy": "echinocytes",
+      "droppedFrom": "crenated_cells"
+    },
+    {
+      "alias": "immunoglobulin panel",
+      "keptBy": "circ_ab",
+      "droppedFrom": "cross_imm"
+    },
+    {
+      "alias": "cryoglobulin",
+      "keptBy": "cryoglobulin",
+      "droppedFrom": "cryoglob"
+    },
+    {
+      "alias": "eosinophils",
+      "keptBy": "eosinophils",
+      "droppedFrom": "eosflg"
+    },
+    {
+      "alias": "erythrocytes",
+      "keptBy": "red_blood_cells",
+      "droppedFrom": "erytflg"
+    },
+    {
+      "alias": "clot lysis",
+      "keptBy": "clot_lysis",
+      "droppedFrom": "euglobulin_lysis"
+    },
+    {
+      "alias": "fibrinogen",
+      "keptBy": "fibrinogen_functional",
+      "droppedFrom": "fibrinoge"
+    },
+    {
+      "alias": "fibrinogen",
+      "keptBy": "fibrinogen_functional",
+      "droppedFrom": "fibrinogen"
+    },
+    {
+      "alias": "schistocytes",
+      "keptBy": "schistocytes",
+      "droppedFrom": "fragflg"
+    },
+    {
+      "alias": "fructosamine",
+      "keptBy": "fructosamine_plus",
+      "droppedFrom": "fructosamine"
+    },
+    {
+      "alias": "fibrin+fibrinogen fragments",
+      "keptBy": "fibrin_degradation_products",
+      "droppedFrom": "fsp"
+    },
+    {
+      "alias": "glucose-6-phosphate dehydrogenase",
+      "keptBy": "quantitative_g6pd",
+      "droppedFrom": "g6pd_qualitative"
+    },
+    {
+      "alias": "glucose-6-phosphate dehydrogenase",
+      "keptBy": "quantitative_g6pd",
+      "droppedFrom": "g6pd_spec"
+    },
+    {
+      "alias": "glucose",
+      "keptBy": "glucose",
+      "droppedFrom": "glucose_whole_blood"
+    },
+    {
+      "alias": "hepatitis b virus surface ag",
+      "keptBy": "hepatitis_b_surface_antigen",
+      "droppedFrom": "hbsag"
+    },
+    {
+      "alias": "choriogonadotropin",
+      "keptBy": "human_chorionic_gonadotropin",
+      "droppedFrom": "hcg_maternal_screen"
+    },
+    {
+      "alias": "heinz bodies",
+      "keptBy": "heinz_body_prep",
+      "droppedFrom": "heinz_aph"
+    },
+    {
+      "alias": "hemoglobin a/hemoglobin.total in blood",
+      "keptBy": "hemogloblin_a",
+      "droppedFrom": "hemoglobin_a"
+    },
+    {
+      "alias": "hemoglobin s/hemoglobin.total in blood",
+      "keptBy": "hemogloblin_s",
+      "droppedFrom": "hemoglobin_s"
+    },
+    {
+      "alias": "hepatitis b virus e ab",
+      "keptBy": "anti_hbe",
+      "droppedFrom": "hepatitis_b_virus_e_antibody"
+    },
+    {
+      "alias": "hepatitis b virus e ag",
+      "keptBy": "hbeag",
+      "droppedFrom": "hepatitis_b_virus_e_antigen"
+    },
+    {
+      "alias": "kininogen hmw",
+      "keptBy": "fitzgerld",
+      "droppedFrom": "hmwk"
+    },
+    {
+      "alias": "immunoglobulin panel",
+      "keptBy": "circ_ab",
+      "droppedFrom": "ig_flg"
+    },
+    {
+      "alias": "immunoglobulin panel",
+      "keptBy": "circ_ab",
+      "droppedFrom": "ig"
+    },
+    {
+      "alias": "leukocyte phosphatase",
+      "keptBy": "leukocyte_alkaline_phosphatase",
+      "droppedFrom": "lap"
+    },
+    {
+      "alias": "lymphocytes",
+      "keptBy": "lymphocytes",
+      "droppedFrom": "lymflg"
+    },
+    {
+      "alias": "heterophile ab",
+      "keptBy": "monospot_rapid_antigen",
+      "droppedFrom": "mono_spot_test"
+    },
+    {
+      "alias": "monocytes/100 leukocytes in blood by automated count",
+      "keptBy": "monocytes",
+      "droppedFrom": "monoflg"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "naphtol_acetate_stain"
+    },
+    {
+      "alias": "prekallikrein fletcher factor",
+      "keptBy": "fletcher",
+      "droppedFrom": "nfletcher"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "non_specific_esterase"
+    },
+    {
+      "alias": "nucleated erythrocytes",
+      "keptBy": "nrbc",
+      "droppedFrom": "nrbcflg"
+    },
+    {
+      "alias": "osmolality of serum or plasma",
+      "keptBy": "osmolality_measured",
+      "droppedFrom": "osmolality"
+    },
+    {
+      "alias": "osmotic fragility",
+      "keptBy": "osmotic_fragility",
+      "droppedFrom": "osmotic_fragility_incubated"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "periodic_acid_schiff_stain"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "peroxidase_staining"
+    },
+    {
+      "alias": "prekallikrein fletcher factor",
+      "keptBy": "fletcher",
+      "droppedFrom": "prekallekrein"
+    },
+    {
+      "alias": "prothrombin time pt",
+      "keptBy": "pt",
+      "droppedFrom": "pt_mean"
+    },
+    {
+      "alias": "aptt.lupus sensitive la screen",
+      "keptBy": "ls",
+      "droppedFrom": "ptt_la"
+    },
+    {
+      "alias": "hepatitis b virus surface ab",
+      "keptBy": "hepatitis_b_surface_antibody",
+      "droppedFrom": "qnthbsab"
+    },
+    {
+      "alias": "reagin ab",
+      "keptBy": "quantitative_rpr_test",
+      "droppedFrom": "rapid_plasma_reagin_test"
+    },
+    {
+      "alias": "erythrocytes",
+      "keptBy": "red_blood_cells",
+      "droppedFrom": "rbc"
+    },
+    {
+      "alias": "erythrocyte distribution width",
+      "keptBy": "rdw",
+      "droppedFrom": "rbcdist"
+    },
+    {
+      "alias": "hepatitis c virus rna",
+      "keptBy": "hepatitis_c_viral_load",
+      "droppedFrom": "reflex_confirmatory_hepatitis_c_viral_load"
+    },
+    {
+      "alias": "reticulocytes",
+      "keptBy": "reticulocyte_count_automated",
+      "droppedFrom": "retscat"
+    },
+    {
+      "alias": "von willebrand factor vwf ristocetin cofactor actual/normal in platelet poor plasma by platelet aggregation",
+      "keptBy": "von_willebrand_factor_activity",
+      "droppedFrom": "ristocetin_response"
+    },
+    {
+      "alias": "folate",
+      "keptBy": "folate",
+      "droppedFrom": "serum_folate"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "sudan_black_staining"
+    },
+    {
+      "alias": "thrombin time",
+      "keptBy": "thrombin",
+      "droppedFrom": "thrombin_time"
+    },
+    {
+      "alias": "calcium",
+      "keptBy": "calcium_total",
+      "droppedFrom": "total_calcium"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "trap_stain"
+    },
+    {
+      "alias": "treponema pallidum ab",
+      "keptBy": "treponema_pallidum_ab",
+      "droppedFrom": "treponemal_antibody_test"
+    },
+    {
+      "alias": "estriol e3 .unconjugated",
+      "keptBy": "ue3_maternal_screen",
+      "droppedFrom": "ue3_multiples_of_median"
+    },
+    {
+      "alias": "bilirubin.indirect",
+      "keptBy": "bilirubin_indirect",
+      "droppedFrom": "uncon_bil"
+    },
+    {
+      "alias": "cbc w ordered manual differential panel - blood",
+      "keptBy": "wam_manual_diff_2",
+      "droppedFrom": "wam_manual_diff"
+    },
+    {
+      "alias": "carbon dioxide, total",
+      "keptBy": "calculated_total_co2",
+      "droppedFrom": "wb_tco2"
+    },
+    {
+      "alias": "leukocytes",
+      "keptBy": "wbc",
+      "droppedFrom": "leukocytes_urine"
+    },
+    {
+      "alias": "glucose",
+      "keptBy": "glucose",
+      "droppedFrom": "glucose_urine"
+    },
+    {
+      "alias": "protein",
+      "keptBy": "protein_total",
+      "droppedFrom": "protein_urine"
+    },
+    {
+      "alias": "bilirubin.total",
+      "keptBy": "bilirubin_total",
+      "droppedFrom": "bilirubin_urine"
+    },
+    {
       "alias": "erythrocytes",
       "keptBy": "red_blood_cells",
       "droppedFrom": "rbc_urine"
     },
     {
       "alias": "rbc",
-      "keptBy": "red_blood_cells",
+      "keptBy": "rbc",
       "droppedFrom": "rbc_urine"
     },
     {
@@ -1116,64 +1762,24 @@
       "droppedFrom": "wbc_urine"
     },
     {
-      "alias": "potassium",
-      "keptBy": "potassium",
-      "droppedFrom": "potassium_whole_blood"
-    },
-    {
-      "alias": "glucose",
-      "keptBy": "glucose",
-      "droppedFrom": "glucose_blood_gas"
-    },
-    {
-      "alias": "glucose blood",
-      "keptBy": "glucose",
-      "droppedFrom": "glucose_blood_gas"
-    },
-    {
       "alias": "creatinine",
       "keptBy": "creatinine",
       "droppedFrom": "creatinine_urine"
     },
     {
       "alias": "protein",
-      "keptBy": "protein_urine",
-      "droppedFrom": "protein_total"
-    },
-    {
-      "alias": "sodium",
-      "keptBy": "sodium",
-      "droppedFrom": "sodium_whole_blood"
-    },
-    {
-      "alias": "hematocrit",
-      "keptBy": "hematocrit",
-      "droppedFrom": "hematocrit_calculated"
-    },
-    {
-      "alias": "protein",
-      "keptBy": "protein_urine",
+      "keptBy": "protein_total",
       "droppedFrom": "total_protein_urine"
     },
     {
-      "alias": "oxygen",
-      "keptBy": "po2",
-      "droppedFrom": "oxygen"
-    },
-    {
-      "alias": "chloride",
-      "keptBy": "chloride",
-      "droppedFrom": "chloride_whole_blood"
-    },
-    {
       "alias": "benzodiazepines",
-      "keptBy": "benzodiazepine_screen_urine",
-      "droppedFrom": "benzodiazepine_screen"
+      "keptBy": "benzodiazepine_screen",
+      "droppedFrom": "benzodiazepine_screen_urine"
     },
     {
       "alias": "barbiturates",
-      "keptBy": "barbiturate_screen_urine",
-      "droppedFrom": "barbiturate_screen"
+      "keptBy": "barbiturate_screen",
+      "droppedFrom": "barbiturate_screen_urine"
     },
     {
       "alias": "sodium",
@@ -1196,16 +1802,6 @@
       "droppedFrom": "urea_nitrogen_urine"
     },
     {
-      "alias": "reticulocytes",
-      "keptBy": "reticulocyte_count_automated",
-      "droppedFrom": "reticulocyte_count_absolute"
-    },
-    {
-      "alias": "bicarbonate",
-      "keptBy": "bicarbonate",
-      "droppedFrom": "calculated_bicarbonate_whole_blood"
-    },
-    {
       "alias": "protein fractions",
       "keptBy": "protein_electrophoresis",
       "droppedFrom": "prot_electrophoresis_urine"
@@ -1222,7 +1818,7 @@
     },
     {
       "alias": "protein",
-      "keptBy": "protein_urine",
+      "keptBy": "protein_total",
       "droppedFrom": "total_protein_csf_cerebrospinal_fluid"
     },
     {
@@ -1256,16 +1852,6 @@
       "droppedFrom": "rbc_ascites"
     },
     {
-      "alias": "ph urine",
-      "keptBy": "ph_urine",
-      "droppedFrom": "ph_urine_chemistry"
-    },
-    {
-      "alias": "urine ph",
-      "keptBy": "ph_urine",
-      "droppedFrom": "ph_urine_chemistry"
-    },
-    {
       "alias": "creatinine",
       "keptBy": "creatinine",
       "droppedFrom": "24_hr_creatinine_urine"
@@ -1286,23 +1872,18 @@
       "droppedFrom": "polys_pleural"
     },
     {
-      "alias": "nuclear ab",
-      "keptBy": "anti_nuclear_antibody",
-      "droppedFrom": "anti_nuclear_antibody_titer"
-    },
-    {
       "alias": "lactate dehydrogenase",
       "keptBy": "lactate_dehydrogenase",
       "droppedFrom": "lactate_dehydrogenase_pleural"
     },
     {
       "alias": "protein",
-      "keptBy": "protein_urine",
+      "keptBy": "protein_total",
       "droppedFrom": "total_protein_pleural"
     },
     {
       "alias": "protein",
-      "keptBy": "protein_urine",
+      "keptBy": "protein_total",
       "droppedFrom": "total_protein_ascites"
     },
     {
@@ -1341,14 +1922,14 @@
       "droppedFrom": "total_nucleated_cells_joint_joint_fluid"
     },
     {
-      "alias": "monocytes",
-      "keptBy": "monocytes",
-      "droppedFrom": "monocytes_joint_fluid"
-    },
-    {
       "alias": "lymphocytes",
       "keptBy": "lymphocytes",
       "droppedFrom": "lymphocytes_joint_fluid"
+    },
+    {
+      "alias": "monocytes",
+      "keptBy": "monocytes",
+      "droppedFrom": "monocytes_joint_fluid"
     },
     {
       "alias": "polys",
@@ -1364,6 +1945,16 @@
       "alias": "erythrocytes",
       "keptBy": "red_blood_cells",
       "droppedFrom": "rbc_joint_fluid"
+    },
+    {
+      "alias": "immunophenotyping",
+      "keptBy": "immunophenotyping",
+      "droppedFrom": "immunophenotyping_other_body_fluid"
+    },
+    {
+      "alias": "immunophenotyping study",
+      "keptBy": "immunophenotyping",
+      "droppedFrom": "immunophenotyping_other_body_fluid"
     },
     {
       "alias": "glucose",
@@ -1387,12 +1978,12 @@
     },
     {
       "alias": "immunophenotyping",
-      "keptBy": "immunophenotyping_other_body_fluid",
+      "keptBy": "immunophenotyping",
       "droppedFrom": "immunophenotyping_bone_marrow"
     },
     {
       "alias": "immunophenotyping study",
-      "keptBy": "immunophenotyping_other_body_fluid",
+      "keptBy": "immunophenotyping",
       "droppedFrom": "immunophenotyping_bone_marrow"
     },
     {
@@ -1411,23 +2002,13 @@
       "droppedFrom": "cholesterol_pleural"
     },
     {
-      "alias": "reticulocytes",
-      "keptBy": "reticulocyte_count_automated",
-      "droppedFrom": "reticulocyte_count_manual"
-    },
-    {
-      "alias": "creatinine",
-      "keptBy": "creatinine",
-      "droppedFrom": "creatinine_whole_blood"
-    },
-    {
       "alias": "macrophage",
       "keptBy": "macrophage_ascites",
       "droppedFrom": "macrophage_cerebrospinal_fluid"
     },
     {
       "alias": "protein",
-      "keptBy": "protein_urine",
+      "keptBy": "protein_total",
       "droppedFrom": "24_hr_protein_urine"
     },
     {
@@ -1446,14 +2027,24 @@
       "droppedFrom": "amylase_ascites"
     },
     {
+      "alias": "cd45",
+      "keptBy": "cd45",
+      "droppedFrom": "cd45_other_body_fluid"
+    },
+    {
       "alias": "phosphate",
       "keptBy": "phosphate",
       "droppedFrom": "phosphate_urine"
     },
     {
-      "alias": "treponema pallidum ab",
-      "keptBy": "treponema_pallidum_ab",
-      "droppedFrom": "treponema_pallidum_value"
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "wright_giemsa_bone_marrow"
+    },
+    {
+      "alias": "cd19",
+      "keptBy": "cd19",
+      "droppedFrom": "cd19_other_body_fluid"
     },
     {
       "alias": "macrophage",
@@ -1461,14 +2052,14 @@
       "droppedFrom": "macrophage_joint_fluid"
     },
     {
-      "alias": "immunophenotyping",
-      "keptBy": "immunophenotyping_other_body_fluid",
-      "droppedFrom": "immunophenotyping"
+      "alias": "kappa",
+      "keptBy": "kappa",
+      "droppedFrom": "kappa_other_body_fluid"
     },
     {
-      "alias": "immunophenotyping study",
-      "keptBy": "immunophenotyping_other_body_fluid",
-      "droppedFrom": "immunophenotyping"
+      "alias": "lambda",
+      "keptBy": "lambda",
+      "droppedFrom": "lambda_other_body_fluid"
     },
     {
       "alias": "bicarbonate",
@@ -1481,11 +2072,6 @@
       "droppedFrom": "eosinophils_pleural"
     },
     {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "envelope_cells"
-    },
-    {
       "alias": "lactate dehydrogenase",
       "keptBy": "lactate_dehydrogenase",
       "droppedFrom": "lactate_dehydrogenase_csf_cerebrospinal_fluid"
@@ -1496,13 +2082,8 @@
       "droppedFrom": "total_nucleated_cells_other_other_body_fluid"
     },
     {
-      "alias": "testosterone free",
-      "keptBy": "calculated_free_testosterone",
-      "droppedFrom": "testosterone_free"
-    },
-    {
       "alias": "cd45",
-      "keptBy": "cd45_other_body_fluid",
+      "keptBy": "cd45",
       "droppedFrom": "cd45_bone_marrow"
     },
     {
@@ -1521,14 +2102,34 @@
       "droppedFrom": "creatinine_ascites"
     },
     {
+      "alias": "cd5",
+      "keptBy": "cd5",
+      "droppedFrom": "cd5_other_body_fluid"
+    },
+    {
+      "alias": "cd3",
+      "keptBy": "cd3",
+      "droppedFrom": "cd3_other_body_fluid"
+    },
+    {
       "alias": "erythrocytes",
       "keptBy": "red_blood_cells",
       "droppedFrom": "rbc_other_fluid_other_body_fluid"
     },
     {
+      "alias": "cd10",
+      "keptBy": "cd10",
+      "droppedFrom": "cd10_other_body_fluid"
+    },
+    {
       "alias": "amylase",
       "keptBy": "amylase",
       "droppedFrom": "amylase_pleural"
+    },
+    {
+      "alias": "cd20",
+      "keptBy": "cd20",
+      "droppedFrom": "cd20_other_body_fluid"
     },
     {
       "alias": "eosinophils",
@@ -1547,7 +2148,7 @@
     },
     {
       "alias": "cd19",
-      "keptBy": "cd19_other_body_fluid",
+      "keptBy": "cd19",
       "droppedFrom": "cd19_bone_marrow"
     },
     {
@@ -1562,17 +2163,17 @@
     },
     {
       "alias": "cd3",
-      "keptBy": "cd3_other_body_fluid",
+      "keptBy": "cd3",
       "droppedFrom": "cd3_bone_marrow"
     },
     {
-      "alias": "cholesterol in ldl",
-      "keptBy": "ldl",
-      "droppedFrom": "rfxldlm"
+      "alias": "hla-dr",
+      "keptBy": "hla_dr",
+      "droppedFrom": "hla_dr_bone_marrow"
     },
     {
       "alias": "cd10",
-      "keptBy": "cd10_other_body_fluid",
+      "keptBy": "cd10",
       "droppedFrom": "cd10_bone_marrow"
     },
     {
@@ -1582,17 +2183,32 @@
     },
     {
       "alias": "hla-dr",
-      "keptBy": "hla_dr_bone_marrow",
+      "keptBy": "hla_dr",
       "droppedFrom": "hla_dr_other_body_fluid"
     },
     {
       "alias": "cd20",
-      "keptBy": "cd20_other_body_fluid",
+      "keptBy": "cd20",
       "droppedFrom": "cd20_bone_marrow"
     },
     {
+      "alias": "fmc-7",
+      "keptBy": "fmc_7",
+      "droppedFrom": "fmc_7_other_body_fluid"
+    },
+    {
+      "alias": "cd23",
+      "keptBy": "cd23",
+      "droppedFrom": "cd23_other_body_fluid"
+    },
+    {
+      "alias": "kappa",
+      "keptBy": "kappa",
+      "droppedFrom": "kappa_bone_marrow"
+    },
+    {
       "alias": "lambda",
-      "keptBy": "lambda_other_body_fluid",
+      "keptBy": "lambda",
       "droppedFrom": "lambda_bone_marrow"
     },
     {
@@ -1601,24 +2217,9 @@
       "droppedFrom": "lambda_bone_marrow"
     },
     {
-      "alias": "kappa",
-      "keptBy": "kappa_other_body_fluid",
-      "droppedFrom": "kappa_bone_marrow"
-    },
-    {
       "alias": "cd5",
-      "keptBy": "cd5_other_body_fluid",
+      "keptBy": "cd5",
       "droppedFrom": "cd5_bone_marrow"
-    },
-    {
-      "alias": "cd45",
-      "keptBy": "cd45_other_body_fluid",
-      "droppedFrom": "cd45"
-    },
-    {
-      "alias": "cd19",
-      "keptBy": "cd19_other_body_fluid",
-      "droppedFrom": "cd19"
     },
     {
       "alias": "amylase",
@@ -1626,44 +2227,24 @@
       "droppedFrom": "amylase_body_fluid_other_body_fluid"
     },
     {
-      "alias": "cd20",
-      "keptBy": "cd20_other_body_fluid",
-      "droppedFrom": "cd20"
-    },
-    {
       "alias": "crystals",
       "keptBy": "joint_crystals_number_joint_fluid",
       "droppedFrom": "joint_crystals_birefringence_joint_fluid"
     },
     {
+      "alias": "crystals",
+      "keptBy": "joint_crystals_number_joint_fluid",
+      "droppedFrom": "joint_crystals_location_joint_fluid"
+    },
+    {
+      "alias": "crystals",
+      "keptBy": "joint_crystals_number_joint_fluid",
+      "droppedFrom": "joint_crystals_shape_joint_fluid"
+    },
+    {
       "alias": "creatinine",
       "keptBy": "creatinine",
       "droppedFrom": "creatinine_pleural"
-    },
-    {
-      "alias": "cd10",
-      "keptBy": "cd10_other_body_fluid",
-      "droppedFrom": "cd10"
-    },
-    {
-      "alias": "cd5",
-      "keptBy": "cd5_other_body_fluid",
-      "droppedFrom": "cd5"
-    },
-    {
-      "alias": "kappa",
-      "keptBy": "kappa_other_body_fluid",
-      "droppedFrom": "kappa"
-    },
-    {
-      "alias": "lambda",
-      "keptBy": "lambda_other_body_fluid",
-      "droppedFrom": "lambda"
-    },
-    {
-      "alias": "hla-dr",
-      "keptBy": "hla_dr_bone_marrow",
-      "droppedFrom": "hla_dr"
     },
     {
       "alias": "natriuretic peptide.b prohormone n-terminal",
@@ -1676,19 +2257,19 @@
       "droppedFrom": "mesothelial_cells_other_body_fluid"
     },
     {
-      "alias": "fmc-7",
-      "keptBy": "fmc_7_other_body_fluid",
-      "droppedFrom": "fmc_7_bone_marrow"
-    },
-    {
       "alias": "cd23",
-      "keptBy": "cd23_other_body_fluid",
+      "keptBy": "cd23",
       "droppedFrom": "cd23_bone_marrow"
     },
     {
       "alias": "fmc-7",
-      "keptBy": "fmc_7_other_body_fluid",
-      "droppedFrom": "fmc_7"
+      "keptBy": "fmc_7",
+      "droppedFrom": "fmc_7_bone_marrow"
+    },
+    {
+      "alias": "cd7",
+      "keptBy": "cd7",
+      "droppedFrom": "cd7_other_body_fluid"
     },
     {
       "alias": "eosinophils",
@@ -1696,13 +2277,18 @@
       "droppedFrom": "eosinophils_joint_fluid"
     },
     {
-      "alias": "cd23",
-      "keptBy": "cd23_other_body_fluid",
-      "droppedFrom": "cd23"
+      "alias": "cd2",
+      "keptBy": "cd2",
+      "droppedFrom": "cd2_other_body_fluid"
     },
     {
       "alias": "cd34",
-      "keptBy": "cd34_other_body_fluid",
+      "keptBy": "cd34",
+      "droppedFrom": "cd34_other_body_fluid"
+    },
+    {
+      "alias": "cd34",
+      "keptBy": "cd34",
       "droppedFrom": "cd34_bone_marrow"
     },
     {
@@ -1711,19 +2297,9 @@
       "droppedFrom": "hematocrit_pleural"
     },
     {
-      "alias": "cd7",
-      "keptBy": "cd7_other_body_fluid",
-      "droppedFrom": "cd7"
-    },
-    {
       "alias": "atypical lymphocytes",
       "keptBy": "atypical_lymphocytes",
       "droppedFrom": "atypical_lymphocytes_cerebrospinal_fluid"
-    },
-    {
-      "alias": "cd2",
-      "keptBy": "cd2_other_body_fluid",
-      "droppedFrom": "cd2"
     },
     {
       "alias": "trichomonas vaginalis",
@@ -1731,29 +2307,19 @@
       "droppedFrom": "trichomonas_vaginalis_urine"
     },
     {
-      "alias": "varicella zoster virus igg ab",
-      "keptBy": "vzv_igg_ab",
-      "droppedFrom": "vzv_igg_ab_value"
-    },
-    {
       "alias": "cd7",
-      "keptBy": "cd7_other_body_fluid",
+      "keptBy": "cd7",
       "droppedFrom": "cd7_bone_marrow"
     },
     {
-      "alias": "rubella virus igg ab",
-      "keptBy": "rubiggv",
-      "droppedFrom": "rubella_igg_ab"
-    },
-    {
       "alias": "cd2",
-      "keptBy": "cd2_other_body_fluid",
+      "keptBy": "cd2",
       "droppedFrom": "cd2_bone_marrow"
     },
     {
-      "alias": "cytomegalovirus igg ab",
-      "keptBy": "cmv_igg_ab",
-      "droppedFrom": "cmv_igg_ab_value"
+      "alias": "cd13",
+      "keptBy": "cd13",
+      "droppedFrom": "cd13_bone_marrow"
     },
     {
       "alias": "protein fractions",
@@ -1766,19 +2332,49 @@
       "droppedFrom": "hematocrit_joint_fluid"
     },
     {
+      "alias": "cd117",
+      "keptBy": "cd117",
+      "droppedFrom": "cd117_bone_marrow"
+    },
+    {
       "alias": "glucose",
       "keptBy": "glucose",
       "droppedFrom": "glucose_body_fluid_other_body_fluid"
     },
     {
       "alias": "protein",
-      "keptBy": "protein_urine",
+      "keptBy": "protein_total",
       "droppedFrom": "total_protein_body_fluid_other_body_fluid"
     },
     {
-      "alias": "cytomegalovirus igg ab",
-      "keptBy": "cmv_igg_ab",
-      "droppedFrom": "cmv_interpretation"
+      "alias": "cd15",
+      "keptBy": "cd15",
+      "droppedFrom": "cd15_bone_marrow"
+    },
+    {
+      "alias": "cd33",
+      "keptBy": "cd33",
+      "droppedFrom": "cd33_bone_marrow"
+    },
+    {
+      "alias": "collection duration of urine",
+      "keptBy": "length_of_urine_collection_urine",
+      "droppedFrom": "total_collection_time_urine"
+    },
+    {
+      "alias": "creatinine",
+      "keptBy": "creatinine",
+      "droppedFrom": "urine_creatinine_urine"
+    },
+    {
+      "alias": "urine creatinine urine",
+      "keptBy": "creatinine_urine",
+      "droppedFrom": "urine_creatinine_urine"
+    },
+    {
+      "alias": "volume of urine",
+      "keptBy": "urine_volume_urine",
+      "droppedFrom": "urine_volume_total_urine"
     },
     {
       "alias": "bands",
@@ -1797,143 +2393,18 @@
     },
     {
       "alias": "immunophenotyping",
-      "keptBy": "immunophenotyping_other_body_fluid",
+      "keptBy": "immunophenotyping",
       "droppedFrom": "immunophenotyping_cerebrospinal_fluid"
     },
     {
       "alias": "immunophenotyping study",
-      "keptBy": "immunophenotyping_other_body_fluid",
+      "keptBy": "immunophenotyping",
       "droppedFrom": "immunophenotyping_cerebrospinal_fluid"
     },
     {
-      "alias": "epstein barr virus nuclear igg ab",
-      "keptBy": "epstein_barr_virus_ebna_igg_ab",
-      "droppedFrom": "epstein_barr_virus_igg_ab_value"
-    },
-    {
-      "alias": "measles virus igg ab",
-      "keptBy": "rubeola_igg_ab_value",
-      "droppedFrom": "rubeola_igg_ab"
-    },
-    {
-      "alias": "bilirubin",
-      "keptBy": "bilirubin_urine",
-      "droppedFrom": "bilirubin_urine_chemistry"
-    },
-    {
-      "alias": "bilirubin urine",
-      "keptBy": "bilirubin_urine",
-      "droppedFrom": "bilirubin_urine_chemistry"
-    },
-    {
-      "alias": "bilirubin.total",
-      "keptBy": "bilirubin_total",
-      "droppedFrom": "bilirubin_urine_chemistry"
-    },
-    {
-      "alias": "urine bilirubin",
-      "keptBy": "bilirubin_urine",
-      "droppedFrom": "bilirubin_urine_chemistry"
-    },
-    {
-      "alias": "protein",
-      "keptBy": "protein_urine",
-      "droppedFrom": "protein_urine_chemistry"
-    },
-    {
-      "alias": "protein urine",
-      "keptBy": "protein_urine",
-      "droppedFrom": "protein_urine_chemistry"
-    },
-    {
-      "alias": "urine protein",
-      "keptBy": "protein_urine",
-      "droppedFrom": "protein_urine_chemistry"
-    },
-    {
-      "alias": "glucose",
-      "keptBy": "glucose",
-      "droppedFrom": "glucose_urine_chemistry"
-    },
-    {
-      "alias": "glucose urine",
-      "keptBy": "glucose_urine",
-      "droppedFrom": "glucose_urine_chemistry"
-    },
-    {
-      "alias": "urine glucose",
-      "keptBy": "glucose_urine",
-      "droppedFrom": "glucose_urine_chemistry"
-    },
-    {
-      "alias": "specific gravity",
-      "keptBy": "specific_gravity_urine",
-      "droppedFrom": "specific_gravity_urine_chemistry"
-    },
-    {
-      "alias": "specific gravity urine",
-      "keptBy": "specific_gravity_urine",
-      "droppedFrom": "specific_gravity_urine_chemistry"
-    },
-    {
-      "alias": "urine specific gravity",
-      "keptBy": "specific_gravity_urine",
-      "droppedFrom": "specific_gravity_urine_chemistry"
-    },
-    {
-      "alias": "urine urobilinogen",
-      "keptBy": "urobilinogen_urine",
-      "droppedFrom": "urobilinogen_urine_chemistry"
-    },
-    {
-      "alias": "urobilinogen",
-      "keptBy": "urobilinogen_urine",
-      "droppedFrom": "urobilinogen_urine_chemistry"
-    },
-    {
-      "alias": "urobilinogen urine",
-      "keptBy": "urobilinogen_urine",
-      "droppedFrom": "urobilinogen_urine_chemistry"
-    },
-    {
-      "alias": "nitrite",
-      "keptBy": "nitrite_urine",
-      "droppedFrom": "nitrite_urine_chemistry"
-    },
-    {
-      "alias": "nitrite urine",
-      "keptBy": "nitrite_urine",
-      "droppedFrom": "nitrite_urine_chemistry"
-    },
-    {
-      "alias": "urine nitrite",
-      "keptBy": "nitrite_urine",
-      "droppedFrom": "nitrite_urine_chemistry"
-    },
-    {
-      "alias": "ketone",
-      "keptBy": "ketone_urine",
-      "droppedFrom": "ketone_urine_chemistry"
-    },
-    {
-      "alias": "ketone urine",
-      "keptBy": "ketone_urine",
-      "droppedFrom": "ketone_urine_chemistry"
-    },
-    {
-      "alias": "ketones",
-      "keptBy": "ketone_urine",
-      "droppedFrom": "ketone_urine_chemistry"
-    },
-    {
-      "alias": "urine ketone",
-      "keptBy": "ketone_urine",
-      "droppedFrom": "ketone_urine_chemistry"
-    },
-    {
-      "alias": "hemoglobin a1c",
-      "keptBy": "hba1c",
-      "droppedFrom": "absolute_a1c"
+      "alias": "cd14",
+      "keptBy": "cd14",
+      "droppedFrom": "cd14_bone_marrow"
     },
     {
       "alias": "cd4",
@@ -1946,19 +2417,9 @@
       "droppedFrom": "plasma_cells_pleural"
     },
     {
-      "alias": "mumps virus igg ab",
-      "keptBy": "mumps_igg_ab_value",
-      "droppedFrom": "mumps_igg_ab"
-    },
-    {
       "alias": "cd8",
       "keptBy": "cd8_cells_percent",
       "droppedFrom": "cd8_bone_marrow"
-    },
-    {
-      "alias": "toxoplasma gondii igg ab",
-      "keptBy": "toxoplasma_igg_ab",
-      "droppedFrom": "toxoplasma_igg_ab_value"
     },
     {
       "alias": "basophils",
@@ -1981,14 +2442,34 @@
       "droppedFrom": "triglycerides_ascites"
     },
     {
+      "alias": "cd56",
+      "keptBy": "cd56",
+      "droppedFrom": "cd56_bone_marrow"
+    },
+    {
+      "alias": "cd64",
+      "keptBy": "cd64",
+      "droppedFrom": "cd64_bone_marrow"
+    },
+    {
+      "alias": "myoglobin",
+      "keptBy": "myoglobin",
+      "droppedFrom": "myoglobin_urine"
+    },
+    {
+      "alias": "cd11c",
+      "keptBy": "cd11c",
+      "droppedFrom": "cd11c_bone_marrow"
+    },
+    {
       "alias": "creatinine",
       "keptBy": "creatinine",
       "droppedFrom": "creatinine_body_fluid_other_body_fluid"
     },
     {
-      "alias": "bilirubin.total",
-      "keptBy": "bilirubin_total",
-      "droppedFrom": "bilirubin_total_body_fluid_other_body_fluid"
+      "alias": "nrbc",
+      "keptBy": "nrbc",
+      "droppedFrom": "nrbc_cerebrospinal_fluid"
     },
     {
       "alias": "atypical lymphocytes",
@@ -1996,19 +2477,19 @@
       "droppedFrom": "atypical_lymphocytes_pleural"
     },
     {
-      "alias": "hemoglobin",
-      "keptBy": "hemoglobin",
-      "droppedFrom": "hemoglobin_calculated"
+      "alias": "bilirubin.total",
+      "keptBy": "bilirubin_total",
+      "droppedFrom": "bilirubin_total_body_fluid_other_body_fluid"
     },
     {
-      "alias": "carbon dioxide, total",
-      "keptBy": "calculated_total_co2",
-      "droppedFrom": "total_co2"
+      "alias": "cd41",
+      "keptBy": "cd41",
+      "droppedFrom": "cd41_bone_marrow"
     },
     {
-      "alias": "anion gap",
-      "keptBy": "anion_gap",
-      "droppedFrom": "anion_gap_chemistry"
+      "alias": "basophils",
+      "keptBy": "basophils",
+      "droppedFrom": "basophils_cerebrospinal_fluid"
     },
     {
       "alias": "hematocrit",
@@ -2018,17 +2499,12 @@
     {
       "alias": "basophils",
       "keptBy": "basophils",
-      "droppedFrom": "basophils_cerebrospinal_fluid"
-    },
-    {
-      "alias": "cd56",
-      "keptBy": "cd56_bone_marrow",
-      "droppedFrom": "cd56"
-    },
-    {
-      "alias": "basophils",
-      "keptBy": "basophils",
       "droppedFrom": "basophils_ascites"
+    },
+    {
+      "alias": "cd71",
+      "keptBy": "cd71",
+      "droppedFrom": "cd71_bone_marrow"
     },
     {
       "alias": "mesothelial cells",
@@ -2036,34 +2512,19 @@
       "droppedFrom": "mesothelial_cells_joint_fluid"
     },
     {
-      "alias": "cd34",
-      "keptBy": "cd34_other_body_fluid",
-      "droppedFrom": "cd34"
+      "alias": "glyco a",
+      "keptBy": "glyco_a",
+      "droppedFrom": "glyco_a_bone_marrow"
     },
     {
-      "alias": "helicobacter pylori igg ab",
-      "keptBy": "h_pylori_igg_ab",
-      "droppedFrom": "h_pylori_igg_ab_value"
+      "alias": "glycolate",
+      "keptBy": "glyco_a",
+      "droppedFrom": "glyco_a_bone_marrow"
     },
     {
       "alias": "bands",
       "keptBy": "bands",
       "droppedFrom": "bands_ascites"
-    },
-    {
-      "alias": "cd13",
-      "keptBy": "cd13_bone_marrow",
-      "droppedFrom": "cd13"
-    },
-    {
-      "alias": "cd11c",
-      "keptBy": "cd11c_bone_marrow",
-      "droppedFrom": "cd11c"
-    },
-    {
-      "alias": "hiv 1 ab",
-      "keptBy": "hiv_antibody",
-      "droppedFrom": "hiv_1_ab_confirmation"
     },
     {
       "alias": "sodium",
@@ -2076,24 +2537,9 @@
       "droppedFrom": "potassium_stool"
     },
     {
-      "alias": "cd117",
-      "keptBy": "cd117_bone_marrow",
-      "droppedFrom": "cd117"
-    },
-    {
-      "alias": "cd15",
-      "keptBy": "cd15_bone_marrow",
-      "droppedFrom": "cd15"
-    },
-    {
       "alias": "cd4",
       "keptBy": "cd4_cells_percent",
       "droppedFrom": "cd4_other_body_fluid"
-    },
-    {
-      "alias": "c reactive protein",
-      "keptBy": "c_reactive_protein",
-      "droppedFrom": "high_sensitivity_crp"
     },
     {
       "alias": "cd8",
@@ -2101,24 +2547,9 @@
       "droppedFrom": "cd8_other_body_fluid"
     },
     {
-      "alias": "cd33",
-      "keptBy": "cd33_bone_marrow",
-      "droppedFrom": "cd33"
-    },
-    {
-      "alias": "cd14",
-      "keptBy": "cd14_bone_marrow",
-      "droppedFrom": "cd14"
-    },
-    {
       "alias": "bands",
       "keptBy": "bands",
       "droppedFrom": "bands_joint_fluid"
-    },
-    {
-      "alias": "cd64",
-      "keptBy": "cd64_bone_marrow",
-      "droppedFrom": "cd64"
     },
     {
       "alias": "plasma",
@@ -2136,29 +2567,14 @@
       "droppedFrom": "basophils_other_body_fluid"
     },
     {
-      "alias": "cd71",
-      "keptBy": "cd71_bone_marrow",
-      "droppedFrom": "cd71"
+      "alias": "epithelial cells.non-squamous",
+      "keptBy": "nonsquamous_epithelial_cell_urine",
+      "droppedFrom": "non_squamous_epithelial_cells_urine"
     },
     {
       "alias": "bands",
       "keptBy": "bands",
       "droppedFrom": "bands_other_body_fluid"
-    },
-    {
-      "alias": "glyco a",
-      "keptBy": "glyco_a_bone_marrow",
-      "droppedFrom": "glyco_a"
-    },
-    {
-      "alias": "glycolate",
-      "keptBy": "glyco_a_bone_marrow",
-      "droppedFrom": "glyco_a"
-    },
-    {
-      "alias": "cd41",
-      "keptBy": "cd41_bone_marrow",
-      "droppedFrom": "cd41"
     },
     {
       "alias": "bands",
@@ -2202,7 +2618,7 @@
     },
     {
       "alias": "nrbc",
-      "keptBy": "nrbc_cerebrospinal_fluid",
+      "keptBy": "nrbc",
       "droppedFrom": "nrbc_pleural"
     },
     {
@@ -2217,7 +2633,7 @@
     },
     {
       "alias": "protein",
-      "keptBy": "protein_urine",
+      "keptBy": "protein_total",
       "droppedFrom": "total_protein_joint_fluid"
     },
     {
@@ -2226,43 +2642,13 @@
       "droppedFrom": "amylase_urine"
     },
     {
-      "alias": "influenza b rapid antigen",
-      "keptBy": "influenza_b_rapid_antigen_other_body_fluid",
-      "droppedFrom": "influenza_b_rapid_antigen_other_body_fluid_chemistry"
-    },
-    {
-      "alias": "influenza b rapid antigen other body fluid",
-      "keptBy": "influenza_b_rapid_antigen_other_body_fluid",
-      "droppedFrom": "influenza_b_rapid_antigen_other_body_fluid_chemistry"
-    },
-    {
-      "alias": "influenza b, rapid antigen",
-      "keptBy": "influenza_b_rapid_antigen_other_body_fluid",
-      "droppedFrom": "influenza_b_rapid_antigen_other_body_fluid_chemistry"
-    },
-    {
-      "alias": "influenza virus b ag",
-      "keptBy": "influenza_b_rapid_antigen_other_body_fluid",
-      "droppedFrom": "influenza_b_rapid_antigen_other_body_fluid_chemistry"
-    },
-    {
-      "alias": "other body fluid influenza b rapid antigen",
-      "keptBy": "influenza_b_rapid_antigen_other_body_fluid",
-      "droppedFrom": "influenza_b_rapid_antigen_other_body_fluid_chemistry"
-    },
-    {
-      "alias": "toxoplasma gondii igm ab",
-      "keptBy": "toxoplasma_igm_ab",
-      "droppedFrom": "toxoplasma_igm_ab_value"
-    },
-    {
       "alias": "ethanol",
       "keptBy": "ethanol",
       "droppedFrom": "ethanol_urine"
     },
     {
       "alias": "cd13",
-      "keptBy": "cd13_bone_marrow",
+      "keptBy": "cd13",
       "droppedFrom": "cd13_other_body_fluid"
     },
     {
@@ -2282,7 +2668,7 @@
     },
     {
       "alias": "nrbc",
-      "keptBy": "nrbc_cerebrospinal_fluid",
+      "keptBy": "nrbc",
       "droppedFrom": "nrbc_other_body_fluid"
     },
     {
@@ -2302,7 +2688,7 @@
     },
     {
       "alias": "nrbc",
-      "keptBy": "nrbc_cerebrospinal_fluid",
+      "keptBy": "nrbc",
       "droppedFrom": "nrbc_joint_fluid"
     },
     {
@@ -2311,14 +2697,24 @@
       "droppedFrom": "nrbc_joint_fluid"
     },
     {
+      "alias": "cd56",
+      "keptBy": "cd56",
+      "droppedFrom": "cd56_other_body_fluid"
+    },
+    {
       "alias": "myelocytes",
       "keptBy": "myelocytes",
       "droppedFrom": "myelocytes_cerebrospinal_fluid"
     },
     {
-      "alias": "cd56",
-      "keptBy": "cd56_bone_marrow",
-      "droppedFrom": "cd56_other_body_fluid"
+      "alias": "tdt",
+      "keptBy": "tdt",
+      "droppedFrom": "tdt_bone_marrow"
+    },
+    {
+      "alias": "cd117",
+      "keptBy": "cd117",
+      "droppedFrom": "cd117_other_body_fluid"
     },
     {
       "alias": "cd25",
@@ -2326,14 +2722,14 @@
       "droppedFrom": "cd25_bone_marrow"
     },
     {
-      "alias": "cd117",
-      "keptBy": "cd117_bone_marrow",
-      "droppedFrom": "cd117_other_body_fluid"
-    },
-    {
       "alias": "promyelocytes",
       "keptBy": "promyelocytes",
       "droppedFrom": "promyelocytes_cerebrospinal_fluid"
+    },
+    {
+      "alias": "cd15",
+      "keptBy": "cd15",
+      "droppedFrom": "cd15_other_body_fluid"
     },
     {
       "alias": "plasma",
@@ -2341,24 +2737,14 @@
       "droppedFrom": "plasma_other_body_fluid"
     },
     {
-      "alias": "cd15",
-      "keptBy": "cd15_bone_marrow",
-      "droppedFrom": "cd15_other_body_fluid"
-    },
-    {
-      "alias": "neutrophil cytoplasmic ab",
-      "keptBy": "anti_neutrophil_cytoplasmic_antibody",
-      "droppedFrom": "anca_titer"
+      "alias": "sodium",
+      "keptBy": "sodium",
+      "droppedFrom": "sodium_ascites"
     },
     {
       "alias": "urea nitrogen",
       "keptBy": "urea_nitrogen",
       "droppedFrom": "urea_nitrogen_body_fluid_other_body_fluid"
-    },
-    {
-      "alias": "sodium",
-      "keptBy": "sodium",
-      "droppedFrom": "sodium_ascites"
     },
     {
       "alias": "lipase",
@@ -2371,6 +2757,16 @@
       "droppedFrom": "cholesterol_ascites"
     },
     {
+      "alias": "cd33",
+      "keptBy": "cd33",
+      "droppedFrom": "cd33_other_body_fluid"
+    },
+    {
+      "alias": "cd38",
+      "keptBy": "cd38",
+      "droppedFrom": "cd38_other_body_fluid"
+    },
+    {
       "alias": "cd3+cd4+ t4 helper cells/cd3+cd8+ t8 suppressor cells cells",
       "keptBy": "cd4_cd8_ratio",
       "droppedFrom": "cd4_cd8_ratio_other_body_fluid"
@@ -2379,16 +2775,6 @@
       "alias": "cd4/cd8 ratio",
       "keptBy": "cd4_cd8_ratio",
       "droppedFrom": "cd4_cd8_ratio_other_body_fluid"
-    },
-    {
-      "alias": "cd33",
-      "keptBy": "cd33_bone_marrow",
-      "droppedFrom": "cd33_other_body_fluid"
-    },
-    {
-      "alias": "cd38",
-      "keptBy": "cd38",
-      "droppedFrom": "cd38_other_body_fluid"
     },
     {
       "alias": "bicarbonate",
@@ -2401,9 +2787,9 @@
       "droppedFrom": "cd38_bone_marrow"
     },
     {
-      "alias": "tdt",
-      "keptBy": "tdt_bone_marrow",
-      "droppedFrom": "tdt"
+      "alias": "cd22",
+      "keptBy": "cd22",
+      "droppedFrom": "cd22_bone_marrow"
     },
     {
       "alias": "lining cell",
@@ -2411,9 +2797,9 @@
       "droppedFrom": "lining_cell_cerebrospinal_fluid"
     },
     {
-      "alias": "cd22",
-      "keptBy": "cd22",
-      "droppedFrom": "cd22_bone_marrow"
+      "alias": "cd138",
+      "keptBy": "cd138",
+      "droppedFrom": "cd138_other_body_fluid"
     },
     {
       "alias": "sodium",
@@ -2427,7 +2813,7 @@
     },
     {
       "alias": "cd14",
-      "keptBy": "cd14_bone_marrow",
+      "keptBy": "cd14",
       "droppedFrom": "cd14_other_body_fluid"
     },
     {
@@ -2439,16 +2825,6 @@
       "alias": "potassium",
       "keptBy": "potassium",
       "droppedFrom": "potassium_body_fluid_other_body_fluid"
-    },
-    {
-      "alias": "d dimer",
-      "keptBy": "d_dimer",
-      "droppedFrom": "d_dimer_chemistry"
-    },
-    {
-      "alias": "d-dimer",
-      "keptBy": "d_dimer",
-      "droppedFrom": "d_dimer_chemistry"
     },
     {
       "alias": "chloride",
@@ -2466,14 +2842,14 @@
       "droppedFrom": "albumin_cerebrospinal_fluid"
     },
     {
-      "alias": "cd57",
-      "keptBy": "cd57",
-      "droppedFrom": "cd57_bone_marrow"
-    },
-    {
       "alias": "bicarbonate",
       "keptBy": "bicarbonate",
       "droppedFrom": "bicarbonate_ascites"
+    },
+    {
+      "alias": "cd57",
+      "keptBy": "cd57",
+      "droppedFrom": "cd57_bone_marrow"
     },
     {
       "alias": "influenza virus a ag",
@@ -2492,7 +2868,7 @@
     },
     {
       "alias": "cd64",
-      "keptBy": "cd64_bone_marrow",
+      "keptBy": "cd64",
       "droppedFrom": "cd64_other_body_fluid"
     },
     {
@@ -2507,7 +2883,7 @@
     },
     {
       "alias": "cd11c",
-      "keptBy": "cd11c_bone_marrow",
+      "keptBy": "cd11c",
       "droppedFrom": "cd11c_other_body_fluid"
     },
     {
@@ -2516,14 +2892,14 @@
       "droppedFrom": "cd16_bone_marrow"
     },
     {
-      "alias": "urea nitrogen",
-      "keptBy": "urea_nitrogen",
-      "droppedFrom": "urea_nitrogen_ascites"
-    },
-    {
       "alias": "metamyelocytes",
       "keptBy": "metamyelocytes",
       "droppedFrom": "metamyelocytes_pleural"
+    },
+    {
+      "alias": "urea nitrogen",
+      "keptBy": "urea_nitrogen",
+      "droppedFrom": "urea_nitrogen_ascites"
     },
     {
       "alias": "cd25",
@@ -2551,6 +2927,11 @@
       "droppedFrom": "metamyelocytes_ascites"
     },
     {
+      "alias": "cd22",
+      "keptBy": "cd22",
+      "droppedFrom": "cd22_other_body_fluid"
+    },
+    {
       "alias": "promyelocytes",
       "keptBy": "promyelocytes",
       "droppedFrom": "promyelocytes_ascites"
@@ -2561,13 +2942,8 @@
       "droppedFrom": "promyelocytes_ascites"
     },
     {
-      "alias": "cd22",
-      "keptBy": "cd22",
-      "droppedFrom": "cd22_other_body_fluid"
-    },
-    {
       "alias": "cd138",
-      "keptBy": "cd138_other_body_fluid",
+      "keptBy": "cd138",
       "droppedFrom": "cd138_bone_marrow"
     },
     {
@@ -2576,34 +2952,29 @@
       "droppedFrom": "cd57_other_body_fluid"
     },
     {
+      "alias": "cd16",
+      "keptBy": "cd16",
+      "droppedFrom": "cd16_other_body_fluid"
+    },
+    {
+      "alias": "cd41",
+      "keptBy": "cd41",
+      "droppedFrom": "cd41_other_body_fluid"
+    },
+    {
+      "alias": "cd71",
+      "keptBy": "cd71",
+      "droppedFrom": "cd71_other_body_fluid"
+    },
+    {
       "alias": "cholesterol",
       "keptBy": "total_cholesterol",
       "droppedFrom": "cholesterol_body_fluid_other_body_fluid"
     },
     {
-      "alias": "myelocytes",
-      "keptBy": "myelocytes",
-      "droppedFrom": "myelocytes_pleural"
-    },
-    {
-      "alias": "metamyelocytes",
-      "keptBy": "metamyelocytes",
-      "droppedFrom": "metamyelocytes_joint_fluid"
-    },
-    {
-      "alias": "metamyelocytes/100 leukocytes in body fluid",
-      "keptBy": "metamyelocytes_pleural",
-      "droppedFrom": "metamyelocytes_joint_fluid"
-    },
-    {
       "alias": "hematocrit",
       "keptBy": "hematocrit",
       "droppedFrom": "hematocrit_urine"
-    },
-    {
-      "alias": "cd16",
-      "keptBy": "cd16",
-      "droppedFrom": "cd16_other_body_fluid"
     },
     {
       "alias": "hiv 1 rna",
@@ -2616,14 +2987,29 @@
       "droppedFrom": "hiv_1_viral_load_cerebrospinal_fluid"
     },
     {
-      "alias": "cd41",
-      "keptBy": "cd41_bone_marrow",
-      "droppedFrom": "cd41_other_body_fluid"
+      "alias": "metamyelocytes",
+      "keptBy": "metamyelocytes",
+      "droppedFrom": "metamyelocytes_joint_fluid"
     },
     {
-      "alias": "cd71",
-      "keptBy": "cd71_bone_marrow",
-      "droppedFrom": "cd71_other_body_fluid"
+      "alias": "metamyelocytes/100 leukocytes in body fluid",
+      "keptBy": "metamyelocytes_pleural",
+      "droppedFrom": "metamyelocytes_joint_fluid"
+    },
+    {
+      "alias": "myelocytes",
+      "keptBy": "myelocytes",
+      "droppedFrom": "myelocytes_pleural"
+    },
+    {
+      "alias": "glyco a",
+      "keptBy": "glyco_a",
+      "droppedFrom": "glyco_a_other_body_fluid"
+    },
+    {
+      "alias": "glycolate",
+      "keptBy": "glyco_a",
+      "droppedFrom": "glyco_a_other_body_fluid"
     },
     {
       "alias": "myelocytes",
@@ -2641,29 +3027,14 @@
       "droppedFrom": "plasma_joint_fluid"
     },
     {
-      "alias": "glyco a",
-      "keptBy": "glyco_a_bone_marrow",
-      "droppedFrom": "glyco_a_other_body_fluid"
-    },
-    {
-      "alias": "glycolate",
-      "keptBy": "glyco_a_bone_marrow",
-      "droppedFrom": "glyco_a_other_body_fluid"
-    },
-    {
       "alias": "tdt",
-      "keptBy": "tdt_bone_marrow",
+      "keptBy": "tdt",
       "droppedFrom": "tdt_other_body_fluid"
     },
     {
-      "alias": "cd138",
-      "keptBy": "cd138_other_body_fluid",
-      "droppedFrom": "cd138"
-    },
-    {
-      "alias": "phosphate",
-      "keptBy": "phosphate",
-      "droppedFrom": "phosphate_body_fluid_other_body_fluid"
+      "alias": "blasts",
+      "keptBy": "blasts",
+      "droppedFrom": "blasts_pleural"
     },
     {
       "alias": "calcium",
@@ -2671,14 +3042,9 @@
       "droppedFrom": "calcium_body_fluid_other_body_fluid"
     },
     {
-      "alias": "promyelocytes",
-      "keptBy": "promyelocytes",
-      "droppedFrom": "promyelocytes_other_body_fluid"
-    },
-    {
-      "alias": "promyelocytes/100 leukocytes in body fluid",
-      "keptBy": "promyelocytes_pleural",
-      "droppedFrom": "promyelocytes_other_body_fluid"
+      "alias": "cd103",
+      "keptBy": "cd103",
+      "droppedFrom": "cd103_other_body_fluid"
     },
     {
       "alias": "myelocytes",
@@ -2691,19 +3057,24 @@
       "droppedFrom": "myelocytes_other_body_fluid"
     },
     {
+      "alias": "phosphate",
+      "keptBy": "phosphate",
+      "droppedFrom": "phosphate_body_fluid_other_body_fluid"
+    },
+    {
+      "alias": "promyelocytes",
+      "keptBy": "promyelocytes",
+      "droppedFrom": "promyelocytes_other_body_fluid"
+    },
+    {
+      "alias": "promyelocytes/100 leukocytes in body fluid",
+      "keptBy": "promyelocytes_pleural",
+      "droppedFrom": "promyelocytes_other_body_fluid"
+    },
+    {
       "alias": "sodium",
       "keptBy": "sodium",
       "droppedFrom": "sodium_pleural"
-    },
-    {
-      "alias": "blasts",
-      "keptBy": "blasts",
-      "droppedFrom": "blasts_pleural"
-    },
-    {
-      "alias": "cd103",
-      "keptBy": "cd103",
-      "droppedFrom": "cd103_other_body_fluid"
     },
     {
       "alias": "promyelocytes",
@@ -2721,6 +3092,16 @@
       "droppedFrom": "albumin_joint_fluid"
     },
     {
+      "alias": "lipase",
+      "keptBy": "lipase",
+      "droppedFrom": "lipase_pleural"
+    },
+    {
+      "alias": "magnesium",
+      "keptBy": "magnesium",
+      "droppedFrom": "magnesium_body_fluid_other_body_fluid"
+    },
+    {
       "alias": "myelocytes",
       "keptBy": "myelocytes",
       "droppedFrom": "myelocytes_joint_fluid"
@@ -2731,24 +3112,24 @@
       "droppedFrom": "myelocytes_joint_fluid"
     },
     {
-      "alias": "magnesium",
-      "keptBy": "magnesium",
-      "droppedFrom": "magnesium_body_fluid_other_body_fluid"
-    },
-    {
       "alias": "potassium",
       "keptBy": "potassium",
       "droppedFrom": "potassium_pleural"
     },
     {
-      "alias": "lipase",
-      "keptBy": "lipase",
-      "droppedFrom": "lipase_pleural"
-    },
-    {
       "alias": "amylase",
       "keptBy": "amylase",
       "droppedFrom": "amylase_joint_fluid"
+    },
+    {
+      "alias": "bicarbonate",
+      "keptBy": "bicarbonate",
+      "droppedFrom": "bicarbonate_pleural"
+    },
+    {
+      "alias": "cd 1a",
+      "keptBy": "cd_1a",
+      "droppedFrom": "cd_1a_bone_marrow"
     },
     {
       "alias": "cd55",
@@ -2759,11 +3140,6 @@
       "alias": "chloride",
       "keptBy": "chloride",
       "droppedFrom": "chloride_pleural"
-    },
-    {
-      "alias": "bicarbonate",
-      "keptBy": "bicarbonate",
-      "droppedFrom": "bicarbonate_pleural"
     },
     {
       "alias": "cd59",
@@ -2786,19 +3162,9 @@
       "droppedFrom": "tcr_gamma_delta_bone_marrow"
     },
     {
-      "alias": "hemoglobin f",
-      "keptBy": "hemoglobin_f",
-      "droppedFrom": "apt_test"
-    },
-    {
-      "alias": "carbon dioxide",
-      "keptBy": "pco2",
-      "droppedFrom": "pco2_body_fluid_other_body_fluid"
-    },
-    {
-      "alias": "cd 1a",
-      "keptBy": "cd_1a_bone_marrow",
-      "droppedFrom": "cd_1a"
+      "alias": "blasts",
+      "keptBy": "blasts",
+      "droppedFrom": "blasts_ascites"
     },
     {
       "alias": "blasts",
@@ -2806,19 +3172,24 @@
       "droppedFrom": "blasts_other_body_fluid"
     },
     {
+      "alias": "carbon dioxide",
+      "keptBy": "pco2",
+      "droppedFrom": "pco2_body_fluid_other_body_fluid"
+    },
+    {
       "alias": "oxygen",
       "keptBy": "po2",
       "droppedFrom": "po2_body_fluid_other_body_fluid"
     },
     {
-      "alias": "blasts",
-      "keptBy": "blasts",
-      "droppedFrom": "blasts_ascites"
-    },
-    {
       "alias": "young",
       "keptBy": "young_cerebrospinal_fluid",
       "droppedFrom": "young_ascites"
+    },
+    {
+      "alias": "cd 1a",
+      "keptBy": "cd_1a",
+      "droppedFrom": "cd_1a_other_body_fluid"
     },
     {
       "alias": "creatinine",
@@ -2831,29 +3202,9 @@
       "droppedFrom": "hypersegmented_neutrophils_other_body_fluid"
     },
     {
-      "alias": "cd 1a",
-      "keptBy": "cd_1a_bone_marrow",
-      "droppedFrom": "cd_1a_other_body_fluid"
-    },
-    {
-      "alias": "urea nitrogen",
-      "keptBy": "urea_nitrogen",
-      "droppedFrom": "urea_nitrogen_pleural"
-    },
-    {
-      "alias": "oxygen",
-      "keptBy": "po2",
-      "droppedFrom": "p50_of_hemoglobin"
-    },
-    {
-      "alias": "chloride",
-      "keptBy": "chloride",
-      "droppedFrom": "chloride_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "urate",
-      "keptBy": "uric_acid",
-      "droppedFrom": "uric_acid_joint_fluid"
+      "alias": "albumin",
+      "keptBy": "albumin",
+      "droppedFrom": "albumin_stool"
     },
     {
       "alias": "blasts",
@@ -2861,9 +3212,19 @@
       "droppedFrom": "blasts_joint_fluid"
     },
     {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": "albumin_stool"
+      "alias": "chloride",
+      "keptBy": "chloride",
+      "droppedFrom": "chloride_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "urea nitrogen",
+      "keptBy": "urea_nitrogen",
+      "droppedFrom": "urea_nitrogen_pleural"
+    },
+    {
+      "alias": "urate",
+      "keptBy": "uric_acid",
+      "droppedFrom": "uric_acid_joint_fluid"
     },
     {
       "alias": "immature cells/100 leukocytes in blood",
@@ -2881,436 +3242,6 @@
       "droppedFrom": "young_other_body_fluid"
     },
     {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": "albumin_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "sudan_stain_other_body_fluid"
-    },
-    {
-      "alias": "sudan stain",
-      "keptBy": "sudan_stain_stool",
-      "droppedFrom": "sudan_stain_other_body_fluid"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "naphtol_acetate_stain"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "chloroacetate"
-    },
-    {
-      "alias": "hepatitis b virus surface ab",
-      "keptBy": "hepatitis_b_surface_antibody",
-      "droppedFrom": "anti_hbs"
-    },
-    {
-      "alias": "hepatitis c virus rna",
-      "keptBy": "hepatitis_c_viral_load",
-      "droppedFrom": "reflex_confirmatory_hepatitis_c_viral_load"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "non_specific_esterase"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "chloroacetate_esterase_bone_marrow"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "peroxidase_staining"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "peroxidase_stain_bone_marrow"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "sudan_black_staining"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "sudan_black_stain_bone_marrow"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "acid_phosphatase_stain"
-    },
-    {
-      "alias": "alpha-1-fetoprotein",
-      "keptBy": "alpha_fetoprotein",
-      "droppedFrom": "afp_body_fluid_other_body_fluid"
-    },
-    {
-      "alias": "immunoelectrophoresis for serum or plasma",
-      "keptBy": "immunoelectrophoresis_ascites",
-      "droppedFrom": "immunoelectrophoresis"
-    },
-    {
-      "alias": "immunoelectrophoresis for serum or plasma",
-      "keptBy": "immunoelectrophoresis_ascites",
-      "droppedFrom": "immunoelectrophoresis_joint_fluid"
-    },
-    {
-      "alias": "immunoelectrophoresis for serum or plasma",
-      "keptBy": "immunoelectrophoresis_ascites",
-      "droppedFrom": "immunoelectrophoresis_fluid_other_body_fluid"
-    },
-    {
-      "alias": "immunoelectrophoresis for serum or plasma",
-      "keptBy": "immunoelectrophoresis_ascites",
-      "droppedFrom": "immunoelectrophoresis_pleural"
-    },
-    {
-      "alias": "immunoelectrophoresis for serum or plasma",
-      "keptBy": "immunoelectrophoresis_ascites",
-      "droppedFrom": "immunoelectrophoresis_stool"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "naphthol_butryrate_bone_marrow"
-    },
-    {
-      "alias": "leukocytes",
-      "keptBy": "wbc",
-      "droppedFrom": "wbc_stool"
-    },
-    {
-      "alias": "wbc",
-      "keptBy": "wbc",
-      "droppedFrom": "wbc_stool"
-    },
-    {
-      "alias": "urate",
-      "keptBy": "uric_acid",
-      "droppedFrom": "uric_acid_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "alpha-1",
-      "keptBy": "alpha_1_cerebrospinal_fluid",
-      "droppedFrom": "alpha_1_urine"
-    },
-    {
-      "alias": "alpha-2",
-      "keptBy": "alpha_2_cerebrospinal_fluid",
-      "droppedFrom": "alpha_2_urine"
-    },
-    {
-      "alias": "beta",
-      "keptBy": "beta_cerebrospinal_fluid",
-      "droppedFrom": "beta_urine"
-    },
-    {
-      "alias": "urea nitrogen",
-      "keptBy": "urea_nitrogen",
-      "droppedFrom": "urea_nitrogen_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "potassium",
-      "keptBy": "potassium",
-      "droppedFrom": "potassium_joint_fluid"
-    },
-    {
-      "alias": "amylase",
-      "keptBy": "amylase",
-      "droppedFrom": "amylase_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "urea nitrogen",
-      "keptBy": "urea_nitrogen",
-      "droppedFrom": "urea_nitrogen_joint_fluid"
-    },
-    {
-      "alias": "creatinine",
-      "keptBy": "creatinine",
-      "droppedFrom": "creatinine_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "bilirubin.total",
-      "keptBy": "bilirubin_total",
-      "droppedFrom": "bilirubin_total_joint_fluid"
-    },
-    {
-      "alias": "cholesterol",
-      "keptBy": "total_cholesterol",
-      "droppedFrom": "cholesterol_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "cholesterol",
-      "keptBy": "total_cholesterol",
-      "droppedFrom": "cholesterol_joint_fluid"
-    },
-    {
-      "alias": "triglyceride",
-      "keptBy": "triglycerides",
-      "droppedFrom": "triglycerides_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "triglyceride",
-      "keptBy": "triglycerides",
-      "droppedFrom": "triglycerides_joint_fluid"
-    },
-    {
-      "alias": "alpha-1",
-      "keptBy": "alpha_1_cerebrospinal_fluid",
-      "droppedFrom": "alpha_1_joint_fluid"
-    },
-    {
-      "alias": "alpha-2",
-      "keptBy": "alpha_2_cerebrospinal_fluid",
-      "droppedFrom": "alpha_2_joint_fluid"
-    },
-    {
-      "alias": "beta",
-      "keptBy": "beta_cerebrospinal_fluid",
-      "droppedFrom": "beta_joint_fluid"
-    },
-    {
-      "alias": "igg",
-      "keptBy": "immunoglobulin_g",
-      "droppedFrom": "immunoglobulin_g_body_fluid_other_body_fluid"
-    },
-    {
-      "alias": "igg",
-      "keptBy": "immunoglobulin_g",
-      "droppedFrom": "immunoglobulin_g_pleural"
-    },
-    {
-      "alias": "igg",
-      "keptBy": "immunoglobulin_g",
-      "droppedFrom": "igg_stool"
-    },
-    {
-      "alias": "bicarbonate",
-      "keptBy": "bicarbonate",
-      "droppedFrom": "bicarbonate_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "hepatitis b virus surface ab",
-      "keptBy": "hepatitis_b_surface_antibody",
-      "droppedFrom": "qnthbsab"
-    },
-    {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": "albumin_urine_chemistry"
-    },
-    {
-      "alias": "albumin urine",
-      "keptBy": "albumin_urine",
-      "droppedFrom": "albumin_urine_chemistry"
-    },
-    {
-      "alias": "albumin urine urine",
-      "keptBy": "albumin_urine",
-      "droppedFrom": "albumin_urine_chemistry"
-    },
-    {
-      "alias": "albumin, urine",
-      "keptBy": "albumin_urine",
-      "droppedFrom": "albumin_urine_chemistry"
-    },
-    {
-      "alias": "urine albumin urine",
-      "keptBy": "albumin_urine",
-      "droppedFrom": "albumin_urine_chemistry"
-    },
-    {
-      "alias": "alpha-1",
-      "keptBy": "alpha_1_cerebrospinal_fluid",
-      "droppedFrom": "alpha_1_ascites"
-    },
-    {
-      "alias": "alpha 1 globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "alpha_1_ascites",
-      "droppedFrom": "alpha_1_other_body_fluid"
-    },
-    {
-      "alias": "alpha-1",
-      "keptBy": "alpha_1_cerebrospinal_fluid",
-      "droppedFrom": "alpha_1_other_body_fluid"
-    },
-    {
-      "alias": "alpha 1 globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "alpha_1_ascites",
-      "droppedFrom": "alpha_1_pleural"
-    },
-    {
-      "alias": "alpha-1",
-      "keptBy": "alpha_1_cerebrospinal_fluid",
-      "droppedFrom": "alpha_1_pleural"
-    },
-    {
-      "alias": "alpha 1 globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "alpha_1_ascites",
-      "droppedFrom": "alpha_1_stool"
-    },
-    {
-      "alias": "alpha-1",
-      "keptBy": "alpha_1_cerebrospinal_fluid",
-      "droppedFrom": "alpha_1_stool"
-    },
-    {
-      "alias": "alpha-2",
-      "keptBy": "alpha_2_cerebrospinal_fluid",
-      "droppedFrom": "alpha_2_ascites"
-    },
-    {
-      "alias": "alpha 2 globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "alpha_2_ascites",
-      "droppedFrom": "alpha_2_other_body_fluid"
-    },
-    {
-      "alias": "alpha-2",
-      "keptBy": "alpha_2_cerebrospinal_fluid",
-      "droppedFrom": "alpha_2_other_body_fluid"
-    },
-    {
-      "alias": "alpha 2 globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "alpha_2_ascites",
-      "droppedFrom": "alpha_2_pleural"
-    },
-    {
-      "alias": "alpha-2",
-      "keptBy": "alpha_2_cerebrospinal_fluid",
-      "droppedFrom": "alpha_2_pleural"
-    },
-    {
-      "alias": "alpha 2 globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "alpha_2_ascites",
-      "droppedFrom": "alpha_2_stool"
-    },
-    {
-      "alias": "alpha-2",
-      "keptBy": "alpha_2_cerebrospinal_fluid",
-      "droppedFrom": "alpha_2_stool"
-    },
-    {
-      "alias": "beta",
-      "keptBy": "beta_cerebrospinal_fluid",
-      "droppedFrom": "beta_ascites"
-    },
-    {
-      "alias": "beta",
-      "keptBy": "beta_cerebrospinal_fluid",
-      "droppedFrom": "beta_other_body_fluid"
-    },
-    {
-      "alias": "beta globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "beta_ascites",
-      "droppedFrom": "beta_other_body_fluid"
-    },
-    {
-      "alias": "beta",
-      "keptBy": "beta_cerebrospinal_fluid",
-      "droppedFrom": "beta_pleural"
-    },
-    {
-      "alias": "beta globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "beta_ascites",
-      "droppedFrom": "beta_pleural"
-    },
-    {
-      "alias": "beta",
-      "keptBy": "beta_cerebrospinal_fluid",
-      "droppedFrom": "beta_stool"
-    },
-    {
-      "alias": "beta globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "beta_ascites",
-      "droppedFrom": "beta_stool"
-    },
-    {
-      "alias": "gamma globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "pep_ascites_gamma_region_ascites",
-      "droppedFrom": "pep_body_fluid_gamma_region_other_body_fluid"
-    },
-    {
-      "alias": "gamma globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "pep_ascites_gamma_region_ascites",
-      "droppedFrom": "pep_pleural_gamma_region_pleural"
-    },
-    {
-      "alias": "gamma globulin/protein.total in body fluid by electrophoresis",
-      "keptBy": "pep_ascites_gamma_region_ascites",
-      "droppedFrom": "gamma_stool"
-    },
-    {
-      "alias": "alpha-1-fetoprotein",
-      "keptBy": "alpha_fetoprotein",
-      "droppedFrom": "afp_amniotic_fluid_other_body_fluid"
-    },
-    {
-      "alias": "base excess",
-      "keptBy": "base_excess",
-      "droppedFrom": "base_excess_fluid"
-    },
-    {
-      "alias": "bicarbonate",
-      "keptBy": "bicarbonate",
-      "droppedFrom": "calculated_bicarbonate_fluid"
-    },
-    {
-      "alias": "bilirubin.total",
-      "keptBy": "bilirubin_total",
-      "droppedFrom": "bilirubin_total_stool"
-    },
-    {
-      "alias": "carbon dioxide",
-      "keptBy": "pco2",
-      "droppedFrom": "pco2_fluid"
-    },
-    {
-      "alias": "pco2",
-      "keptBy": "pco2",
-      "droppedFrom": "pco2_fluid"
-    },
-    {
-      "alias": "alpha-1-fetoprotein",
-      "keptBy": "alpha_fetoprotein",
-      "droppedFrom": "afp_mom"
-    },
-    {
-      "alias": "carbon dioxide, total",
-      "keptBy": "calculated_total_co2",
-      "droppedFrom": "wb_tco2"
-    },
-    {
-      "alias": "acid phosphatase stain",
-      "keptBy": "acid_phosphatase_stain",
-      "droppedFrom": "acid_phosphatase_stain_bone_marrow"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "acid_phosphatase_stain_bone_marrow"
-    },
-    {
-      "alias": "estriol e3 .unconjugated",
-      "keptBy": "ue3_multiples_of_median",
-      "droppedFrom": "ue3_maternal_screen"
-    },
-    {
-      "alias": "fat",
-      "keptBy": "free_fat_urine",
-      "droppedFrom": "fat_stool"
-    },
-    {
       "alias": "fat",
       "keptBy": "free_fat_urine",
       "droppedFrom": "72_hr_fat_other_body_fluid"
@@ -3326,9 +3257,309 @@
       "droppedFrom": "72_hr_fat_stool"
     },
     {
+      "alias": "acid phosphatase stain",
+      "keptBy": "acid_phosphatase_stain",
+      "droppedFrom": "acid_phosphatase_stain_bone_marrow"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "acid_phosphatase_stain_bone_marrow"
+    },
+    {
+      "alias": "alpha-1-fetoprotein",
+      "keptBy": "alpha_fetoprotein",
+      "droppedFrom": "afp_amniotic_fluid_other_body_fluid"
+    },
+    {
+      "alias": "alpha-1-fetoprotein",
+      "keptBy": "alpha_fetoprotein",
+      "droppedFrom": "afp_body_fluid_other_body_fluid"
+    },
+    {
+      "alias": "albumin",
+      "keptBy": "albumin",
+      "droppedFrom": "albumi_other_body_fluid"
+    },
+    {
+      "alias": "albumin",
+      "keptBy": "albumin",
+      "droppedFrom": "albumin_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "alpha-1",
+      "keptBy": "alpha_1",
+      "droppedFrom": "alpha_1_ascites"
+    },
+    {
+      "alias": "alpha-1",
+      "keptBy": "alpha_1",
+      "droppedFrom": "alpha_1_cerebrospinal_fluid"
+    },
+    {
+      "alias": "alpha-1",
+      "keptBy": "alpha_1",
+      "droppedFrom": "alpha_1_joint_fluid"
+    },
+    {
+      "alias": "alpha 1 globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "alpha_1_ascites",
+      "droppedFrom": "alpha_1_other_body_fluid"
+    },
+    {
+      "alias": "alpha-1",
+      "keptBy": "alpha_1",
+      "droppedFrom": "alpha_1_other_body_fluid"
+    },
+    {
+      "alias": "alpha 1 globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "alpha_1_ascites",
+      "droppedFrom": "alpha_1_pleural"
+    },
+    {
+      "alias": "alpha-1",
+      "keptBy": "alpha_1",
+      "droppedFrom": "alpha_1_pleural"
+    },
+    {
+      "alias": "alpha 1 globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "alpha_1_ascites",
+      "droppedFrom": "alpha_1_stool"
+    },
+    {
+      "alias": "alpha-1",
+      "keptBy": "alpha_1",
+      "droppedFrom": "alpha_1_stool"
+    },
+    {
+      "alias": "alpha-1",
+      "keptBy": "alpha_1",
+      "droppedFrom": "alpha_1_urine"
+    },
+    {
+      "alias": "alpha-2",
+      "keptBy": "alpha_2",
+      "droppedFrom": "alpha_2_ascites"
+    },
+    {
+      "alias": "alpha-2",
+      "keptBy": "alpha_2",
+      "droppedFrom": "alpha_2_cerebrospinal_fluid"
+    },
+    {
+      "alias": "alpha-2",
+      "keptBy": "alpha_2",
+      "droppedFrom": "alpha_2_joint_fluid"
+    },
+    {
+      "alias": "alpha 2 globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "alpha_2_ascites",
+      "droppedFrom": "alpha_2_other_body_fluid"
+    },
+    {
+      "alias": "alpha-2",
+      "keptBy": "alpha_2",
+      "droppedFrom": "alpha_2_other_body_fluid"
+    },
+    {
+      "alias": "alpha 2 globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "alpha_2_ascites",
+      "droppedFrom": "alpha_2_pleural"
+    },
+    {
+      "alias": "alpha-2",
+      "keptBy": "alpha_2",
+      "droppedFrom": "alpha_2_pleural"
+    },
+    {
+      "alias": "alpha 2 globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "alpha_2_ascites",
+      "droppedFrom": "alpha_2_stool"
+    },
+    {
+      "alias": "alpha-2",
+      "keptBy": "alpha_2",
+      "droppedFrom": "alpha_2_stool"
+    },
+    {
+      "alias": "alpha-2",
+      "keptBy": "alpha_2",
+      "droppedFrom": "alpha_2_urine"
+    },
+    {
+      "alias": "amylase",
+      "keptBy": "amylase",
+      "droppedFrom": "amylase_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "amylase",
+      "keptBy": "amylase",
+      "droppedFrom": "amylase_serum_urine"
+    },
+    {
+      "alias": "amylase",
+      "keptBy": "amylase",
+      "droppedFrom": "amylase_stool"
+    },
+    {
+      "alias": "atyps",
+      "keptBy": "atyps_ascites",
+      "droppedFrom": "atyps_cerebrospinal_fluid"
+    },
+    {
+      "alias": "variant lymphocytes",
+      "keptBy": "atyps_ascites",
+      "droppedFrom": "atyps_cerebrospinal_fluid"
+    },
+    {
+      "alias": "atyps",
+      "keptBy": "atyps_ascites",
+      "droppedFrom": "atyps_joint_fluid"
+    },
+    {
+      "alias": "variant lymphocytes",
+      "keptBy": "atyps_ascites",
+      "droppedFrom": "atyps_joint_fluid"
+    },
+    {
+      "alias": "atyps",
+      "keptBy": "atyps_ascites",
+      "droppedFrom": "atyps_other_body_fluid"
+    },
+    {
+      "alias": "variant lymphocytes",
+      "keptBy": "atyps_ascites",
+      "droppedFrom": "atyps_other_body_fluid"
+    },
+    {
+      "alias": "atyps",
+      "keptBy": "atyps_ascites",
+      "droppedFrom": "atyps_pleural"
+    },
+    {
+      "alias": "variant lymphocytes",
+      "keptBy": "atyps_ascites",
+      "droppedFrom": "atyps_pleural"
+    },
+    {
+      "alias": "base excess",
+      "keptBy": "base_excess",
+      "droppedFrom": "base_excess_fluid"
+    },
+    {
+      "alias": "basophils",
+      "keptBy": "basophils",
+      "droppedFrom": "basos_ascites"
+    },
+    {
+      "alias": "basophils",
+      "keptBy": "basophils",
+      "droppedFrom": "basos_cerebrospinal_fluid"
+    },
+    {
+      "alias": "basos",
+      "keptBy": "basos_ascites",
+      "droppedFrom": "basos_cerebrospinal_fluid"
+    },
+    {
+      "alias": "basophils",
+      "keptBy": "basophils",
+      "droppedFrom": "basos_joint_fluid"
+    },
+    {
+      "alias": "basos",
+      "keptBy": "basos_ascites",
+      "droppedFrom": "basos_joint_fluid"
+    },
+    {
+      "alias": "basophils",
+      "keptBy": "basophils",
+      "droppedFrom": "basos_other_body_fluid"
+    },
+    {
+      "alias": "basos",
+      "keptBy": "basos_ascites",
+      "droppedFrom": "basos_other_body_fluid"
+    },
+    {
+      "alias": "basophils",
+      "keptBy": "basophils",
+      "droppedFrom": "basos_pleural"
+    },
+    {
+      "alias": "basos",
+      "keptBy": "basos_ascites",
+      "droppedFrom": "basos_pleural"
+    },
+    {
+      "alias": "beta",
+      "keptBy": "beta",
+      "droppedFrom": "beta_ascites"
+    },
+    {
+      "alias": "beta",
+      "keptBy": "beta",
+      "droppedFrom": "beta_cerebrospinal_fluid"
+    },
+    {
+      "alias": "beta",
+      "keptBy": "beta",
+      "droppedFrom": "beta_joint_fluid"
+    },
+    {
+      "alias": "beta",
+      "keptBy": "beta",
+      "droppedFrom": "beta_other_body_fluid"
+    },
+    {
+      "alias": "beta globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "beta_ascites",
+      "droppedFrom": "beta_other_body_fluid"
+    },
+    {
+      "alias": "beta",
+      "keptBy": "beta",
+      "droppedFrom": "beta_pleural"
+    },
+    {
+      "alias": "beta globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "beta_ascites",
+      "droppedFrom": "beta_pleural"
+    },
+    {
+      "alias": "beta",
+      "keptBy": "beta",
+      "droppedFrom": "beta_stool"
+    },
+    {
+      "alias": "beta globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "beta_ascites",
+      "droppedFrom": "beta_stool"
+    },
+    {
+      "alias": "beta",
+      "keptBy": "beta",
+      "droppedFrom": "beta_urine"
+    },
+    {
+      "alias": "bicarbonate",
+      "keptBy": "bicarbonate",
+      "droppedFrom": "bicarbonate_csf_cerebrospinal_fluid"
+    },
+    {
       "alias": "bicarbonate",
       "keptBy": "bicarbonate",
       "droppedFrom": "bicarbonate_joint_fluid"
+    },
+    {
+      "alias": "bilirubin.total",
+      "keptBy": "bilirubin_total",
+      "droppedFrom": "bilirubin_total_joint_fluid"
+    },
+    {
+      "alias": "bilirubin.total",
+      "keptBy": "bilirubin_total",
+      "droppedFrom": "bilirubin_total_stool"
     },
     {
       "alias": "blood, occult",
@@ -3341,1399 +3572,54 @@
       "droppedFrom": "blood_occult_other_body_fluid"
     },
     {
-      "alias": "glucose-6-phosphate dehydrogenase",
-      "keptBy": "quantitative_g6pd",
-      "droppedFrom": "g6pd_qualitative"
-    },
-    {
-      "alias": "igg",
-      "keptBy": "immunoglobulin_g",
-      "droppedFrom": "immunoglobulin_g_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "iron",
-      "keptBy": "iron",
-      "droppedFrom": "iron_urine"
-    },
-    {
-      "alias": "lactate",
-      "keptBy": "lactate",
-      "droppedFrom": "lactate_blood_gas"
-    },
-    {
-      "alias": "lithium",
-      "keptBy": "lithium",
-      "droppedFrom": "lithium_blood_gas"
-    },
-    {
-      "alias": "hiv 1 rna",
-      "keptBy": "hiv_1_viral_load",
-      "droppedFrom": "hiv_1_viral_load_other_body_fluid"
-    },
-    {
-      "alias": "hiv 1 viral load",
-      "keptBy": "hiv_1_viral_load",
-      "droppedFrom": "hiv_1_viral_load_other_body_fluid"
-    },
-    {
-      "alias": "methemoglobin",
-      "keptBy": "methemoglobin",
-      "droppedFrom": "methemoglobin_hematology"
-    },
-    {
-      "alias": "myoglobin",
-      "keptBy": "myoglobin_urine",
-      "droppedFrom": "myoglobin"
-    },
-    {
-      "alias": "cerebrospinal fluid nrbc",
-      "keptBy": "nrbc_cerebrospinal_fluid",
-      "droppedFrom": "nrbc_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "nrbc",
-      "keptBy": "nrbc_cerebrospinal_fluid",
-      "droppedFrom": "nrbc_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "nrbc cerebrospinal fluid",
-      "keptBy": "nrbc_cerebrospinal_fluid",
-      "droppedFrom": "nrbc_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "nucleated erythrocytes",
-      "keptBy": "nrbc_cerebrospinal_fluid_hematology",
-      "droppedFrom": "nuc_rbcs_ascites"
-    },
-    {
-      "alias": "nrbc",
-      "keptBy": "nrbc_cerebrospinal_fluid",
-      "droppedFrom": "nrbc_other_body_fluid_hematology"
-    },
-    {
-      "alias": "nrbc other body fluid",
-      "keptBy": "nrbc_other_body_fluid",
-      "droppedFrom": "nrbc_other_body_fluid_hematology"
-    },
-    {
-      "alias": "nucleated erythrocytes",
-      "keptBy": "nrbc_cerebrospinal_fluid_hematology",
-      "droppedFrom": "nrbc_other_body_fluid_hematology"
-    },
-    {
-      "alias": "other body fluid nrbc",
-      "keptBy": "nrbc_other_body_fluid",
-      "droppedFrom": "nrbc_other_body_fluid_hematology"
-    },
-    {
-      "alias": "lymphocytes",
-      "keptBy": "lymphocytes",
-      "droppedFrom": "lymphs_cerebrospinal_fluid"
-    },
-    {
-      "alias": "lymphocytes",
-      "keptBy": "lymphocytes",
-      "droppedFrom": "metas_ascites"
-    },
-    {
-      "alias": "lymphocytes",
-      "keptBy": "lymphocytes",
-      "droppedFrom": "lymphs_other_body_fluid"
-    },
-    {
-      "alias": "lymphs",
-      "keptBy": "lymphs_cerebrospinal_fluid",
-      "droppedFrom": "lymphs_other_body_fluid"
-    },
-    {
-      "alias": "cerebrospinal fluid lymphs",
-      "keptBy": "lymphs_cerebrospinal_fluid",
-      "droppedFrom": "lymphs_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "lymphs",
-      "keptBy": "lymphs_cerebrospinal_fluid",
-      "droppedFrom": "lymphs_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "lymphs cerebrospinal fluid",
-      "keptBy": "lymphs_cerebrospinal_fluid",
-      "droppedFrom": "lymphs_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils",
-      "droppedFrom": "hypersegmented_neutrophils_cerebrospinal_fluid"
-    },
-    {
-      "alias": "clostrid",
-      "keptBy": "clostrid_other_body_fluid",
-      "droppedFrom": "clostrid"
-    },
-    {
-      "alias": "osmolality of specimen",
-      "keptBy": "osmolality_csf_cerebrospinal_fluid",
-      "droppedFrom": "osmolality_joint_fluid"
-    },
-    {
-      "alias": "oxygen",
-      "keptBy": "po2",
-      "droppedFrom": "po2_fluid"
-    },
-    {
-      "alias": "po2",
-      "keptBy": "po2",
-      "droppedFrom": "po2_fluid"
-    },
-    {
-      "alias": "hemoglobin f",
-      "keptBy": "hemoglobin_f",
-      "droppedFrom": "fetal_hgb_other_body_fluid"
-    },
-    {
-      "alias": "potassium",
-      "keptBy": "potassium",
-      "droppedFrom": "potassium_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "cortisol",
-      "keptBy": "cortisol",
-      "droppedFrom": "cortisol_urine"
+      "alias": "albumin",
+      "keptBy": "albumin",
+      "droppedFrom": "_ascites"
     },
     {
       "alias": "albumin",
       "keptBy": "albumin",
-      "droppedFrom": ""
+      "droppedFrom": "_cerebrospinal_fluid"
     },
     {
-      "alias": "blood",
-      "keptBy": "blood_urine",
-      "droppedFrom": ""
+      "alias": "albumin",
+      "keptBy": "albumin",
+      "droppedFrom": "_joint_fluid"
     },
     {
-      "alias": "alpha-1",
-      "keptBy": "alpha_1_cerebrospinal_fluid",
-      "droppedFrom": "alpha_1"
+      "alias": "albumin",
+      "keptBy": "albumin",
+      "droppedFrom": "_pleural"
     },
     {
-      "alias": "alpha-2",
-      "keptBy": "alpha_2_cerebrospinal_fluid",
-      "droppedFrom": "alpha_2"
-    },
-    {
-      "alias": "beta",
-      "keptBy": "beta_cerebrospinal_fluid",
-      "droppedFrom": "beta"
-    },
-    {
-      "alias": "gamma",
-      "keptBy": "gamma_stool",
-      "droppedFrom": "gamma"
-    },
-    {
-      "alias": "gamma globulin",
-      "keptBy": "pep_csf_gamma_region_cerebrospinal_fluid",
-      "droppedFrom": "gamma"
-    },
-    {
-      "alias": "gamma globulin",
-      "keptBy": "pep_csf_gamma_region_cerebrospinal_fluid",
-      "droppedFrom": "pep_joint_fluid_gamma_region_joint_fluid"
-    },
-    {
-      "alias": "sodium",
-      "keptBy": "sodium",
-      "droppedFrom": "sodium_csf_cerebrospinal_fluid"
-    },
-    {
-      "alias": "cryptococ",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_ascites"
-    },
-    {
-      "alias": "cryptococcus sp ag",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_ascites"
-    },
-    {
-      "alias": "cryptococ",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_joint_fluid"
-    },
-    {
-      "alias": "cryptococcus sp ag",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_joint_fluid"
-    },
-    {
-      "alias": "cryptococ",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_pleural"
-    },
-    {
-      "alias": "cryptococcus sp ag",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_pleural"
-    },
-    {
-      "alias": "cryptococ",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_stool"
-    },
-    {
-      "alias": "cryptococcus sp ag",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_stool"
-    },
-    {
-      "alias": "blasts",
-      "keptBy": "blasts",
-      "droppedFrom": "blasflg"
-    },
-    {
-      "alias": "monocytes",
-      "keptBy": "monocytes",
-      "droppedFrom": "monos_joint_fluid"
-    },
-    {
-      "alias": "monos",
-      "keptBy": "monos_pleural",
-      "droppedFrom": "monos_joint_fluid"
-    },
-    {
-      "alias": "hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils",
-      "droppedFrom": "hypersegmented_neutrophils_other_body_fluid_hematology"
-    },
-    {
-      "alias": "hypersegmented neutrophils other body fluid",
-      "keptBy": "hypersegmented_neutrophils_other_body_fluid",
-      "droppedFrom": "hypersegmented_neutrophils_other_body_fluid_hematology"
-    },
-    {
-      "alias": "other body fluid hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils_other_body_fluid",
-      "droppedFrom": "hypersegmented_neutrophils_other_body_fluid_hematology"
+      "alias": "albumin",
+      "keptBy": "albumin",
+      "droppedFrom": "_stool"
     },
     {
       "alias": "urea nitrogen",
       "keptBy": "urea_nitrogen",
-      "droppedFrom": "urea_nitrogen_stool"
+      "droppedFrom": "bun_other_body_fluid"
     },
     {
-      "alias": "reagin ab",
-      "keptBy": "rapid_plasma_reagin_test",
-      "droppedFrom": "quantitative_rpr_test"
+      "alias": "c. diff pcr",
+      "keptBy": "c_diff_pcr_stool",
+      "droppedFrom": "c_diff_pcr_other_body_fluid"
     },
     {
-      "alias": "ptt",
-      "keptBy": "ptt",
-      "droppedFrom": "ptt_hematology"
+      "alias": "c diff toxin antigen assay",
+      "keptBy": "c_diff_toxin_antigen_assay_stool",
+      "droppedFrom": "c_diff_toxin_antigen_assay_other_body_fluid"
     },
     {
-      "alias": "cryptococ",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_cerebrospinal_fluid"
+      "alias": "clostridioides difficile toxin a+b",
+      "keptBy": "c_diff_toxin_antigen_assay_stool",
+      "droppedFrom": "c_diff_toxin_antigen_assay_other_body_fluid"
     },
     {
-      "alias": "cryptococcus sp ag",
-      "keptBy": "cryptococ_other_body_fluid",
-      "droppedFrom": "cryptococ_cerebrospinal_fluid"
-    },
-    {
-      "alias": "factor ix",
-      "keptBy": "factor_ix",
-      "droppedFrom": "factor_ix_hematology"
-    },
-    {
-      "alias": "amylase",
-      "keptBy": "amylase",
-      "droppedFrom": "amylase_stool"
-    },
-    {
-      "alias": "chloride",
-      "keptBy": "chloride",
-      "droppedFrom": "chloride_joint_fluid"
-    },
-    {
-      "alias": "cholesterol",
-      "keptBy": "total_cholesterol",
-      "droppedFrom": "cholesterol_stool"
-    },
-    {
-      "alias": "lactate dehydrogenase",
-      "keptBy": "lactate_dehydrogenase",
-      "droppedFrom": "lactate_dehydrogenase_stool"
-    },
-    {
-      "alias": "sodium",
-      "keptBy": "sodium",
-      "droppedFrom": "sodium_joint_fluid"
-    },
-    {
-      "alias": "urate",
-      "keptBy": "uric_acid",
-      "droppedFrom": "uric_acid_ascites"
-    },
-    {
-      "alias": "urate",
-      "keptBy": "uric_acid",
-      "droppedFrom": "uric_acid_stool"
-    },
-    {
-      "alias": "hematocrit",
-      "keptBy": "hematocrit",
-      "droppedFrom": "hematocrit_blood_gas"
-    },
-    {
-      "alias": "hematocrit blood",
-      "keptBy": "hematocrit",
-      "droppedFrom": "hematocrit_blood_gas"
-    },
-    {
-      "alias": "factor xiii",
-      "keptBy": "factor_xiii",
-      "droppedFrom": "factor_xiii_hematology"
-    },
-    {
-      "alias": "potassium",
-      "keptBy": "potassium",
-      "droppedFrom": "potassium_whole_blood_blood_gas"
-    },
-    {
-      "alias": "potassium whole blood",
-      "keptBy": "potassium_whole_blood",
-      "droppedFrom": "potassium_whole_blood_blood_gas"
-    },
-    {
-      "alias": "potassium, whole blood",
-      "keptBy": "potassium_whole_blood",
-      "droppedFrom": "potassium_whole_blood_blood_gas"
-    },
-    {
-      "alias": "sodium",
-      "keptBy": "sodium",
-      "droppedFrom": "sodium_whole_blood_blood_gas"
-    },
-    {
-      "alias": "sodium whole blood",
-      "keptBy": "sodium_whole_blood",
-      "droppedFrom": "sodium_whole_blood_blood_gas"
-    },
-    {
-      "alias": "sodium, whole blood",
-      "keptBy": "sodium_whole_blood",
-      "droppedFrom": "sodium_whole_blood_blood_gas"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "chloroac_other_body_fluid"
-    },
-    {
-      "alias": "cd62",
-      "keptBy": "cd62",
-      "droppedFrom": "cd62_bone_marrow"
-    },
-    {
-      "alias": "cd62 cells/100 cells in specimen",
-      "keptBy": "cd62",
-      "droppedFrom": "cd62_bone_marrow"
-    },
-    {
-      "alias": "cd62",
-      "keptBy": "cd62",
-      "droppedFrom": "cd62_other_body_fluid"
-    },
-    {
-      "alias": "cd62 cells/100 cells in specimen",
-      "keptBy": "cd62",
-      "droppedFrom": "cd62_other_body_fluid"
-    },
-    {
-      "alias": "osmotic fragility",
-      "keptBy": "osmotic_fragility",
-      "droppedFrom": "osmotic_fragility_incubated"
-    },
-    {
-      "alias": "hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils",
-      "droppedFrom": "hypersegmented_neutrophils_pleural"
-    },
-    {
-      "alias": "hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils",
-      "droppedFrom": "hypersegmented_neutrophils_joint_fluid"
-    },
-    {
-      "alias": "nrbc",
-      "keptBy": "nrbc_cerebrospinal_fluid",
-      "droppedFrom": "nrbc"
-    },
-    {
-      "alias": "nucleated erythrocytes",
-      "keptBy": "nrbc_cerebrospinal_fluid_hematology",
-      "droppedFrom": "nrbc"
-    },
-    {
-      "alias": "clostrid",
-      "keptBy": "clostrid_other_body_fluid",
-      "droppedFrom": "clostrid_stool"
-    },
-    {
-      "alias": "eosinophils",
-      "keptBy": "eosinophils",
-      "droppedFrom": "eos_cerebrospinal_fluid"
-    },
-    {
-      "alias": "cerebrospinal fluid promyelocytes",
-      "keptBy": "promyelocytes_cerebrospinal_fluid",
-      "droppedFrom": "promyelocytes_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "promyelocytes",
-      "keptBy": "promyelocytes",
-      "droppedFrom": "promyelocytes_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "promyelocytes cerebrospinal fluid",
-      "keptBy": "promyelocytes_cerebrospinal_fluid",
-      "droppedFrom": "promyelocytes_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "promyelocytes",
-      "keptBy": "promyelocytes",
-      "droppedFrom": "promyelo_ascites"
-    },
-    {
-      "alias": "promyelo",
-      "keptBy": "promyelo_ascites",
-      "droppedFrom": "promyelo_joint_fluid"
-    },
-    {
-      "alias": "promyelocytes",
-      "keptBy": "promyelocytes",
-      "droppedFrom": "promyelo_joint_fluid"
-    },
-    {
-      "alias": "promyelocytes",
-      "keptBy": "promyelocytes",
-      "droppedFrom": "promyelocyte_other_body_fluid"
-    },
-    {
-      "alias": "pleural promyelocytes",
-      "keptBy": "promyelocytes_pleural",
-      "droppedFrom": "promyelocytes_pleural_hematology"
-    },
-    {
-      "alias": "promyelocytes",
-      "keptBy": "promyelocytes",
-      "droppedFrom": "promyelocytes_pleural_hematology"
-    },
-    {
-      "alias": "promyelocytes pleural",
-      "keptBy": "promyelocytes_pleural",
-      "droppedFrom": "promyelocytes_pleural_hematology"
-    },
-    {
-      "alias": "pleural polys",
-      "keptBy": "polys_pleural",
-      "droppedFrom": "polys_pleural_hematology"
-    },
-    {
-      "alias": "polys",
-      "keptBy": "polys_cerebrospinal_fluid",
-      "droppedFrom": "polys_pleural_hematology"
-    },
-    {
-      "alias": "polys pleural",
-      "keptBy": "polys_pleural",
-      "droppedFrom": "polys_pleural_hematology"
-    },
-    {
-      "alias": "cerebrospinal fluid polys",
-      "keptBy": "polys_cerebrospinal_fluid",
-      "droppedFrom": "polys_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "polymorphonuclear cells",
-      "keptBy": "polys_pleural_hematology",
-      "droppedFrom": "polys_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "polys",
-      "keptBy": "polys_cerebrospinal_fluid",
-      "droppedFrom": "polys_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "polys cerebrospinal fluid",
-      "keptBy": "polys_cerebrospinal_fluid",
-      "droppedFrom": "polys_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "other body fluid polys",
-      "keptBy": "polys_other_body_fluid",
-      "droppedFrom": "polys_other_body_fluid_hematology"
-    },
-    {
-      "alias": "polymorphonuclear cells",
-      "keptBy": "polys_pleural_hematology",
-      "droppedFrom": "polys_other_body_fluid_hematology"
-    },
-    {
-      "alias": "polys",
-      "keptBy": "polys_cerebrospinal_fluid",
-      "droppedFrom": "polys_other_body_fluid_hematology"
-    },
-    {
-      "alias": "polys other body fluid",
-      "keptBy": "polys_other_body_fluid",
-      "droppedFrom": "polys_other_body_fluid_hematology"
-    },
-    {
-      "alias": "joint fluid polys",
-      "keptBy": "polys_joint_fluid",
-      "droppedFrom": "polys_joint_fluid_hematology"
-    },
-    {
-      "alias": "polymorphonuclear cells",
-      "keptBy": "polys_pleural_hematology",
-      "droppedFrom": "polys_joint_fluid_hematology"
-    },
-    {
-      "alias": "polys",
-      "keptBy": "polys_cerebrospinal_fluid",
-      "droppedFrom": "polys_joint_fluid_hematology"
-    },
-    {
-      "alias": "polys joint fluid",
-      "keptBy": "polys_joint_fluid",
-      "droppedFrom": "polys_joint_fluid_hematology"
-    },
-    {
-      "alias": "ascites polys",
-      "keptBy": "polys_ascites",
-      "droppedFrom": "polys_ascites_hematology"
-    },
-    {
-      "alias": "polymorphonuclear cells",
-      "keptBy": "polys_pleural_hematology",
-      "droppedFrom": "polys_ascites_hematology"
-    },
-    {
-      "alias": "polys",
-      "keptBy": "polys_cerebrospinal_fluid",
-      "droppedFrom": "polys_ascites_hematology"
-    },
-    {
-      "alias": "polys ascites",
-      "keptBy": "polys_ascites",
-      "droppedFrom": "polys_ascites_hematology"
-    },
-    {
-      "alias": "ascites plasma",
-      "keptBy": "plasma_ascites",
-      "droppedFrom": "plasma_ascites_hematology"
-    },
-    {
-      "alias": "plasma",
-      "keptBy": "plasma_ascites",
-      "droppedFrom": "plasma_ascites_hematology"
-    },
-    {
-      "alias": "plasma ascites",
-      "keptBy": "plasma_ascites",
-      "droppedFrom": "plasma_ascites_hematology"
-    },
-    {
-      "alias": "plasma cells",
-      "keptBy": "plasma_cells",
-      "droppedFrom": "plasma_ascites_hematology"
-    },
-    {
-      "alias": "cerebrospinal fluid plasma",
-      "keptBy": "plasma_cerebrospinal_fluid",
-      "droppedFrom": "plasma_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "plasma",
-      "keptBy": "plasma_ascites",
-      "droppedFrom": "plasma_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "plasma cells",
-      "keptBy": "plasma_cells",
-      "droppedFrom": "plasma_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "plasma cerebrospinal fluid",
-      "keptBy": "plasma_cerebrospinal_fluid",
-      "droppedFrom": "plasma_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "joint fluid plasma",
-      "keptBy": "plasma_joint_fluid",
-      "droppedFrom": "plasma_joint_fluid_hematology"
-    },
-    {
-      "alias": "plasma",
-      "keptBy": "plasma_ascites",
-      "droppedFrom": "plasma_joint_fluid_hematology"
-    },
-    {
-      "alias": "plasma cells",
-      "keptBy": "plasma_cells",
-      "droppedFrom": "plasma_joint_fluid_hematology"
-    },
-    {
-      "alias": "plasma joint fluid",
-      "keptBy": "plasma_joint_fluid",
-      "droppedFrom": "plasma_joint_fluid_hematology"
-    },
-    {
-      "alias": "other body fluid plasma",
-      "keptBy": "plasma_other_body_fluid",
-      "droppedFrom": "plasma_other_body_fluid_hematology"
-    },
-    {
-      "alias": "plasma",
-      "keptBy": "plasma_ascites",
-      "droppedFrom": "plasma_other_body_fluid_hematology"
-    },
-    {
-      "alias": "plasma cells",
-      "keptBy": "plasma_cells",
-      "droppedFrom": "plasma_other_body_fluid_hematology"
-    },
-    {
-      "alias": "plasma other body fluid",
-      "keptBy": "plasma_other_body_fluid",
-      "droppedFrom": "plasma_other_body_fluid_hematology"
-    },
-    {
-      "alias": "plasma",
-      "keptBy": "plasma_ascites",
-      "droppedFrom": "plasma_pleural"
-    },
-    {
-      "alias": "plasma cells",
-      "keptBy": "plasma_cells",
-      "droppedFrom": "plasma_pleural"
-    },
-    {
-      "alias": "hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils",
-      "droppedFrom": "hypersegmented_neutrophils_joint_fluid_hematology"
-    },
-    {
-      "alias": "hypersegmented neutrophils joint fluid",
-      "keptBy": "hypersegmented_neutrophils_joint_fluid",
-      "droppedFrom": "hypersegmented_neutrophils_joint_fluid_hematology"
-    },
-    {
-      "alias": "joint fluid hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils_joint_fluid",
-      "droppedFrom": "hypersegmented_neutrophils_joint_fluid_hematology"
-    },
-    {
-      "alias": "segmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils_other_body_fluid_hematology",
-      "droppedFrom": "hypersegmented_neutrophils_joint_fluid_hematology"
-    },
-    {
-      "alias": "ascites hyperseg",
-      "keptBy": "hyperseg_ascites",
-      "droppedFrom": "hyperseg_ascites_hematology"
-    },
-    {
-      "alias": "hyperseg",
-      "keptBy": "hyperseg_ascites",
-      "droppedFrom": "hyperseg_ascites_hematology"
-    },
-    {
-      "alias": "hyperseg ascites",
-      "keptBy": "hyperseg_ascites",
-      "droppedFrom": "hyperseg_ascites_hematology"
-    },
-    {
-      "alias": "segmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils_other_body_fluid_hematology",
-      "droppedFrom": "hyperseg_ascites_hematology"
-    },
-    {
-      "alias": "cerebrospinal fluid hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils_cerebrospinal_fluid",
-      "droppedFrom": "hypersegmented_neutrophils_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils",
-      "droppedFrom": "hypersegmented_neutrophils_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "hypersegmented neutrophils cerebrospinal fluid",
-      "keptBy": "hypersegmented_neutrophils_cerebrospinal_fluid",
-      "droppedFrom": "hypersegmented_neutrophils_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "segmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils_other_body_fluid_hematology",
-      "droppedFrom": "hypersegmented_neutrophils_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils",
-      "droppedFrom": "hypersegmented_neutrophils_pleural_hematology"
-    },
-    {
-      "alias": "hypersegmented neutrophils pleural",
-      "keptBy": "hypersegmented_neutrophils_pleural",
-      "droppedFrom": "hypersegmented_neutrophils_pleural_hematology"
-    },
-    {
-      "alias": "pleural hypersegmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils_pleural",
-      "droppedFrom": "hypersegmented_neutrophils_pleural_hematology"
-    },
-    {
-      "alias": "segmented neutrophils",
-      "keptBy": "hypersegmented_neutrophils_other_body_fluid_hematology",
-      "droppedFrom": "hypersegmented_neutrophils_pleural_hematology"
-    },
-    {
-      "alias": "bands",
-      "keptBy": "bands",
-      "droppedFrom": "bands_joint_fluid_hematology"
-    },
-    {
-      "alias": "bands joint fluid",
-      "keptBy": "bands_joint_fluid",
-      "droppedFrom": "bands_joint_fluid_hematology"
-    },
-    {
-      "alias": "joint fluid bands",
-      "keptBy": "bands_joint_fluid",
-      "droppedFrom": "bands_joint_fluid_hematology"
-    },
-    {
-      "alias": "ascites bands",
-      "keptBy": "bands_ascites",
-      "droppedFrom": "bands_ascites_hematology"
-    },
-    {
-      "alias": "band form neutrophils",
-      "keptBy": "bands_joint_fluid_hematology",
-      "droppedFrom": "bands_ascites_hematology"
-    },
-    {
-      "alias": "bands",
-      "keptBy": "bands",
-      "droppedFrom": "bands_ascites_hematology"
-    },
-    {
-      "alias": "bands ascites",
-      "keptBy": "bands_ascites",
-      "droppedFrom": "bands_ascites_hematology"
-    },
-    {
-      "alias": "band form neutrophils",
-      "keptBy": "bands_joint_fluid_hematology",
-      "droppedFrom": "bands_other_body_fluid_hematology"
-    },
-    {
-      "alias": "bands",
-      "keptBy": "bands",
-      "droppedFrom": "bands_other_body_fluid_hematology"
-    },
-    {
-      "alias": "bands other body fluid",
-      "keptBy": "bands_other_body_fluid",
-      "droppedFrom": "bands_other_body_fluid_hematology"
-    },
-    {
-      "alias": "other body fluid bands",
-      "keptBy": "bands_other_body_fluid",
-      "droppedFrom": "bands_other_body_fluid_hematology"
-    },
-    {
-      "alias": "band form neutrophils",
-      "keptBy": "bands_joint_fluid_hematology",
-      "droppedFrom": "bands_pleural_hematology"
-    },
-    {
-      "alias": "bands",
-      "keptBy": "bands",
-      "droppedFrom": "bands_pleural_hematology"
-    },
-    {
-      "alias": "bands pleural",
-      "keptBy": "bands_pleural",
-      "droppedFrom": "bands_pleural_hematology"
-    },
-    {
-      "alias": "pleural bands",
-      "keptBy": "bands_pleural",
-      "droppedFrom": "bands_pleural_hematology"
-    },
-    {
-      "alias": "band form neutrophils",
-      "keptBy": "bands_joint_fluid_hematology",
-      "droppedFrom": "bands_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "bands",
-      "keptBy": "bands",
-      "droppedFrom": "bands_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "bands cerebrospinal fluid",
-      "keptBy": "bands_cerebrospinal_fluid",
-      "droppedFrom": "bands_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "cerebrospinal fluid bands",
-      "keptBy": "bands_cerebrospinal_fluid",
-      "droppedFrom": "bands_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "myelocytes",
-      "keptBy": "myelocytes",
-      "droppedFrom": "myelos_ascites"
-    },
-    {
-      "alias": "myelocytes",
-      "keptBy": "myelocytes",
-      "droppedFrom": "myelos_joint_fluid"
-    },
-    {
-      "alias": "myelos",
-      "keptBy": "myelos_ascites",
-      "droppedFrom": "myelos_joint_fluid"
-    },
-    {
-      "alias": "myelocytes",
-      "keptBy": "myelocytes",
-      "droppedFrom": "myelos_other_body_fluid"
-    },
-    {
-      "alias": "myelos",
-      "keptBy": "myelos_ascites",
-      "droppedFrom": "myelos_other_body_fluid"
-    },
-    {
-      "alias": "myelocytes",
-      "keptBy": "myelocytes",
-      "droppedFrom": "myelos_pleural"
-    },
-    {
-      "alias": "myelos",
-      "keptBy": "myelos_ascites",
-      "droppedFrom": "myelos_pleural"
-    },
-    {
-      "alias": "myelocytes",
-      "keptBy": "myelocytes",
-      "droppedFrom": "myelos_cerebrospinal_fluid"
-    },
-    {
-      "alias": "myelos",
-      "keptBy": "myelos_ascites",
-      "droppedFrom": "myelos_cerebrospinal_fluid"
-    },
-    {
-      "alias": "monocytes",
-      "keptBy": "monocytes",
-      "droppedFrom": "monos_cerebrospinal_fluid"
-    },
-    {
-      "alias": "monos",
-      "keptBy": "monos_pleural",
-      "droppedFrom": "monos_cerebrospinal_fluid"
-    },
-    {
-      "alias": "monocytes",
-      "keptBy": "monocytes",
-      "droppedFrom": "monos_ascites"
-    },
-    {
-      "alias": "monos",
-      "keptBy": "monos_pleural",
-      "droppedFrom": "monos_ascites"
-    },
-    {
-      "alias": "monocytes",
-      "keptBy": "monocytes",
-      "droppedFrom": "monos_pleural_hematology"
-    },
-    {
-      "alias": "monos",
-      "keptBy": "monos_pleural",
-      "droppedFrom": "monos_pleural_hematology"
-    },
-    {
-      "alias": "monos pleural",
-      "keptBy": "monos_pleural",
-      "droppedFrom": "monos_pleural_hematology"
-    },
-    {
-      "alias": "pleural monos",
-      "keptBy": "monos_pleural",
-      "droppedFrom": "monos_pleural_hematology"
-    },
-    {
-      "alias": "metamyelocytes",
-      "keptBy": "metamyelocytes",
-      "droppedFrom": "metas_cerebrospinal_fluid"
-    },
-    {
-      "alias": "metas",
-      "keptBy": "metas_ascites",
-      "droppedFrom": "metas_cerebrospinal_fluid"
-    },
-    {
-      "alias": "metamyelocytes",
-      "keptBy": "metamyelocytes",
-      "droppedFrom": "metas_joint_fluid"
-    },
-    {
-      "alias": "metas",
-      "keptBy": "metas_ascites",
-      "droppedFrom": "metas_joint_fluid"
-    },
-    {
-      "alias": "metamyelocytes",
-      "keptBy": "metamyelocytes",
-      "droppedFrom": "metamyelocytes_other_body_fluid_hematology"
-    },
-    {
-      "alias": "metamyelocytes other body fluid",
-      "keptBy": "metamyelocytes_other_body_fluid",
-      "droppedFrom": "metamyelocytes_other_body_fluid_hematology"
-    },
-    {
-      "alias": "other body fluid metamyelocytes",
-      "keptBy": "metamyelocytes_other_body_fluid",
-      "droppedFrom": "metamyelocytes_other_body_fluid_hematology"
-    },
-    {
-      "alias": "metamyelocytes",
-      "keptBy": "metamyelocytes",
-      "droppedFrom": "metas_pleural"
-    },
-    {
-      "alias": "metas",
-      "keptBy": "metas_ascites",
-      "droppedFrom": "metas_pleural"
-    },
-    {
-      "alias": "cerebrospinal fluid mesothelial cells",
-      "keptBy": "mesothelial_cells_cerebrospinal_fluid",
-      "droppedFrom": "mesothelial_cells_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "mesothelial cells",
-      "keptBy": "mesothelial_cells_pleural",
-      "droppedFrom": "mesothelial_cells_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "mesothelial cells cerebrospinal fluid",
-      "keptBy": "mesothelial_cells_cerebrospinal_fluid",
-      "droppedFrom": "mesothelial_cells_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "cerebrospinal fluid macrophage",
-      "keptBy": "macrophage_cerebrospinal_fluid",
-      "droppedFrom": "macrophage_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "macrophage",
-      "keptBy": "macrophage_ascites",
-      "droppedFrom": "macrophage_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "macrophage cerebrospinal fluid",
-      "keptBy": "macrophage_cerebrospinal_fluid",
-      "droppedFrom": "macrophage_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "macrophages",
-      "keptBy": "macrophages_pleural",
-      "droppedFrom": "macrophage_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "atyps",
-      "keptBy": "atyps_ascites",
-      "droppedFrom": "atyps_pleural"
-    },
-    {
-      "alias": "variant lymphocytes",
-      "keptBy": "atyps_ascites",
-      "droppedFrom": "atyps_pleural"
-    },
-    {
-      "alias": "atyps",
-      "keptBy": "atyps_ascites",
-      "droppedFrom": "atyps_cerebrospinal_fluid"
-    },
-    {
-      "alias": "variant lymphocytes",
-      "keptBy": "atyps_ascites",
-      "droppedFrom": "atyps_cerebrospinal_fluid"
-    },
-    {
-      "alias": "atyps",
-      "keptBy": "atyps_ascites",
-      "droppedFrom": "atyps_joint_fluid"
-    },
-    {
-      "alias": "variant lymphocytes",
-      "keptBy": "atyps_ascites",
-      "droppedFrom": "atyps_joint_fluid"
-    },
-    {
-      "alias": "atyps",
-      "keptBy": "atyps_ascites",
-      "droppedFrom": "atyps_other_body_fluid"
-    },
-    {
-      "alias": "variant lymphocytes",
-      "keptBy": "atyps_ascites",
-      "droppedFrom": "atyps_other_body_fluid"
-    },
-    {
-      "alias": "lymphocytes",
-      "keptBy": "lymphocytes",
-      "droppedFrom": "lymphs_joint_fluid"
-    },
-    {
-      "alias": "lymphs",
-      "keptBy": "lymphs_cerebrospinal_fluid",
-      "droppedFrom": "lymphs_joint_fluid"
-    },
-    {
-      "alias": "histiocytes",
-      "keptBy": "histiocytes_other_body_fluid",
-      "droppedFrom": "histiocytes_cerebrospinal_fluid"
-    },
-    {
-      "alias": "histiocytes",
-      "keptBy": "histiocytes_other_body_fluid",
-      "droppedFrom": "histio_ascites"
-    },
-    {
-      "alias": "histio",
-      "keptBy": "histio_ascites",
-      "droppedFrom": "histio_joint_fluid"
-    },
-    {
-      "alias": "histiocytes",
-      "keptBy": "histiocytes_other_body_fluid",
-      "droppedFrom": "histio_joint_fluid"
-    },
-    {
-      "alias": "histiocyte",
-      "keptBy": "histiocyte_cerebrospinal_fluid",
-      "droppedFrom": "histiocyte_other_body_fluid"
-    },
-    {
-      "alias": "histiocytes",
-      "keptBy": "histiocytes_other_body_fluid",
-      "droppedFrom": "histiocyte_other_body_fluid"
-    },
-    {
-      "alias": "histiocyte",
-      "keptBy": "histiocyte_cerebrospinal_fluid",
-      "droppedFrom": "histiocyte_pleural"
-    },
-    {
-      "alias": "histiocytes",
-      "keptBy": "histiocytes_other_body_fluid",
-      "droppedFrom": "histiocyte_pleural"
-    },
-    {
-      "alias": "eos",
-      "keptBy": "eos_cerebrospinal_fluid",
-      "droppedFrom": "eos_joint_fluid"
-    },
-    {
-      "alias": "eosinophils",
-      "keptBy": "eosinophils",
-      "droppedFrom": "eos_joint_fluid"
-    },
-    {
-      "alias": "eos",
-      "keptBy": "eos_cerebrospinal_fluid",
-      "droppedFrom": "eos_ascites"
-    },
-    {
-      "alias": "eosinophils",
-      "keptBy": "eosinophils",
-      "droppedFrom": "eos_ascites"
-    },
-    {
-      "alias": "eos",
-      "keptBy": "eos_cerebrospinal_fluid",
-      "droppedFrom": "eos_pleural"
-    },
-    {
-      "alias": "eosinophils",
-      "keptBy": "eosinophils",
-      "droppedFrom": "eos_pleural"
-    },
-    {
-      "alias": "eos",
-      "keptBy": "eos_cerebrospinal_fluid",
-      "droppedFrom": "eos_other_body_fluid"
-    },
-    {
-      "alias": "eosinophils",
-      "keptBy": "eosinophils",
-      "droppedFrom": "eos_other_body_fluid"
-    },
-    {
-      "alias": "blasts",
-      "keptBy": "blasts",
-      "droppedFrom": "blasts_joint_fluid_hematology"
-    },
-    {
-      "alias": "blasts joint fluid",
-      "keptBy": "blasts_joint_fluid",
-      "droppedFrom": "blasts_joint_fluid_hematology"
-    },
-    {
-      "alias": "joint fluid blasts",
-      "keptBy": "blasts_joint_fluid",
-      "droppedFrom": "blasts_joint_fluid_hematology"
-    },
-    {
-      "alias": "ascites blasts",
-      "keptBy": "blasts_ascites",
-      "droppedFrom": "blasts_ascites_hematology"
-    },
-    {
-      "alias": "blasts",
-      "keptBy": "blasts",
-      "droppedFrom": "blasts_ascites_hematology"
-    },
-    {
-      "alias": "blasts ascites",
-      "keptBy": "blasts_ascites",
-      "droppedFrom": "blasts_ascites_hematology"
-    },
-    {
-      "alias": "blasts",
-      "keptBy": "blasts",
-      "droppedFrom": "blasts_pleural_hematology"
-    },
-    {
-      "alias": "blasts pleural",
-      "keptBy": "blasts_pleural",
-      "droppedFrom": "blasts_pleural_hematology"
-    },
-    {
-      "alias": "pleural blasts",
-      "keptBy": "blasts_pleural",
-      "droppedFrom": "blasts_pleural_hematology"
-    },
-    {
-      "alias": "blasts",
-      "keptBy": "blasts",
-      "droppedFrom": "blasts_other_body_fluid_hematology"
-    },
-    {
-      "alias": "blasts other body fluid",
-      "keptBy": "blasts_other_body_fluid",
-      "droppedFrom": "blasts_other_body_fluid_hematology"
-    },
-    {
-      "alias": "other body fluid blasts",
-      "keptBy": "blasts_other_body_fluid",
-      "droppedFrom": "blasts_other_body_fluid_hematology"
-    },
-    {
-      "alias": "blasts",
-      "keptBy": "blasts",
-      "droppedFrom": "blasts_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "blasts cerebrospinal fluid",
-      "keptBy": "blasts_cerebrospinal_fluid",
-      "droppedFrom": "blasts_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "cerebrospinal fluid blasts",
-      "keptBy": "blasts_cerebrospinal_fluid",
-      "droppedFrom": "blasts_cerebrospinal_fluid_hematology"
-    },
-    {
-      "alias": "basophils",
-      "keptBy": "basophils",
-      "droppedFrom": "basos_other_body_fluid"
-    },
-    {
-      "alias": "basophils",
-      "keptBy": "basophils",
-      "droppedFrom": "basos_cerebrospinal_fluid"
-    },
-    {
-      "alias": "basos",
-      "keptBy": "basos_other_body_fluid",
-      "droppedFrom": "basos_cerebrospinal_fluid"
-    },
-    {
-      "alias": "basophils",
-      "keptBy": "basophils",
-      "droppedFrom": "basos_ascites"
-    },
-    {
-      "alias": "basos",
-      "keptBy": "basos_other_body_fluid",
-      "droppedFrom": "basos_ascites"
-    },
-    {
-      "alias": "basophils",
-      "keptBy": "basophils",
-      "droppedFrom": "basos_joint_fluid"
-    },
-    {
-      "alias": "basos",
-      "keptBy": "basos_other_body_fluid",
-      "droppedFrom": "basos_joint_fluid"
-    },
-    {
-      "alias": "basophils",
-      "keptBy": "basophils",
-      "droppedFrom": "basos_pleural"
-    },
-    {
-      "alias": "basos",
-      "keptBy": "basos_other_body_fluid",
-      "droppedFrom": "basos_pleural"
-    },
-    {
-      "alias": "monocytes",
-      "keptBy": "monocytes",
-      "droppedFrom": "monos_other_body_fluid_hematology"
-    },
-    {
-      "alias": "monos",
-      "keptBy": "monos_pleural",
-      "droppedFrom": "monos_other_body_fluid_hematology"
-    },
-    {
-      "alias": "monos other body fluid",
-      "keptBy": "monos_other_body_fluid",
-      "droppedFrom": "monos_other_body_fluid_hematology"
-    },
-    {
-      "alias": "other body fluid monos",
-      "keptBy": "monos_other_body_fluid",
-      "droppedFrom": "monos_other_body_fluid_hematology"
-    },
-    {
-      "alias": "lymphocytes",
-      "keptBy": "lymphocytes",
-      "droppedFrom": "lymphs_ascites"
-    },
-    {
-      "alias": "lymphs",
-      "keptBy": "lymphs_cerebrospinal_fluid",
-      "droppedFrom": "lymphs_ascites"
-    },
-    {
-      "alias": "lymphocytes",
-      "keptBy": "lymphocytes",
-      "droppedFrom": "lymphs_pleural"
-    },
-    {
-      "alias": "lymphs",
-      "keptBy": "lymphs_cerebrospinal_fluid",
-      "droppedFrom": "lymphs_pleural"
-    },
-    {
-      "alias": "histiocyte",
-      "keptBy": "histiocyte_cerebrospinal_fluid",
-      "droppedFrom": "histiocyte_joint_fluid"
-    },
-    {
-      "alias": "histiocyte",
-      "keptBy": "histiocyte_cerebrospinal_fluid",
-      "droppedFrom": "histiocyte_ascites"
-    },
-    {
-      "alias": "histiocytes",
-      "keptBy": "histiocytes_other_body_fluid",
-      "droppedFrom": "histiocytes_pleural"
-    },
-    {
-      "alias": "chloride",
-      "keptBy": "chloride",
-      "droppedFrom": "chloride_whole_blood_blood_gas"
-    },
-    {
-      "alias": "chloride whole blood",
-      "keptBy": "chloride_whole_blood",
-      "droppedFrom": "chloride_whole_blood_blood_gas"
-    },
-    {
-      "alias": "chloride, whole blood",
-      "keptBy": "chloride_whole_blood",
-      "droppedFrom": "chloride_whole_blood_blood_gas"
-    },
-    {
-      "alias": "cd52",
-      "keptBy": "cd52",
-      "droppedFrom": "cd52_other_body_fluid"
-    },
-    {
-      "alias": "cd52",
-      "keptBy": "cd52",
-      "droppedFrom": "cd52_bone_marrow"
-    },
-    {
-      "alias": "cd55",
-      "keptBy": "cd55",
-      "droppedFrom": "cd55_other_body_fluid"
-    },
-    {
-      "alias": "cd59",
-      "keptBy": "cd59",
-      "droppedFrom": "cd59_other_body_fluid"
-    },
-    {
-      "alias": "iron",
-      "keptBy": "iron",
-      "droppedFrom": "iron_other_body_fluid"
-    },
-    {
-      "alias": "histiocytes",
-      "keptBy": "histiocytes_other_body_fluid",
-      "droppedFrom": "histiocytes"
-    },
-    {
-      "alias": "creatinine",
-      "keptBy": "creatinine",
-      "droppedFrom": "creatinine_stool"
-    },
-    {
-      "alias": "protein",
-      "keptBy": "protein_urine",
-      "droppedFrom": "total_protein_stool"
-    },
-    {
-      "alias": "xylose",
-      "keptBy": "xylose",
-      "droppedFrom": "xylose_urine"
-    },
-    {
-      "alias": "calcium",
-      "keptBy": "calcium_total",
-      "droppedFrom": "total_calcium"
-    },
-    {
-      "alias": "cytomegalovirus igm ab",
-      "keptBy": "cmv_igm_ab",
-      "droppedFrom": "cmv_igm_ab_value"
+      "alias": "bicarbonate",
+      "keptBy": "bicarbonate",
+      "droppedFrom": "calculated_bicarbonate_fluid"
     },
     {
       "alias": "cd30",
@@ -4756,6 +3642,26 @@
       "droppedFrom": "cd42_other_body_fluid"
     },
     {
+      "alias": "cd52",
+      "keptBy": "cd52",
+      "droppedFrom": "cd52_bone_marrow"
+    },
+    {
+      "alias": "cd52",
+      "keptBy": "cd52",
+      "droppedFrom": "cd52_other_body_fluid"
+    },
+    {
+      "alias": "cd55",
+      "keptBy": "cd55",
+      "droppedFrom": "cd55_other_body_fluid"
+    },
+    {
+      "alias": "cd59",
+      "keptBy": "cd59",
+      "droppedFrom": "cd59_other_body_fluid"
+    },
+    {
       "alias": "cd61",
       "keptBy": "cd61",
       "droppedFrom": "cd61_bone_marrow"
@@ -4766,44 +3672,99 @@
       "droppedFrom": "cd61_other_body_fluid"
     },
     {
-      "alias": "glucose",
-      "keptBy": "glucose",
-      "droppedFrom": "glucose_stool"
+      "alias": "cd62",
+      "keptBy": "cd62",
+      "droppedFrom": "cd62_bone_marrow"
     },
     {
-      "alias": "hepatitis b virus e ab",
-      "keptBy": "anti_hbe",
-      "droppedFrom": "hepatitis_b_virus_e_antibody"
+      "alias": "cd62 cells/100 cells in specimen",
+      "keptBy": "cd62",
+      "droppedFrom": "cd62_bone_marrow"
     },
     {
-      "alias": "hepatitis b virus e ag",
-      "keptBy": "hbeag",
-      "droppedFrom": "hepatitis_b_virus_e_antigen"
+      "alias": "cd62",
+      "keptBy": "cd62",
+      "droppedFrom": "cd62_other_body_fluid"
     },
     {
-      "alias": "anti hbs",
-      "keptBy": "anti_hbs",
-      "droppedFrom": "anti_hbs_chemistry"
+      "alias": "cd62 cells/100 cells in specimen",
+      "keptBy": "cd62",
+      "droppedFrom": "cd62_other_body_fluid"
     },
     {
-      "alias": "hepatitis b virus surface ab",
-      "keptBy": "hepatitis_b_surface_antibody",
-      "droppedFrom": "anti_hbs_chemistry"
+      "alias": "chloride",
+      "keptBy": "chloride",
+      "droppedFrom": "chloride_joint_fluid"
     },
     {
-      "alias": "urate",
-      "keptBy": "uric_acid",
-      "droppedFrom": "uric_acid_body_fluid_other_body_fluid"
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "chloroac_other_body_fluid"
     },
     {
-      "alias": "thyroperoxidase ab",
-      "keptBy": "thyroid_peroxidase_antibodies",
-      "droppedFrom": "anti_microsomal_antibodies"
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "chloroacetate_esterase_bone_marrow"
     },
     {
-      "alias": "igg",
-      "keptBy": "immunoglobulin_g",
-      "droppedFrom": "immunoglobulin_g_ascites"
+      "alias": "cholesterol",
+      "keptBy": "total_cholesterol",
+      "droppedFrom": "cholesterol_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "cholesterol",
+      "keptBy": "total_cholesterol",
+      "droppedFrom": "cholesterol_joint_fluid"
+    },
+    {
+      "alias": "cholesterol",
+      "keptBy": "total_cholesterol",
+      "droppedFrom": "cholesterol_stool"
+    },
+    {
+      "alias": "clostrid",
+      "keptBy": "clostrid",
+      "droppedFrom": "clostrid_ascites"
+    },
+    {
+      "alias": "clostrid",
+      "keptBy": "clostrid",
+      "droppedFrom": "clostrid_cerebrospinal_fluid"
+    },
+    {
+      "alias": "clostridium perfringens",
+      "keptBy": "clostrid_ascites",
+      "droppedFrom": "clostrid_cerebrospinal_fluid"
+    },
+    {
+      "alias": "clostrid",
+      "keptBy": "clostrid",
+      "droppedFrom": "clostrid_joint_fluid"
+    },
+    {
+      "alias": "clostridium perfringens",
+      "keptBy": "clostrid_ascites",
+      "droppedFrom": "clostrid_joint_fluid"
+    },
+    {
+      "alias": "clostrid",
+      "keptBy": "clostrid",
+      "droppedFrom": "clostrid_other_body_fluid"
+    },
+    {
+      "alias": "clostrid",
+      "keptBy": "clostrid",
+      "droppedFrom": "clostrid_pleural"
+    },
+    {
+      "alias": "clostridium perfringens",
+      "keptBy": "clostrid_ascites",
+      "droppedFrom": "clostrid_pleural"
+    },
+    {
+      "alias": "clostrid",
+      "keptBy": "clostrid",
+      "droppedFrom": "clostrid_stool"
     },
     {
       "alias": "copper",
@@ -4811,19 +3772,139 @@
       "droppedFrom": "copper_urine"
     },
     {
-      "alias": "tcr alpha-beta",
-      "keptBy": "tcr_alpha_beta",
-      "droppedFrom": "tcr_alpha_beta_other_body_fluid"
+      "alias": "cortisol",
+      "keptBy": "cortisol",
+      "droppedFrom": "cortisol_urine"
     },
     {
-      "alias": "tcr gamma-delta",
-      "keptBy": "tcr_gamma_delta",
-      "droppedFrom": "tcr_gamma_delta_other_body_fluid"
+      "alias": "creatinine",
+      "keptBy": "creatinine",
+      "droppedFrom": "creatinine_blood_urine"
     },
     {
-      "alias": "zinc",
-      "keptBy": "zinc_urine",
-      "droppedFrom": "zinc"
+      "alias": "creatinine",
+      "keptBy": "creatinine",
+      "droppedFrom": "creatinine_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "creatinine",
+      "keptBy": "creatinine",
+      "droppedFrom": "creatinine_stool"
+    },
+    {
+      "alias": "cryptococ",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_cerebrospinal_fluid"
+    },
+    {
+      "alias": "cryptococcus sp ag",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_cerebrospinal_fluid"
+    },
+    {
+      "alias": "cryptococ",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_joint_fluid"
+    },
+    {
+      "alias": "cryptococcus sp ag",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_joint_fluid"
+    },
+    {
+      "alias": "cryptococ",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_other_body_fluid"
+    },
+    {
+      "alias": "cryptococcus sp ag",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_other_body_fluid"
+    },
+    {
+      "alias": "cryptococ",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_pleural"
+    },
+    {
+      "alias": "cryptococcus sp ag",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_pleural"
+    },
+    {
+      "alias": "cryptococ",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_stool"
+    },
+    {
+      "alias": "cryptococcus sp ag",
+      "keptBy": "cryptococ_ascites",
+      "droppedFrom": "cryptococ_stool"
+    },
+    {
+      "alias": "eosinophils",
+      "keptBy": "eosinophils",
+      "droppedFrom": "eos_ascites"
+    },
+    {
+      "alias": "eos",
+      "keptBy": "eos_ascites",
+      "droppedFrom": "eos_cerebrospinal_fluid"
+    },
+    {
+      "alias": "eosinophils",
+      "keptBy": "eosinophils",
+      "droppedFrom": "eos_cerebrospinal_fluid"
+    },
+    {
+      "alias": "eos",
+      "keptBy": "eos_ascites",
+      "droppedFrom": "eos_joint_fluid"
+    },
+    {
+      "alias": "eosinophils",
+      "keptBy": "eosinophils",
+      "droppedFrom": "eos_joint_fluid"
+    },
+    {
+      "alias": "eos",
+      "keptBy": "eos_ascites",
+      "droppedFrom": "eos_other_body_fluid"
+    },
+    {
+      "alias": "eosinophils",
+      "keptBy": "eosinophils",
+      "droppedFrom": "eos_other_body_fluid"
+    },
+    {
+      "alias": "eos",
+      "keptBy": "eos_ascites",
+      "droppedFrom": "eos_pleural"
+    },
+    {
+      "alias": "eosinophils",
+      "keptBy": "eosinophils",
+      "droppedFrom": "eos_pleural"
+    },
+    {
+      "alias": "fat",
+      "keptBy": "free_fat_urine",
+      "droppedFrom": "fat_stool"
+    },
+    {
+      "alias": "hemoglobin f",
+      "keptBy": "hemoglobin_f",
+      "droppedFrom": "fetal_hgb_other_body_fluid"
+    },
+    {
+      "alias": "gamma",
+      "keptBy": "gamma",
+      "droppedFrom": "gamma_stool"
+    },
+    {
+      "alias": "glucose",
+      "keptBy": "glucose",
+      "droppedFrom": "glucose_stool"
     },
     {
       "alias": "hemoglobin",
@@ -4836,94 +3917,319 @@
       "droppedFrom": "hgb_urine"
     },
     {
-      "alias": "prekallikrein fletcher factor",
-      "keptBy": "prekallekrein",
-      "droppedFrom": "fletcher"
+      "alias": "histiocytes",
+      "keptBy": "histiocytes",
+      "droppedFrom": "histio_ascites"
     },
     {
-      "alias": "urate",
-      "keptBy": "uric_acid",
-      "droppedFrom": "uric_acid_pleural"
+      "alias": "histio",
+      "keptBy": "histio_ascites",
+      "droppedFrom": "histio_joint_fluid"
     },
     {
-      "alias": "c. diff pcr",
-      "keptBy": "c_diff_pcr_stool",
-      "droppedFrom": "c_diff_pcr_other_body_fluid"
+      "alias": "histiocytes",
+      "keptBy": "histiocytes",
+      "droppedFrom": "histio_joint_fluid"
     },
     {
-      "alias": "c diff toxin antigen assay",
-      "keptBy": "c_diff_toxin_antigen_assay_stool",
-      "droppedFrom": "c_diff_toxin_antigen_assay_other_body_fluid"
+      "alias": "histiocyte",
+      "keptBy": "histiocyte_ascites",
+      "droppedFrom": "histiocyte_cerebrospinal_fluid"
     },
     {
-      "alias": "clostridioides difficile toxin a+b",
-      "keptBy": "c_diff_toxin_antigen_assay_stool",
-      "droppedFrom": "c_diff_toxin_antigen_assay_other_body_fluid"
+      "alias": "histiocyte",
+      "keptBy": "histiocyte_ascites",
+      "droppedFrom": "histiocyte_joint_fluid"
     },
     {
-      "alias": "o p",
-      "keptBy": "o_p_stool",
-      "droppedFrom": "o_p_other_body_fluid"
+      "alias": "histiocyte",
+      "keptBy": "histiocyte_ascites",
+      "droppedFrom": "histiocyte_other_body_fluid"
     },
     {
-      "alias": "o p",
-      "keptBy": "o_p_stool",
-      "droppedFrom": "o_p_urine"
+      "alias": "histiocytes",
+      "keptBy": "histiocytes",
+      "droppedFrom": "histiocyte_other_body_fluid"
     },
     {
-      "alias": "nucleated erythrocytes",
-      "keptBy": "nrbc_cerebrospinal_fluid_hematology",
-      "droppedFrom": "nrbcflg"
+      "alias": "histiocyte",
+      "keptBy": "histiocyte_ascites",
+      "droppedFrom": "histiocyte_pleural"
     },
     {
-      "alias": "triglyceride",
-      "keptBy": "triglycerides",
-      "droppedFrom": "triglycerides_stool"
+      "alias": "histiocytes",
+      "keptBy": "histiocytes",
+      "droppedFrom": "histiocyte_pleural"
     },
     {
-      "alias": "clostrid",
-      "keptBy": "clostrid_other_body_fluid",
-      "droppedFrom": "clostrid_ascites"
+      "alias": "histiocytes",
+      "keptBy": "histiocytes",
+      "droppedFrom": "histiocytes_cerebrospinal_fluid"
     },
     {
-      "alias": "clostrid",
-      "keptBy": "clostrid_other_body_fluid",
-      "droppedFrom": "clostrid_cerebrospinal_fluid"
+      "alias": "histiocytes",
+      "keptBy": "histiocytes",
+      "droppedFrom": "histiocytes_other_body_fluid"
     },
     {
-      "alias": "clostridium perfringens",
-      "keptBy": "clostrid_ascites",
-      "droppedFrom": "clostrid_cerebrospinal_fluid"
+      "alias": "histiocytes",
+      "keptBy": "histiocytes",
+      "droppedFrom": "histiocytes_pleural"
     },
     {
-      "alias": "clostrid",
-      "keptBy": "clostrid_other_body_fluid",
-      "droppedFrom": "clostrid_pleural"
+      "alias": "hiv 1 rna",
+      "keptBy": "hiv_1_viral_load",
+      "droppedFrom": "hiv_1_viral_load_other_body_fluid"
     },
     {
-      "alias": "clostridium perfringens",
-      "keptBy": "clostrid_ascites",
-      "droppedFrom": "clostrid_pleural"
+      "alias": "hiv 1 viral load",
+      "keptBy": "hiv_1_viral_load",
+      "droppedFrom": "hiv_1_viral_load_other_body_fluid"
     },
     {
-      "alias": "mitochondria ab",
-      "keptBy": "anti_mitochondrial_antibody",
-      "droppedFrom": "anti_microsomal_antibody"
+      "alias": "hypersegmented neutrophils",
+      "keptBy": "hypersegmented_neutrophils",
+      "droppedFrom": "hypersegmented_neutrophils_cerebrospinal_fluid"
+    },
+    {
+      "alias": "hypersegmented neutrophils",
+      "keptBy": "hypersegmented_neutrophils",
+      "droppedFrom": "hypersegmented_neutrophils_joint_fluid"
+    },
+    {
+      "alias": "hypersegmented neutrophils",
+      "keptBy": "hypersegmented_neutrophils",
+      "droppedFrom": "hypersegmented_neutrophils_pleural"
+    },
+    {
+      "alias": "igg",
+      "keptBy": "immunoglobulin_g",
+      "droppedFrom": "igg_stool"
+    },
+    {
+      "alias": "immunoelectrophoresis for serum or plasma",
+      "keptBy": "immunoelectrophoresis",
+      "droppedFrom": "immunoelectrophoresis_ascites"
+    },
+    {
+      "alias": "immunoelectrophoresis for serum or plasma",
+      "keptBy": "immunoelectrophoresis",
+      "droppedFrom": "immunoelectrophoresis_joint_fluid"
+    },
+    {
+      "alias": "immunoelectrophoresis for serum or plasma",
+      "keptBy": "immunoelectrophoresis",
+      "droppedFrom": "immunoelectrophoresis_fluid_other_body_fluid"
+    },
+    {
+      "alias": "immunoelectrophoresis for serum or plasma",
+      "keptBy": "immunoelectrophoresis",
+      "droppedFrom": "immunoelectrophoresis_pleural"
+    },
+    {
+      "alias": "immunoelectrophoresis for serum or plasma",
+      "keptBy": "immunoelectrophoresis",
+      "droppedFrom": "immunoelectrophoresis_stool"
+    },
+    {
+      "alias": "igg",
+      "keptBy": "immunoglobulin_g",
+      "droppedFrom": "immunoglobulin_g_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "igg",
+      "keptBy": "immunoglobulin_g",
+      "droppedFrom": "immunoglobulin_g_ascites"
+    },
+    {
+      "alias": "igg",
+      "keptBy": "immunoglobulin_g",
+      "droppedFrom": "immunoglobulin_g_body_fluid_other_body_fluid"
+    },
+    {
+      "alias": "igg",
+      "keptBy": "immunoglobulin_g",
+      "droppedFrom": "immunoglobulin_g_pleural"
+    },
+    {
+      "alias": "iron",
+      "keptBy": "iron",
+      "droppedFrom": "iron_other_body_fluid"
+    },
+    {
+      "alias": "iron",
+      "keptBy": "iron",
+      "droppedFrom": "iron_urine"
+    },
+    {
+      "alias": "lactate dehydrogenase",
+      "keptBy": "lactate_dehydrogenase",
+      "droppedFrom": "lactate_dehydrogenase_stool"
+    },
+    {
+      "alias": "leukocytes",
+      "keptBy": "wbc",
+      "droppedFrom": "leuks_urine"
+    },
+    {
+      "alias": "lymphocytes",
+      "keptBy": "lymphocytes",
+      "droppedFrom": "lymphs_ascites"
+    },
+    {
+      "alias": "lymphs",
+      "keptBy": "lymphs_ascites",
+      "droppedFrom": "lymphs_cerebrospinal_fluid"
+    },
+    {
+      "alias": "lymphocytes",
+      "keptBy": "lymphocytes",
+      "droppedFrom": "lymphs_joint_fluid"
+    },
+    {
+      "alias": "lymphs",
+      "keptBy": "lymphs_ascites",
+      "droppedFrom": "lymphs_joint_fluid"
+    },
+    {
+      "alias": "lymphocytes",
+      "keptBy": "lymphocytes",
+      "droppedFrom": "lymphs_other_body_fluid"
+    },
+    {
+      "alias": "lymphs",
+      "keptBy": "lymphs_ascites",
+      "droppedFrom": "lymphs_other_body_fluid"
+    },
+    {
+      "alias": "lymphocytes",
+      "keptBy": "lymphocytes",
+      "droppedFrom": "lymphs_pleural"
+    },
+    {
+      "alias": "lymphs",
+      "keptBy": "lymphs_ascites",
+      "droppedFrom": "lymphs_pleural"
+    },
+    {
+      "alias": "lymphocytes",
+      "keptBy": "lymphocytes",
+      "droppedFrom": "metas_ascites"
+    },
+    {
+      "alias": "metamyelocytes",
+      "keptBy": "metamyelocytes",
+      "droppedFrom": "metas_cerebrospinal_fluid"
+    },
+    {
+      "alias": "metas",
+      "keptBy": "metas_ascites",
+      "droppedFrom": "metas_cerebrospinal_fluid"
+    },
+    {
+      "alias": "metamyelocytes",
+      "keptBy": "metamyelocytes",
+      "droppedFrom": "metas_joint_fluid"
+    },
+    {
+      "alias": "metas",
+      "keptBy": "metas_ascites",
+      "droppedFrom": "metas_joint_fluid"
+    },
+    {
+      "alias": "metamyelocytes",
+      "keptBy": "metamyelocytes",
+      "droppedFrom": "metas_pleural"
+    },
+    {
+      "alias": "metas",
+      "keptBy": "metas_ascites",
+      "droppedFrom": "metas_pleural"
+    },
+    {
+      "alias": "monocytes",
+      "keptBy": "monocytes",
+      "droppedFrom": "monos_ascites"
+    },
+    {
+      "alias": "monos",
+      "keptBy": "monos_pleural",
+      "droppedFrom": "monos_ascites"
+    },
+    {
+      "alias": "monocytes",
+      "keptBy": "monocytes",
+      "droppedFrom": "monos_cerebrospinal_fluid"
+    },
+    {
+      "alias": "monos",
+      "keptBy": "monos_pleural",
+      "droppedFrom": "monos_cerebrospinal_fluid"
+    },
+    {
+      "alias": "monocytes",
+      "keptBy": "monocytes",
+      "droppedFrom": "monos_joint_fluid"
+    },
+    {
+      "alias": "monos",
+      "keptBy": "monos_pleural",
+      "droppedFrom": "monos_joint_fluid"
+    },
+    {
+      "alias": "myelocytes",
+      "keptBy": "myelocytes",
+      "droppedFrom": "myelos_ascites"
+    },
+    {
+      "alias": "myelocytes",
+      "keptBy": "myelocytes",
+      "droppedFrom": "myelos_cerebrospinal_fluid"
+    },
+    {
+      "alias": "myelos",
+      "keptBy": "myelos_ascites",
+      "droppedFrom": "myelos_cerebrospinal_fluid"
+    },
+    {
+      "alias": "myelocytes",
+      "keptBy": "myelocytes",
+      "droppedFrom": "myelos_joint_fluid"
+    },
+    {
+      "alias": "myelos",
+      "keptBy": "myelos_ascites",
+      "droppedFrom": "myelos_joint_fluid"
+    },
+    {
+      "alias": "myelocytes",
+      "keptBy": "myelocytes",
+      "droppedFrom": "myelos_other_body_fluid"
+    },
+    {
+      "alias": "myelos",
+      "keptBy": "myelos_ascites",
+      "droppedFrom": "myelos_other_body_fluid"
+    },
+    {
+      "alias": "myelocytes",
+      "keptBy": "myelocytes",
+      "droppedFrom": "myelos_pleural"
+    },
+    {
+      "alias": "myelos",
+      "keptBy": "myelos_ascites",
+      "droppedFrom": "myelos_pleural"
     },
     {
       "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
+      "keptBy": "envelope_cells",
       "droppedFrom": "naphthol_acetate_stain_bone_marrow"
     },
     {
-      "alias": "hemoglobin a2",
-      "keptBy": "hemoglobin_a2",
-      "droppedFrom": "hemoglobin_a2_chemistry"
-    },
-    {
-      "alias": "hemoglobin a2/hemoglobin.total in blood",
-      "keptBy": "hemoglobin_a2",
-      "droppedFrom": "hemoglobin_a2_chemistry"
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "naphthol_butryrate_bone_marrow"
     },
     {
       "alias": "norovirus genogroup i",
@@ -4946,106 +4252,252 @@
       "droppedFrom": "norovirus_genogroup_ii_other_body_fluid"
     },
     {
-      "alias": "clostrid",
-      "keptBy": "clostrid_other_body_fluid",
-      "droppedFrom": "clostrid_joint_fluid"
+      "alias": "nucleated erythrocytes",
+      "keptBy": "nrbc",
+      "droppedFrom": "nuc_rbcs_ascites"
     },
     {
-      "alias": "clostridium perfringens",
-      "keptBy": "clostrid_ascites",
-      "droppedFrom": "clostrid_joint_fluid"
+      "alias": "o p",
+      "keptBy": "o_p_other_body_fluid",
+      "droppedFrom": "o_p_stool"
+    },
+    {
+      "alias": "o p",
+      "keptBy": "o_p_other_body_fluid",
+      "droppedFrom": "o_p_urine"
+    },
+    {
+      "alias": "osmolality of specimen",
+      "keptBy": "osmolality_csf_cerebrospinal_fluid",
+      "droppedFrom": "osmolality_joint_fluid"
+    },
+    {
+      "alias": "carbon dioxide",
+      "keptBy": "pco2",
+      "droppedFrom": "pco2_fluid"
+    },
+    {
+      "alias": "pco2",
+      "keptBy": "pco2",
+      "droppedFrom": "pco2_fluid"
+    },
+    {
+      "alias": "gamma globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "gamma_stool",
+      "droppedFrom": "pep_ascites_gamma_region_ascites"
+    },
+    {
+      "alias": "gamma globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "gamma_stool",
+      "droppedFrom": "pep_body_fluid_gamma_region_other_body_fluid"
+    },
+    {
+      "alias": "gamma globulin",
+      "keptBy": "gamma",
+      "droppedFrom": "pep_csf_gamma_region_cerebrospinal_fluid"
+    },
+    {
+      "alias": "gamma globulin",
+      "keptBy": "gamma",
+      "droppedFrom": "pep_joint_fluid_gamma_region_joint_fluid"
+    },
+    {
+      "alias": "gamma globulin/protein.total in body fluid by electrophoresis",
+      "keptBy": "gamma_stool",
+      "droppedFrom": "pep_pleural_gamma_region_pleural"
     },
     {
       "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
-      "droppedFrom": "periodic_acid_schiff_stain"
-    },
-    {
-      "alias": "microscopic observation",
-      "keptBy": "wright_giemsa_bone_marrow",
+      "keptBy": "envelope_cells",
       "droppedFrom": "periodic_schiff_stain_bone_marrow"
     },
     {
-      "alias": "absolute lymphocyte count",
-      "keptBy": "absolute_lymphocyte_count",
-      "droppedFrom": "absolute_lymphocyte_count_0"
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "peroxidase_stain_bone_marrow"
     },
     {
-      "alias": "anion gap",
-      "keptBy": "anion_gap",
-      "droppedFrom": "anion_gap_0"
+      "alias": "plasma",
+      "keptBy": "plasma_ascites",
+      "droppedFrom": "plasma_pleural"
     },
     {
-      "alias": "chloride",
-      "keptBy": "chloride",
-      "droppedFrom": "chloride_0"
+      "alias": "plasma cells",
+      "keptBy": "plasma_cells",
+      "droppedFrom": "plasma_pleural"
     },
     {
-      "alias": "creatinine",
-      "keptBy": "creatinine",
-      "droppedFrom": "creatinine_0"
+      "alias": "oxygen",
+      "keptBy": "po2",
+      "droppedFrom": "po2_fluid"
     },
     {
-      "alias": "glucose",
-      "keptBy": "glucose",
-      "droppedFrom": "glucose_0"
-    },
-    {
-      "alias": "glucose blood",
-      "keptBy": "glucose",
-      "droppedFrom": "glucose_0"
-    },
-    {
-      "alias": "hcg urine qualitative",
-      "keptBy": "hcg_urine_qualitative_urine",
-      "droppedFrom": "hcg_urine_qualitative_urine_0"
-    },
-    {
-      "alias": "hcg urine qualitative urine",
-      "keptBy": "hcg_urine_qualitative_urine",
-      "droppedFrom": "hcg_urine_qualitative_urine_0"
-    },
-    {
-      "alias": "hcg, urine, qualitative",
-      "keptBy": "hcg_urine_qualitative_urine",
-      "droppedFrom": "hcg_urine_qualitative_urine_0"
-    },
-    {
-      "alias": "urine hcg urine qualitative",
-      "keptBy": "hcg_urine_qualitative_urine",
-      "droppedFrom": "hcg_urine_qualitative_urine_0"
-    },
-    {
-      "alias": "ph urine",
-      "keptBy": "ph_urine",
-      "droppedFrom": "ph_urine_0"
-    },
-    {
-      "alias": "urine ph",
-      "keptBy": "ph_urine",
-      "droppedFrom": "ph_urine_0"
+      "alias": "po2",
+      "keptBy": "po2",
+      "droppedFrom": "po2_fluid"
     },
     {
       "alias": "potassium",
       "keptBy": "potassium",
-      "droppedFrom": "potassium_0"
+      "droppedFrom": "potassium_csf_cerebrospinal_fluid"
     },
     {
-      "alias": "potassium blood",
+      "alias": "potassium",
       "keptBy": "potassium",
-      "droppedFrom": "potassium_0"
+      "droppedFrom": "potassium_joint_fluid"
+    },
+    {
+      "alias": "promyelocytes",
+      "keptBy": "promyelocytes",
+      "droppedFrom": "promyelo_ascites"
+    },
+    {
+      "alias": "promyelo",
+      "keptBy": "promyelo_ascites",
+      "droppedFrom": "promyelo_joint_fluid"
+    },
+    {
+      "alias": "promyelocytes",
+      "keptBy": "promyelocytes",
+      "droppedFrom": "promyelo_joint_fluid"
+    },
+    {
+      "alias": "promyelocytes",
+      "keptBy": "promyelocytes",
+      "droppedFrom": "promyelocyte_other_body_fluid"
     },
     {
       "alias": "sodium",
       "keptBy": "sodium",
-      "droppedFrom": "sodium_0"
+      "droppedFrom": "sodium_csf_cerebrospinal_fluid"
     },
     {
-      "alias": "troponin i",
-      "keptBy": "troponin_i",
-      "droppedFrom": "troponin_i_0"
+      "alias": "sodium",
+      "keptBy": "sodium",
+      "droppedFrom": "sodium_joint_fluid"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "sudan_black_stain_bone_marrow"
+    },
+    {
+      "alias": "microscopic observation",
+      "keptBy": "envelope_cells",
+      "droppedFrom": "sudan_stain_other_body_fluid"
+    },
+    {
+      "alias": "sudan stain",
+      "keptBy": "sudan_stain_other_body_fluid",
+      "droppedFrom": "sudan_stain_stool"
+    },
+    {
+      "alias": "surfactant/albumin",
+      "keptBy": "surfactant_albumin_other_body_fluid",
+      "droppedFrom": "surf_alb_other_body_fluid"
+    },
+    {
+      "alias": "tcr alpha-beta",
+      "keptBy": "tcr_alpha_beta",
+      "droppedFrom": "tcr_alpha_beta_other_body_fluid"
+    },
+    {
+      "alias": "tcr gamma-delta",
+      "keptBy": "tcr_gamma_delta",
+      "droppedFrom": "tcr_gamma_delta_other_body_fluid"
+    },
+    {
+      "alias": "protein",
+      "keptBy": "protein_total",
+      "droppedFrom": "total_protein_stool"
+    },
+    {
+      "alias": "triglyceride",
+      "keptBy": "triglycerides",
+      "droppedFrom": "triglycerides_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "triglyceride",
+      "keptBy": "triglycerides",
+      "droppedFrom": "triglycerides_joint_fluid"
+    },
+    {
+      "alias": "triglyceride",
+      "keptBy": "triglycerides",
+      "droppedFrom": "triglycerides_stool"
+    },
+    {
+      "alias": "urea nitrogen",
+      "keptBy": "urea_nitrogen",
+      "droppedFrom": "urea_nitrogen_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "urea nitrogen",
+      "keptBy": "urea_nitrogen",
+      "droppedFrom": "urea_nitrogen_joint_fluid"
+    },
+    {
+      "alias": "urea nitrogen",
+      "keptBy": "urea_nitrogen",
+      "droppedFrom": "urea_nitrogen_stool"
+    },
+    {
+      "alias": "urate",
+      "keptBy": "uric_acid",
+      "droppedFrom": "uric_acid_csf_cerebrospinal_fluid"
+    },
+    {
+      "alias": "urate",
+      "keptBy": "uric_acid",
+      "droppedFrom": "uric_acid_ascites"
+    },
+    {
+      "alias": "urate",
+      "keptBy": "uric_acid",
+      "droppedFrom": "uric_acid_body_fluid_other_body_fluid"
+    },
+    {
+      "alias": "urate",
+      "keptBy": "uric_acid",
+      "droppedFrom": "uric_acid_pleural"
+    },
+    {
+      "alias": "urate",
+      "keptBy": "uric_acid",
+      "droppedFrom": "uric_acid_stool"
+    },
+    {
+      "alias": "amylase",
+      "keptBy": "amylase",
+      "droppedFrom": "urine_amylase_urine"
+    },
+    {
+      "alias": "urine amylase urine",
+      "keptBy": "amylase_urine",
+      "droppedFrom": "urine_amylase_urine"
+    },
+    {
+      "alias": "leukocytes",
+      "keptBy": "wbc",
+      "droppedFrom": "wbc_stool"
+    },
+    {
+      "alias": "wbc",
+      "keptBy": "wbc",
+      "droppedFrom": "wbc_stool"
+    },
+    {
+      "alias": "xylose",
+      "keptBy": "xylose",
+      "droppedFrom": "xylose_urine"
+    },
+    {
+      "alias": "zinc",
+      "keptBy": "zinc",
+      "droppedFrom": "zinc_urine"
     }
   ],
+  "unmatchedAliasAdditions": [],
   "unusedNarratives": [],
   "panelsCovered": [
     "cardiac",

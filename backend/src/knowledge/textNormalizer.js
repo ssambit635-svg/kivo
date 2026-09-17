@@ -133,6 +133,21 @@ function levenshtein(a, b, max = 2) {
 function repairUnitToken(token, corrections) {
   const bare = token.replace(/^[([{]+|[)\]}.,;:]+$/g, '');
   if (!bare) return token;
+  // Glued value+unit ("0IU/L", "13.4rng/dL", "010^3/µL"): split them instead of
+  // treating the digits as part of the unit — a fuzzy repair here used to eat
+  // the leading zero of a legitimate "0" reading.
+  const glued = bare.match(/^(\d+(?:\.\d+)?)\s*([A-Za-zµμ][A-Za-z0-9µμ%^/\/.]{1,12})$/);
+  if (glued) {
+    const rest = glued[2];
+    const restLower = rest.toLowerCase().replace(/\s+/g, '');
+    const knownSet = unitVocabIndex().set;
+    const ligatureRest = restLower.replace(/rn/g, 'm');
+    if (knownSet.has(restLower) || knownSet.has(ligatureRest)) {
+      const unit = knownSet.has(restLower) ? restLower : ligatureRest;
+      corrections.push({ type: 'value-unit-split', from: bare, to: `${glued[1]} ${unit}` });
+      return token.replace(bare, `${glued[1]} ${unit}`);
+    }
+  }
   const lower = bare.toLowerCase().replace(/\s+/g, '');
   const ligature = lower.replace(/rn/g, 'm'); // classic 'm' misread as 'rn'
   const known = unitVocabIndex().set;
@@ -148,6 +163,11 @@ function repairUnitToken(token, corrections) {
   // into a unit: "rng" alone could be anything, but "rng/dL" cannot.
   const unitish = bare.includes('/') || /[%^]/.test(bare) || /[0-9µμ]/.test(bare);
   if (!unitish) return token;
+  // A token carrying a DIGIT must never be fuzzy-"repaired" into a shorter
+  // unit: "0%" is a value with a percent sign, not a mangled "%" (that repair
+  // used to delete the zero and lose the reading entirely). Fuzzy matching is
+  // therefore restricted to tokens with a separator (mg/dL, uiu/ml, 10^3/uL).
+  if (!bare.includes('/') && /[0-9]/.test(bare)) return token;
   let best = null;
   let bestDist = 3;
   const buckets = unitVocabIndex().byLength;

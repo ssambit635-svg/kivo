@@ -127,19 +127,32 @@ function corruptionsFor(intensity, rng, types = CORRUPTION_TYPES) {
 }
 
 /** Realistic report line layouts (a lab report prints rows, not one shape). */
+/**
+ * The text a report would actually print for this marker: a real label from the
+ * marker's alias list (preferring multi-word forms, which are what report
+ * layouts use) rather than the internal display name.
+ */
+export function labelFor(marker, rng) {
+  const aliases = (marker.aliases || []).filter((a) => a.length >= 3);
+  const multiWord = aliases.filter((a) => /[^a-z0-9]/.test(a) && a.split(/[^a-z0-9]+/).filter(Boolean).length >= 2);
+  const pool = multiWord.length ? multiWord : aliases;
+  return pool.length ? pick(rng, pool) : marker.name;
+}
+
 export function formatLine(marker, value, rng) {
   const unit = marker.defaultUnit || '';
   const v = formatValue(value);
   const spread = referenceSpreadFor(marker, value, rng);
+  const label = labelFor(marker, rng);
   const layouts = [
-    `${marker.name} ${v} ${unit} ${spread}`,
-    `${marker.name}: ${v} ${unit}`,
-    `${marker.name}  ${v}  ${unit}  Reference: <${spread.split(' - ')[1] ?? v}`,
-    `${marker.name} | ${v} | ${unit} | ${spread.replace(' - ', ' | ')}`,
-    `${marker.name} ${v} ${unit} (${spread})`,
-    `${marker.name.toUpperCase()} ${v} ${unit}`,
-    `${marker.name}\t${v}\t${unit}\t${spread}`,
-    `${marker.name} ${v}${unit}`,
+    `${label} ${v} ${unit} ${spread}`,
+    `${label}: ${v} ${unit}`,
+    `${label}  ${v}  ${unit}  Reference: <${spread.split(' - ')[1] ?? v}`,
+    `${label} | ${v} | ${unit} | ${spread.replace(' - ', ' | ')}`,
+    `${label} ${v} ${unit} (${spread})`,
+    `${label.toUpperCase()} ${v} ${unit}`,
+    `${label}\t${v}\t${unit}\t${spread}`,
+    `${label} ${v}${unit}`,
   ];
   return pick(rng, layouts);
 }

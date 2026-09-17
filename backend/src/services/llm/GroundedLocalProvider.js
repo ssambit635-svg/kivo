@@ -1,3 +1,5 @@
+import { LAB_DICTIONARY } from '../labs/labDictionary.js';
+
 /**
  * GroundedLocalProvider — the cost-free LLM substitute.
  *
@@ -221,23 +223,23 @@ function shortDate(iso) {
   return new Date(iso).toISOString().slice(0, 10);
 }
 function explainer(code) {
-  const blurbs = {
-    hba1c: 'HbA1c reflects average blood-sugar levels over roughly the past 2–3 months.',
-    fasting_glucose: 'Fasting glucose measures blood sugar after at least 8 hours without food.',
-    total_cholesterol: 'Total cholesterol sums several blood fats — interpret it together with its parts.',
-    hdl: 'HDL is often called "good" cholesterol; higher values are generally protective.',
-    ldl: 'LDL is often called "bad" cholesterol; persistently high values are linked to artery plaque buildup.',
-    triglycerides: 'Triglycerides are a blood fat influenced by diet, alcohol and activity.',
-    hemoglobin: 'Hemoglobin carries oxygen in red blood cells.',
-    creatinine: 'Creatinine is a waste product used to gauge kidney filtration.',
-    egfr: 'eGFR estimates how well the kidneys filter blood.',
-    tsh: 'TSH is the main thyroid-regulating hormone.',
-    vitamin_d: 'Vitamin D supports bone health and immune function.',
-    vitamin_b12: 'Vitamin B12 supports nerves and red-blood-cell formation.',
-    alt: 'ALT is a liver enzyme; elevations can signal liver stress.',
-    ast: 'AST is a liver enzyme; elevations can signal liver or muscle stress.',
-    platelets: 'Platelets help blood clot.',
-    wbc: 'White blood cells are part of the immune system.',
-  };
-  return blurbs[code] || 'This is one of the markers measured in your report.';
+  // Patient-education text comes from the knowledge base (curated narratives
+  // authored in-house, plus the structural fallback). Nothing here is generated:
+  // the sentence is either the marker's own curated narrative or a neutral
+  // "compare it against your report's range" statement.
+  const def = LAB_DICTIONARY[code];
+  const narrative = def?.narrative;
+  if (narrative) {
+    const related = (def.related ?? [])
+      .map((c) => LAB_DICTIONARY[c]?.name)
+      .filter(Boolean)
+      .slice(0, 3);
+    return related.length
+      ? `${narrative} It is usually read together with ${related.join(', ')}.`
+      : narrative;
+  }
+  if (def?.name) {
+    return `${def.name} is one of the markers measured in this report; compare it against the reference range printed alongside it.`;
+  }
+  return 'This is one of the markers measured in your report.';
 }

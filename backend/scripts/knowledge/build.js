@@ -360,6 +360,7 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
       valueKind: 'numeric', // every curated marker is a numeric measurement
       rangeSource: def.typicalRange ? 'curated-prototype' : 'report-only',
       narrativeStatus: MARKER_NARRATIVES[code] ? 'curated' : 'structural',
+      curated: true,
       provenance: rows.length ? 'curated + upstream-identity' : 'curated',
     };
   }
@@ -369,8 +370,17 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
   const groups = new Map();
   for (const row of usable) {
     if (foldOf.has(row.itemid)) continue;
+    // Identity = label + specimen (NOT the LOINC code alone): upstream carries
+    // several items for one analyte measured by different assays, and a report
+    // prints one row for it. Extra LOINC codes are recorded as variants.
     const analyte = analyteFromLabel(row.label);
-    const key = row.loinc ? `loinc:${row.loinc}|${row.fluid}` : `name:${slugify(analyte)}|${row.fluid}`;
+    // "Glucose, Urine" and "Glucose (Urine)" are the same urine glucose row on
+    // a report: strip the specimen words from the analyte before keying so the
+    // two upstream items merge into one marker.
+    const analyteSlug = slugify(analyte);
+    const fluidWords = slugify(row.fluid).split('_').filter(Boolean);
+    const trimmed = stripTrailingWords(analyteSlug, fluidWords) || 'body_fluid';
+    const key = `name:${trimmed}|${row.fluid}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push({ ...row, analyteKey: slugify(analyte) });
   }
@@ -386,6 +396,7 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
 
   const usedCodes = new Set(Object.keys(curatedMarkers));
   const generatedMarkers = {};
+  const appliedAliasAdditions = new Set();
   const aliasOwner = new Map(); // alias → code (collision resolution)
 
   // Seed ownership with curated aliases first: curated always wins.
@@ -394,10 +405,14 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
   }
 
   const collisions = [];
+  // Blood markers claim the bare aliases first ("glucose" belongs to the serum
+  // measurement, not to urine glucose), then by real-world frequency.
   const orderedGroups = [...groups.entries()].sort((a, b) => {
+    const bloodA = a[1][0].fluid === 'Blood' ? 0 : 1;
+    const bloodB = b[1][0].fluid === 'Blood' ? 0 : 1;
     const fa = Math.max(...a[1].map((r) => r.frequency));
     const fb = Math.max(...b[1].map((r) => r.frequency));
-    return fb - fa || a[0].localeCompare(b[0]);
+    return bloodA - bloodB || fb - fa || a[0].localeCompare(b[0]);
   });
 
   for (const [key, rows] of orderedGroups) {
@@ -431,6 +446,11 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
       return source;
     };
 
+    const displayName = isBlood || primary.analyteKey.endsWith(`_${fluidSlug}`)
+      ? titleCase(analyteFromLabel(primary.label))
+      : `${titleCase(analyteFromLabel(primary.label))} (${fluid})`;
+    addAlias(displayName); // the exact name this build publishes
+    addAlias(displayName.replace(/\([^)]*\)/g, ' ')); // and without the parenthetical
     addAlias(primary.label);
     if (primary.analyteKey && primary.analyteKey.length >= 3) {
       if (isBlood || !multiFluid) addAlias(primary.analyteKey.replace(/_/g, ' '));
@@ -446,7 +466,9 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
     if (isBlood && multiFluid) addAlias(`${primary.analyteKey.replace(/_/g, ' ')} blood`);
 
     // Human-vetted aliases for this specific marker (short but unambiguous in
-    // this document class — see curatedMappings.js).
+    // this document class — see curatedMappings.js). A key that matches no
+    // emitted code is reported, so a typo can never silently drop an alias.
+    appliedAliasAdditions.add(code);
     for (const extra of GENERATED_ALIAS_ADDITIONS[code] || []) {
       const norm = normalizeAlias(extra);
       if (norm) aliasSet.add(norm);
@@ -468,15 +490,22 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
       excluded.push({ itemid: primary.itemid, label: primary.label, reason: 'no usable alias after collision resolution' });
       continue;
     }
+    if (!code || code === 'body_fluid' || !primary.label.trim()) {
+      excluded.push({ itemid: primary.itemid, label: primary.label, reason: 'analyte name reduces to nothing usable' });
+      continue;
+    }
 
     const bounds = mergeBounds(rows, itemBounds, positiveOnlyItems);
     const curatedBound = PLAUSIBILITY_BOUNDS[code];
     const prevalence = rows.reduce((s, r) => s + r.frequency, 0);
-    const panel = isBlood ? panelFor(primary.label, primary.category) : panelFor(primary.label, primary.category);
+    const panel = panelFor(primary.label, primary.category);
+    const valueKind = rows.some((r) => valueKindOf(r) === 'numeric') ? 'numeric' : 'qualitative';
 
     generatedMarkers[code] = {
       code,
-      name: isBlood ? titleCase(analyteFromLabel(primary.label)) : `${titleCase(analyteFromLabel(primary.label))} (${fluid})`,
+      name: isBlood || primary.analyteKey.endsWith(`_${fluidSlug}`)
+        ? titleCase(analyteFromLabel(primary.label))
+        : `${titleCase(analyteFromLabel(primary.label))} (${fluid})`,
       aliases,
       defaultUnit: primary.unit,
       units: [...new Set(rows.map((r) => r.unit).filter(Boolean))],
@@ -484,6 +513,7 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
       typicalRange: null,
       betterDirection: null,
       loinc: primary.loinc,
+      loincVariants: [...new Set(rows.map((r) => r.loinc).filter(Boolean))].sort(),
       specimen: fluid,
       upstreamCategory: primary.category,
       panel,
@@ -491,9 +521,16 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
       upstreamItemIds: rows.map((r) => r.itemid).sort((a, b) => a - b),
       tier: isBlood && (primary.category === 'Chemistry' || primary.category === 'Hematology') && prevalence >= 1000 ? 'core' : 'extended',
       rangeSource: 'report-only',
-      valueKind: rows.some((r) => valueKindOf(r) === 'numeric') ? 'numeric' : 'qualitative',
+      valueKind,
       plausibilityBounds: curatedBound || bounds || null,
       narrativeStatus: MARKER_NARRATIVES[code] ? 'curated' : 'structural',
+      curated: false,
+      // A marker is only worth matching if at least one alias is long enough to
+      // be unambiguous; the rest stay catalogued for display.
+      // Only numeric, unambiguously-named markers are offered to the numeric
+      // extractor: a qualitative finding ("Acanthocytes: present") has no value
+      // to read, and a 2-letter alias would match half the alphabet.
+      extractable: valueKind !== 'qualitative' && aliases.some((a) => a.length >= 3),
       provenance: 'upstream-identity',
       aliasSpecificity: aliases.some((a) => aliasSpecificity(a) === 'precise')
         ? 'precise'
@@ -609,6 +646,7 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
     exclusions: excluded.slice(0, 200),
     excludedByReason: tally(excluded.map((e) => e.reason)),
     aliasCollisions: collisions,
+    unmatchedAliasAdditions: Object.keys(GENERATED_ALIAS_ADDITIONS).filter((c) => !appliedAliasAdditions.has(c)),
     unusedNarratives,
     panelsCovered: [...new Set(Object.values(sortedMarkers).map((m) => m.panel))].sort(),
     ocrCharset: { size: ocrCharset.size, cjkGlyphs: ocrCharset.cjk, digits: ocrCharset.digits },
@@ -634,6 +672,26 @@ function mergeBounds(rows, itemBounds, positiveOnlyItems) {
   }
   if (min == null && max == null) return null;
   return { min, max };
+}
+
+/**
+ * Removes a trailing run of specimen words from an analyte slug:
+ * "glucose_urine" + fluid "Urine" → "glucose". Returns the original slug when
+ * nothing matches, and null for an empty result.
+ */
+export function stripTrailingWords(slug, words) {
+  if (!slug || words.length === 0) return slug || null;
+  let parts = slug.split('_');
+  let stripped = false;
+  for (let guard = 0; guard < words.length; guard += 1) {
+    const tail = parts[parts.length - 1];
+    if (tail && words.includes(tail)) {
+      parts = parts.slice(0, -1);
+      stripped = true;
+    } else break;
+  }
+  if (!stripped) return slug;
+  return parts.length ? parts.join('_') : null;
 }
 
 function panelNameOf(key) {
