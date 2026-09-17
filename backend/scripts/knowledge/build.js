@@ -40,6 +40,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
   LOINC_ANCHORS,
+  GENERATED_ALIAS_ADDITIONS,
   CURATED_EXTRA_ALIASES,
   LABEL_BLOCKLIST,
   UNIT_PLACEHOLDER_BLOCKLIST,
@@ -51,7 +52,8 @@ import {
   PLAUSIBILITY_BOUNDS,
 } from '../../knowledge/curated/curatedMappings.js';
 import { MARKER_NARRATIVES, structuralNarrative } from '../../knowledge/curated/markerNarratives.js';
-import { LAB_DICTIONARY } from '../../src/services/labs/labDictionary.js';
+// NOTE: the CURATED layer only — the build must not read the artifact it produces.
+import { CURATED_LAB_DICTIONARY as LAB_DICTIONARY } from '../../src/services/labs/curatedLabDictionary.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
@@ -442,6 +444,13 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
       addAlias(`${base} ${slugify(fluid).replace(/_/g, ' ')}`);
     }
     if (isBlood && multiFluid) addAlias(`${primary.analyteKey.replace(/_/g, ' ')} blood`);
+
+    // Human-vetted aliases for this specific marker (short but unambiguous in
+    // this document class — see curatedMappings.js).
+    for (const extra of GENERATED_ALIAS_ADDITIONS[code] || []) {
+      const norm = normalizeAlias(extra);
+      if (norm) aliasSet.add(norm);
+    }
 
     // Collision policy: first owner (highest prevalence, curated first) wins;
     // the loser keeps the alias out of its list and the event is audited.

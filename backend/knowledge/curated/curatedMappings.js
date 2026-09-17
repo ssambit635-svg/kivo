@@ -85,6 +85,42 @@ export const CURATED_EXTRA_ALIASES = {
 };
 
 /**
+ * Aliases a human wants added to SPECIFIC generated markers, keyed by generated
+ * code. Needed because the build's automatic alias rules reject very short
+ * aliases (they are risky in general), while a few two-character report labels
+ * are unambiguous in this document class — "T3"/"T4" on a lab report are the
+ * thyroid hormones, and "CD4"/"CD8" are the lymphocyte subsets.
+ */
+export const GENERATED_ALIAS_ADDITIONS = {
+  triiodothyronine: ['t3', 'total t3', 't3 total'],
+  thyroxine: ['t4', 'total t4', 't4 total'],
+  thyroxine_free: ['ft4', 'free t4', 'ft3 free t4'],
+  reverse_t3: ['rt3', 'reverse t3'],
+  cd4_cells_percent: ['cd4', 'cd4 percent', 'cd4 percentage'],
+  cd8_cells_percent: ['cd8', 'cd8 percent', 'cd8 percentage'],
+  cd4_cd8_ratio: ['cd4 cd8 ratio', 'cd4/cd8'],
+  calculated_thyroxine_index: ['fti', 'free thyroxine index'],
+  rheumatoid_factor: ['rf', 'ra factor'],
+  anti_nuclear_antibody: ['ana', 'ana screen'],
+  prostate_specific_antigen: ['psa', 'total psa'],
+  creatine_kinase_mb_isoenzyme: ['ck mb', 'ck-mb', 'ckmb'],
+  creatine_kinase: ['cpk', 'ck total'],
+  lactate_dehydrogenase: ['ldh', 'ld', 'ldh total'],
+  alkaline_phosphatase: ['alp', 'alk phos'],
+  gamma_glutamyltransferase: ['ggt', 'gamma gt', 'ggtp'],
+  ntprobnp: ['nt probnp', 'nt-probnp'],
+  parathyroid_hormone: ['pth', 'intact pth'],
+  iron_binding_capacity_total: ['tibc', 'iron binding capacity'],
+  transferrin_saturation: ['tsat', 'transferrin sat'],
+  uric_acid: ['ua'],
+  c_reactive_protein: ['crp', 'hs crp', 'hs-crp'],
+  sedimentation_rate: ['esr', 'esr westergren'],
+  free_thyroxine_index: ['fti'],
+  protein_creatinine_ratio_urine: ['upcr', 'urine pcr'],
+  albumin_creatinine_urine: ['uacr', 'microalbumin creatinine ratio'],
+};
+
+/**
  * Non-analyte labels: flag columns, specimen metadata and free-text fields that
  * appear in the upstream item table but must never become extractable markers.
  * (Upstream item ids for these are real; they are simply not measurements.)
@@ -181,6 +217,7 @@ export const UNIT_EQUIVALENCES = {
   'ng/ml': 'ng/mL', 'ng/ml.': 'ng/mL',
   'pg/ml': 'pg/mL',
   'ug/ml': 'µg/mL', 'mcg/ml': 'µg/mL', 'µg/ml': 'µg/mL',
+  'ug/dl': 'µg/dL', 'mcg/dl': 'µg/dL', 'µg/dl': 'µg/dL',
   'ng/l': 'ng/L',
   'mg/24hr': 'mg/24h', 'mg/24h': 'mg/24h',
   // molar

@@ -1936,6 +1936,11 @@
       "droppedFrom": "absolute_a1c"
     },
     {
+      "alias": "cd4",
+      "keptBy": "cd4_cells_percent",
+      "droppedFrom": "cd4_bone_marrow"
+    },
+    {
       "alias": "plasma cells",
       "keptBy": "plasma_cells",
       "droppedFrom": "plasma_cells_pleural"
@@ -1944,6 +1949,11 @@
       "alias": "mumps virus igg ab",
       "keptBy": "mumps_igg_ab_value",
       "droppedFrom": "mumps_igg_ab"
+    },
+    {
+      "alias": "cd8",
+      "keptBy": "cd8_cells_percent",
+      "droppedFrom": "cd8_bone_marrow"
     },
     {
       "alias": "toxoplasma gondii igg ab",
@@ -2077,7 +2087,7 @@
     },
     {
       "alias": "cd4",
-      "keptBy": "cd4_bone_marrow",
+      "keptBy": "cd4_cells_percent",
       "droppedFrom": "cd4_other_body_fluid"
     },
     {
@@ -2087,7 +2097,7 @@
     },
     {
       "alias": "cd8",
-      "keptBy": "cd8_bone_marrow",
+      "keptBy": "cd8_cells_percent",
       "droppedFrom": "cd8_other_body_fluid"
     },
     {
