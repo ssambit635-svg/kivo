@@ -188,7 +188,7 @@ describe('uploads (multipart) with real files', () => {
   });
 
   it('rejects files over the size limit (413)', async () => {
-    const big = Buffer.alloc(6 * 1024 * 1024, 'a');
+    const big = Buffer.alloc(ctx.container.config.maxUploadBytes + 1024 * 1024, 'a');
     const res = await request(ctx.app)
       .post(`/api/members/${memberId}/reports`)
       .set(auth(sess.accessToken))

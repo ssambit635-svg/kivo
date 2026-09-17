@@ -25,6 +25,8 @@ export class GroundedLocalProvider {
         return this.wrap(this.summarizeTrends(request.data), request.data);
       case 'doctor_summary':
         return this.wrap(this.doctorSummary(request.data), request.data);
+      case 'explain_intelligence':
+        return this.wrap(this.explainIntelligence(request.data), request.data);
       default:
         return this.wrap('Unsupported narration task.', request.data);
     }
@@ -111,6 +113,79 @@ export class GroundedLocalProvider {
     lines.push(
       'These are observed changes in recorded values, not a diagnosis. Persistent movement outside ' +
         'reference ranges is a good reason to speak with a qualified healthcare professional.',
+    );
+    return lines.join('\n');
+  }
+
+  /**
+   * Narrates a Personal Health Intelligence evidence package. Every number,
+   * label, date and band below is copied from the structured input — this
+   * method performs no computation and invents no values. Association is
+   * always framed as non-causal; nothing here is a diagnosis.
+   */
+  explainIntelligence({ memberName, dataSummary, cards, baselines, findings, edges, risk, uncertainty }) {
+    const lines = [];
+    const name = memberName || 'you';
+    lines.push(`Personal Health Intelligence summary for ${name}.`);
+    lines.push('');
+    lines.push(
+      `This summary is grounded in ${dataSummary.signalCount} recorded signal(s) ` +
+        `(${dataSummary.verifiedLabCount} verified lab values, ${dataSummary.observationCount} observations). ` +
+        `Overall intelligence confidence is ${uncertainty.level}.`,
+    );
+    lines.push('');
+
+    const baselineCard = (cards || []).find((c) => c.title === 'Personal Baseline');
+    if (baselineCard) {
+      lines.push('PERSONAL BASELINE');
+      lines.push(baselineCard.headline);
+      for (const d of baselineCard.detail.slice(0, 4)) lines.push(`• ${d}`);
+      lines.push('');
+    } else if ((baselines || []).length > 0) {
+      lines.push('PERSONAL BASELINE');
+      for (const b of baselines.slice(0, 4)) lines.push(`• ${b.summary}`);
+      lines.push('');
+    }
+
+    if ((findings || []).length > 0) {
+      lines.push('DETECTED SHIFTS');
+      for (const f of findings.slice(0, 4)) {
+        lines.push(`• [${f.severity}] ${f.interpretation}`);
+      }
+      lines.push('');
+    } else {
+      lines.push('DETECTED SHIFTS');
+      lines.push('• No notable shifts were detected in the recorded history.');
+      lines.push('');
+    }
+
+    if ((edges || []).length > 0) {
+      lines.push('HEALTH PATTERNS');
+      for (const e of edges.slice(0, 4)) {
+        lines.push(
+          `• ${e.source} and ${e.target}: ${e.type} (strength ${e.strength == null ? 'n/a' : e.strength}). ` +
+            `This is an observed association, not proof that one caused the other.`,
+        );
+      }
+      lines.push('');
+    }
+
+    lines.push('MODEL CONTEXT');
+    lines.push(
+      `The existing prototype risk estimate stands at ${risk.percent}% (${risk.band}) with ` +
+        `${Math.round(risk.completeness * 100)}% data completeness. This is a model-based figure ` +
+        `over recorded inputs — not a prediction about any person.`,
+    );
+    lines.push('');
+
+    lines.push('CONFIDENCE');
+    for (const r of (uncertainty.reasons || []).slice(0, 4)) lines.push(`• ${r}`);
+    lines.push('');
+    lines.push(
+      'Reminder: this intelligence summary describes patterns in recorded values — personal ' +
+        'baselines, historical shifts, and associations between signals. It does not diagnose ' +
+        'any condition — this is not a diagnosis — it does not claim causation, and it does not ' +
+        'replace discussion with a qualified healthcare professional.',
     );
     return lines.join('\n');
   }

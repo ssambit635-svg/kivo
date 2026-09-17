@@ -28,12 +28,19 @@ import { AdminService } from '../services/AdminService.js';
 import { LabExtractionService } from '../services/labs/LabExtractionService.js';
 import { OcrService } from '../services/ocr/OcrService.js';
 import { LlmGateway } from '../services/llm/LlmGateway.js';
+import { PersonalBaselineService } from '../services/intelligence/PersonalBaselineService.js';
+import { TemporalAnomalyService } from '../services/intelligence/TemporalAnomalyService.js';
+import { HealthPatternGraphService } from '../services/intelligence/HealthPatternGraphService.js';
+import { CounterfactualTwinService } from '../services/intelligence/CounterfactualTwinService.js';
+import { IntelligenceOrchestratorService } from '../services/intelligence/IntelligenceOrchestratorService.js';
+import { IntelligenceExplanationService } from '../services/intelligence/IntelligenceExplanationService.js';
 
 import { AuthController } from '../controllers/AuthController.js';
 import { MemberController } from '../controllers/MemberController.js';
 import { ReportController } from '../controllers/ReportController.js';
 import { HealthIntelController } from '../controllers/HealthIntelController.js';
 import { AdminController } from '../controllers/AdminController.js';
+import { IntelligenceController } from '../controllers/IntelligenceController.js';
 
 /**
  * Dependency-injection container — manual, explicit, test-friendly.
@@ -100,6 +107,35 @@ export class Container {
       auditLogRepository: this.auditLogRepository,
     });
 
+    // --- Personal Health Intelligence Engine (ADD-ON: read-only, CPU-only) ---
+    this.personalBaselineService = new PersonalBaselineService({
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+    });
+    this.temporalAnomalyService = new TemporalAnomalyService({
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+    });
+    this.healthPatternGraphService = new HealthPatternGraphService({
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      riskModelService: this.riskModelService,
+    });
+    this.counterfactualTwinService = new CounterfactualTwinService({
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      riskModelService: this.riskModelService,
+    });
+    this.intelligenceOrchestratorService = new IntelligenceOrchestratorService({
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      riskModelService: this.riskModelService,
+    });
+    this.intelligenceExplanationService = new IntelligenceExplanationService({
+      intelligenceOrchestrator: this.intelligenceOrchestratorService,
+      llmGateway: this.llmGateway,
+    });
+
     // --- domain services ---
     this.memberService = new MemberService({
       memberRepository: this.memberRepository,
@@ -146,6 +182,12 @@ export class Container {
       auditService: this.auditService,
     });
     this.adminController = new AdminController(this.adminService);
+    this.intelligenceController = new IntelligenceController({
+      orchestratorService: this.intelligenceOrchestratorService,
+      counterfactualService: this.counterfactualTwinService,
+      explanationService: this.intelligenceExplanationService,
+      policyService: this.policyService,
+    });
 
     this.authenticateMw = authenticate({
       tokenService: this.tokenService,

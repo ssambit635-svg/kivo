@@ -305,6 +305,14 @@ export class OcrService {
   async extractText({ buffer, mimeType }) {
     const provider = await this.providerFor(mimeType);
     if (!provider) {
+      // PDFs have no text/OCR provider in this build — say so plainly instead
+      // of pointing at image-OCR setup steps that can't help with a PDF.
+      if (mimeType === 'application/pdf') {
+        throw new OcrUnavailableError(
+          `PDF files can't be read automatically yet — open the PDF, copy its text, and paste it ` +
+            `into the upload dialog (or add the values manually). Your report is saved and nothing is lost.`,
+        );
+      }
       const detail = (await this.diagnose(mimeType)).join('; ');
       throw new OcrUnavailableError(
         `No OCR provider available for '${mimeType}'. ` +

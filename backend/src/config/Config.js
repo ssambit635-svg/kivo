@@ -29,7 +29,10 @@ export class Config {
     // --- persistence -----------------------------------------------------
     this.dbPath = env.DB_PATH || (this.isTest ? ':memory:' : 'data/medtwin.db');
     this.uploadDir = env.UPLOAD_DIR || 'uploads';
-    this.maxUploadBytes = Number(env.MAX_UPLOAD_MB || 5) * 1024 * 1024;
+    // Phone cameras (esp. 50MP+ sensors) produce multi-MB originals; the PWA
+    // downscales before upload, but gallery picks can still be large — 10 MB
+    // default keeps real phones working while staying abuse-safe.
+    this.maxUploadBytes = Number(env.MAX_UPLOAD_MB || 10) * 1024 * 1024;
 
     // --- CORS ------------------------------------------------------------
     this.corsAllowedOrigins = (env.CORS_ORIGINS || '')
@@ -43,6 +46,15 @@ export class Config {
       this.corsAllowOriginRegexes.push(/^https:\/\/[\w-]+\.e2b\.app$/);
       this.corsAllowOriginRegexes.push(/^https?:\/\/localhost(:\d+)?$/);
       this.corsAllowOriginRegexes.push(/^https?:\/\/127\.0\.0\.1(:\d+)?$/);
+      // Native-app shells (Capacitor / Cordova / Ionic WebViews) send a
+      // custom-scheme Origin instead of https — the mobile app needs these.
+      this.corsAllowOriginRegexes.push(/^(capacitor|ionic|http|https):\/\/localhost(:\d+)?$/);
+      this.corsAllowOriginRegexes.push(/^capacitor:\/\/[^/]+$/);
+      this.corsAllowOriginRegexes.push(/^ionic:\/\/[^/]+$/);
+      // Demo-day reality: the phone's browser hits the laptop backend over
+      // LAN (http://192.168.x.x:8080). Private-network origins are safe to
+      // allow outside production; same-origin PWA use needs no CORS at all.
+      this.corsAllowOriginRegexes.push(/^https?:\/\/(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/);
     }
 
     // --- rate limiting ---------------------------------------------------

@@ -625,24 +625,36 @@
   /* multipart upload helper (files can't go through the JSON api())   */
   /* ---------------------------------------------------------------- */
 
-  function apiUpload(path, formData) {
+  function apiUpload(path, formData, allowRetry) {
     var headers = {};
     if (state.tokens && state.tokens.accessToken) headers.Authorization = 'Bearer ' + state.tokens.accessToken;
     return fetch('/api' + path, { method: 'POST', headers: headers, body: formData }).then(function (res) {
+      // Same one-shot session refresh as api(): uploads must not hard-fail
+      // just because the 15-minute access token expired mid-demo.
+      if (res.status === 401 && allowRetry !== false && state.tokens && state.tokens.refreshToken) {
+        return refreshSession().then(function (ok) {
+          if (!ok) throw sessionExpired();
+          return apiUpload(path, formData, false);
+        });
+      }
       return res.json().then(function (body) {
         if (!res.ok) {
           var err = new Error((body && body.error && body.error.message) || 'Upload failed (' + res.status + ')');
           err.status = res.status;
+          err.body = body;
           throw err;
         }
         return body;
+      }, function () {
+        // Non-JSON error body (proxy / connection edge) — still report status.
+        throw new Error('Upload failed (' + res.status + ')');
       });
     });
   }
 
   function ingestFile(file, source) {
     var fd = new FormData();
-    fd.append('file', file, file.name || (source === 'camera' ? 'camera-scan.png' : 'upload.png'));
+    fd.append('file', file, file.name || (source === 'camera' ? 'camera-scan.jpg' : 'upload.jpg'));
     return apiUpload('/members/' + state.member.id + '/reports', fd);
   }
 
@@ -687,19 +699,51 @@
     $('scanner-view').classList.add('hidden');
   }
 
+  // Phone sensors (12–200MP) produce frames far larger than any server
+  // should accept — and Tesseract reads documents better at moderate
+  // resolution anyway. Everything uploaded is shrunk to <=1600px / JPEG.
+  var SCAN_MAX_EDGE = 1600;
+
+  function canvasToJpeg(canvas, name, done) {
+    canvas.toBlob(function (blob) {
+      if (!blob) { toast('Could not capture the frame.'); return; }
+      done(new File([blob], name, { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.85);
+  }
+
+  function drawScaled(img, imgW, imgH, name, done) {
+    var scale = Math.min(1, SCAN_MAX_EDGE / Math.max(imgW, imgH));
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(imgW * scale));
+    canvas.height = Math.max(1, Math.round(imgH * scale));
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    canvasToJpeg(canvas, name, done);
+  }
+
+  /** Shrink a gallery/camera file client-side; falls back to the original on any error. */
+  function shrinkImage(file, name, done) {
+    if (!file || !/^image\//.test(file.type || '')) { done(file); return; }
+    var url;
+    try { url = URL.createObjectURL(file); } catch (e) { done(file); return; }
+    var img = new Image();
+    img.onload = function () {
+      try {
+        URL.revokeObjectURL(url);
+        if (!img.naturalWidth) { done(file); return; }
+        drawScaled(img, img.naturalWidth, img.naturalHeight, name, done);
+      } catch (e) { done(file); }
+    };
+    img.onerror = function () { try { URL.revokeObjectURL(url); } catch (e) {} done(file); };
+    img.src = url;
+  }
+
   function captureFrame() {
     var video = $('scan-video');
     if (!video.videoWidth) { toast('Camera not ready yet.'); return; }
-    var canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    canvas.toBlob(function (blob) {
-      if (!blob) { toast('Could not capture the frame.'); return; }
-      var file = new File([blob], 'camera-scan.png', { type: 'image/png' });
-      closeScanner();
+    closeScanner();
+    drawScaled(video, video.videoWidth, video.videoHeight, 'camera-scan.jpg', function (file) {
       submitCapture(file, 'camera');
-    }, 'image/png');
+    });
   }
 
   function submitCapture(file, source) {
@@ -875,7 +919,12 @@
     $('scan-capture').addEventListener('click', captureFrame);
     $('scan-file').addEventListener('change', function (ev) {
       var f = ev.target.files && ev.target.files[0];
-      if (f) { closeScanner(); submitCapture(f, 'gallery'); }
+      ev.target.value = ''; // allow re-picking the same photo
+      if (f) {
+        closeScanner();
+        toast('Preparing photo…');
+        shrinkImage(f, 'gallery-scan.jpg', function (small) { submitCapture(small, 'gallery'); });
+      }
     });
     $('btn-voice').addEventListener('click', toggleVoice);
     $('nav-home').addEventListener('click', function () { setTab('home'); scrollTo(0, 0); });

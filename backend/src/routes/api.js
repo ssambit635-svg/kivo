@@ -6,6 +6,7 @@ import { memberSchemas } from '../controllers/MemberController.js';
 import { reportSchemas } from '../controllers/ReportController.js';
 import { healthSchemas } from '../controllers/HealthIntelController.js';
 import { adminSchemas } from '../controllers/AdminController.js';
+import { intelligenceSchemas } from '../controllers/IntelligenceController.js';
 
 /** Builds and wires every API route against the container. */
 export function buildApiRouter(c) {
@@ -86,6 +87,14 @@ export function buildApiRouter(c) {
   secure('get', '/members/:memberId/doctor-summary', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getDoctorSummary);
   secure('get', '/members/:memberId/health-score', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getHealthScore);
   secure('get', '/members/:memberId/milestones', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getMilestones);
+
+  // personal health intelligence engine (ADD-ON — read-only computations + hypothetical scenarios)
+  secure('get', '/members/:memberId/intelligence', validate({ params: intelligenceSchemas.memberParams }), c.intelligenceController.getIntelligence);
+  secure('get', '/members/:memberId/intelligence/baseline', validate({ params: intelligenceSchemas.memberParams, query: intelligenceSchemas.baselineQuery }), c.intelligenceController.getBaseline);
+  secure('get', '/members/:memberId/intelligence/patterns', validate({ params: intelligenceSchemas.memberParams, query: intelligenceSchemas.patternsQuery }), c.intelligenceController.getPatterns);
+  secure('post', '/members/:memberId/intelligence/simulate', validate({ params: intelligenceSchemas.memberParams, body: intelligenceSchemas.simulate }), c.intelligenceController.simulate);
+  secure('post', '/members/:memberId/intelligence/scenarios', validate({ params: intelligenceSchemas.memberParams, body: intelligenceSchemas.scenarios }), c.intelligenceController.exploreScenarios);
+  secure('get', '/members/:memberId/intelligence/explanation', validate({ params: intelligenceSchemas.memberParams }), c.intelligenceController.explain);
 
   // admin
   secure('get', '/admin/users', validate({ query: adminSchemas.listUsersQuery }), c.adminController.listUsers);
