@@ -20,7 +20,7 @@ grounded explanations → doctor-visit preparation.
 | Phone-first UI | ✅ Camera report scanner (`getUserMedia` + gallery fallback) · voice journaling · installable PWA (manifest + service worker) · mobile bottom-nav |
 | Engagement widgets | ✅ Health Score Timeline · Report Confidence Badges · Health Milestones (icon keys, no emojis) |
 | Health Intelligence | ✅ Personal baselines · multivariate anomaly detection · pattern graph · counterfactual twin + scenario explorer (read-only add-on, CPU-only) |
-| Clinical knowledge base | ✅ **1,231 markers** (1,224 with a LOINC code, 18 panels) built offline from pinned MIT-licensed sources — see [`backend/knowledge/README.md`](backend/knowledge/README.md) |
+| Clinical knowledge base | ✅ **1,226 markers** (1,219 with a LOINC code, 18 panels) built offline from pinned MIT-licensed sources — see [`backend/knowledge/README.md`](backend/knowledge/README.md) |
 | Extraction model | ✅ Calibrated confidence trained on a documented OCR-noise corpus (Brier 0.15 → 0.07, ECE 0.26 → 0.06) with a shipped model card |
 | Tests | ✅ **337 passing** (`cd backend && npm test`) |
 | Frontend | ✅ Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
@@ -76,7 +76,7 @@ curl localhost:8080/api/meta/knowledge   # public transparency report
 Medical-safety invariants (enforced by `knowledge:verify` and by tests):
 
 - **No fabricated reference ranges.** Only hand-authored markers carry a typical
-  range; the other 1,214 markers are `report-only`, compared against the range
+  range; the other 1,209 markers are `report-only`, compared against the range
   printed on the user's own report.
 - **Plausibility bounds are physical, not clinical** — they flag a suspected
   OCR misread for review, never judge a value.
