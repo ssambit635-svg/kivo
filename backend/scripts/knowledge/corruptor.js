@@ -37,12 +37,21 @@ export const CORRUPTION_TYPES = [
   'digit-glyph',
   'letter-glyph',
   'unit-mangle',
+  'unit-case',
   'decimal-comma',
   'decimal-drop',
   'column-merge',
   'space-noise',
+  'whitespace-collapse',
   'flag-glyph',
   'range-dash',
+  'case-noise',
+  'punct-noise',
+  'thousand-sep',
+  'sign-noise',
+  'digit-repeat',
+  'digit-drop',
+  'header-noise',
 ];
 
 /** Applies one corruption of the given type to a line. */
@@ -97,6 +106,15 @@ export function corrupt(line, type, rng) {
       }
       return line;
     }
+    case 'unit-case': {
+      // Report scanners preserve letters but mangle case: MG/DL, Mg/Dl, G/dl.
+      const m = line.match(/[A-Za-z]+(?:\/[A-Za-z]+|\^3\/[A-Za-z]+|%)/);
+      if (!m) return line;
+      const variants = [m[0].toUpperCase(), m[0].toLowerCase()];
+      const to = pick(rng, variants);
+      if (to === m[0]) return line;
+      return line.replace(m[0], to);
+    }
     case 'decimal-comma':
       return line.replace(/(\d)\.(\d)/, '$1,$2');
     case 'decimal-drop':
@@ -111,15 +129,61 @@ export function corrupt(line, type, rng) {
     }
     case 'range-dash':
       return line.replace(/(\d)\s*-\s*(\d)/, '$1 ~ $2');
+    case 'case-noise': {
+      // Random case flips inside the label (camera OCR on small caps).
+      const idx = Math.floor(rng() * line.length);
+      const ch = line[idx];
+      if (!ch || !/[A-Za-z]/.test(ch)) return line;
+      const flipped = ch === ch.toUpperCase() ? ch.toLowerCase() : ch.toUpperCase();
+      return `${line.slice(0, idx)}${flipped}${line.slice(idx + 1)}`;
+    }
+    case 'punct-noise': {
+      // Stray punctuation a recognizer hallucinates, or a dropped separator.
+      const ops = [
+        (s) => s.replace(/\s/, '. '),
+        (s) => s.replace(/\s/, ', '),
+        (s) => s.replace(/:/, ';'),
+        (s) => s.replace(/:\s*/, ' '),
+        (s) => `${s}.`,
+      ];
+      return pick(rng, ops)(line);
+    }
+    case 'thousand-sep':
+      // 1000 → 1,000: thousands separators some labs print, OCR keeps.
+      return line.replace(/\b(\d)(\d{3})\b/, '$1,$2');
+    case 'sign-noise': {
+      // Stray '+' before the value, or a lost '-' on a negative delta.
+      if (rng() < 0.5) return line.replace(/(\s)(\d)/, '$1+$2');
+      return line.replace('-', '');
+    }
+    case 'digit-repeat':
+      // Doubled digit from a shaky scan: 12.5 → 122.5.
+      return line.replace(/(\d)/, '$1$1');
+    case 'digit-drop': {
+      // Dropped digit: 12.5 → 1.5 (only when 2+ digits survive).
+      const digits = (line.match(/\d/g) || []).length;
+      if (digits < 3) return line;
+      return line.replace(/(\d)\d/, '$1');
+    }
+    case 'whitespace-collapse': {
+      // All spacing lost: label, value and unit glued into one token run.
+      const collapsed = line.replace(/\s+/g, '');
+      return collapsed.length >= 8 ? collapsed : line;
+    }
+    case 'header-noise': {
+      // Lab letterhead / footer junk a full-page OCR prepends to the line.
+      const junk = pick(rng, ['LAB REPORT ', 'Page 1 ', 'CITY LABS ', 'Acc: 88213 ', 'Ref: DR. SHAH ']);
+      return `${junk}${line}`;
+    }
     default:
       return line;
   }
 }
 
-/** How many corruptions a line receives, by intensity 0–3. */
+/** How many corruptions a line receives, by intensity 0–4 (4 = severe photo damage). */
 function corruptionsFor(intensity, rng, types = CORRUPTION_TYPES) {
   if (intensity <= 0) return [];
-  const base = intensity === 1 ? 1 : intensity === 2 ? 2 : 3;
+  const base = intensity === 1 ? 1 : intensity === 2 ? 2 : intensity === 3 ? 3 : 4;
   const count = rng() < 0.25 ? base + 1 : base;
   const out = [];
   for (let i = 0; i < count; i += 1) out.push(pick(rng, types));
@@ -133,7 +197,8 @@ function corruptionsFor(intensity, rng, types = CORRUPTION_TYPES) {
  * layouts use) rather than the internal display name.
  */
 export function labelFor(marker, rng) {
-  const aliases = (marker.aliases || []).filter((a) => a.length >= 3);
+  const m = marker && typeof marker === 'object' ? marker : {};
+  const aliases = (Array.isArray(m.aliases) ? m.aliases : []).filter((a) => typeof a === 'string' && a.length >= 3);
   // A printed report uses a short label ("Fasting Glucose", "SGPT"), not a
   // LOINC long name (".../100 leukocytes in blood by automated count"). Sample
   // the short forms most of the time, but keep the long form sometimes: some
@@ -143,14 +208,18 @@ export function labelFor(marker, rng) {
   const pool = short.length && rng() < 0.9 ? short : aliases;
   const multiWord = pool.filter((a) => /[^a-z0-9]/.test(a) && a.split(/[^a-z0-9]+/).filter(Boolean).length >= 2);
   const chosen = multiWord.length ? multiWord : pool;
-  return chosen.length ? pick(rng, chosen) : marker.name;
+  return chosen.length ? pick(rng, chosen) : (typeof m.name === 'string' && m.name ? m.name : 'Test');
 }
 
 export function formatLine(marker, value, rng) {
-  const unit = marker.defaultUnit || '';
-  const v = formatValue(value);
-  const spread = referenceSpreadFor(marker, value, rng);
-  const label = labelFor(marker, rng);
+  const m = marker && typeof marker === 'object' ? marker : {};
+  const safeValue = Number.isFinite(Number(value)) ? Number(value) : 0;
+  const unit = typeof m.defaultUnit === 'string' ? m.defaultUnit : '';
+  const v = formatValue(safeValue);
+  const spread = referenceSpreadFor(m, safeValue, rng);
+  const label = labelFor(m, rng);
+  const flag = pick(rng, ['H', 'L', '']);
+  const flagged = flag ? ` ${flag}` : '';
   const layouts = [
     `${label} ${v} ${unit} ${spread}`,
     `${label}: ${v} ${unit}`,
@@ -160,36 +229,62 @@ export function formatLine(marker, value, rng) {
     `${label.toUpperCase()} ${v} ${unit}`,
     `${label}\t${v}\t${unit}\t${spread}`,
     `${label} ${v}${unit}`,
+    // Real-world variants: flags, missing range/unit, lowercase, method notes.
+    `${label} ${v} ${unit} ${spread}${flagged}`,
+    `${label.toLowerCase()} ${v} ${unit}`,
+    `${label} ${v}`,
+    `${label}: ${v}${flagged}`,
+    `${label} - Result: ${v} ${unit}`,
+    `${label} ${v} ${unit}; Ref ${spread}`,
+    `Test: ${label} Value: ${v} ${unit} Range: ${spread}`,
+    `${label} (${unit}) ${v} [${spread}]`,
   ];
   return pick(rng, layouts);
 }
 
 function referenceSpreadFor(marker, value, rng) {
-  const t = marker.typicalRange;
+  const m = marker && typeof marker === 'object' ? marker : {};
+  const val = Number.isFinite(Number(value)) ? Number(value) : 1;
+  const t = m.typicalRange && typeof m.typicalRange === 'object' ? m.typicalRange : null;
   if (t && (t.low != null || t.high != null)) {
-    const low = t.low ?? Math.round(value * 0.6);
-    const high = t.high ?? Math.round(value * 1.4);
+    let low = Number(t.low ?? Math.round(val * 0.6));
+    let high = Number(t.high ?? Math.round(val * 1.4));
+    if (!Number.isFinite(low) || !Number.isFinite(high) || high <= low) {
+      low = Math.round(val * 0.6);
+      high = Math.round(val * 1.4);
+      if (!(high > low)) {
+        low = 0;
+        high = 1;
+      }
+    }
     return `${low} - ${high}`;
   }
-  const low = Math.max(0, Math.round(value * (0.6 + rng() * 0.1) * 100) / 100);
-  const high = Math.round(value * (1.3 + rng() * 0.3) * 100) / 100;
-  return `${low} - ${high}`;
+  const low = Math.max(0, Math.round(val * (0.6 + rng() * 0.1) * 100) / 100);
+  const high = Math.round(val * (1.3 + rng() * 0.3) * 100) / 100;
+  return `${low} - ${high > low ? high : low + 1}`;
 }
 
 function formatValue(v) {
-  if (Number.isInteger(v)) return String(v);
-  const abs = Math.abs(v);
-  if (abs < 1) return v.toFixed(2);
-  if (abs < 20) return v.toFixed(1);
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '0';
+  if (Number.isInteger(n)) return String(n);
+  const abs = Math.abs(n);
+  if (abs < 1) return n.toFixed(2);
+  if (abs < 20) return n.toFixed(1);
   return String(Math.round(v));
 }
 
 /** Samples a plausible value for a marker (inside its range, sometimes outside). */
 export function sampleValue(marker, rng) {
-  const t = marker.typicalRange;
+  const m = marker && typeof marker === 'object' ? marker : {};
+  const t = m.typicalRange && typeof m.typicalRange === 'object' ? m.typicalRange : null;
   if (t && (t.low != null || t.high != null)) {
-    const low = t.low ?? (t.high != null ? t.high * 0.5 : 1);
-    const high = t.high ?? low * 2;
+    let low = Number(t.low ?? (t.high != null ? Number(t.high) * 0.5 : 1));
+    let high = Number(t.high ?? low * 2);
+    if (!Number.isFinite(low) || !Number.isFinite(high) || high <= low) {
+      low = 1;
+      high = 2;
+    }
     const inside = rng() < 0.75;
     const v = inside
       ? low + (high - low) * (0.15 + rng() * 0.7)
@@ -198,13 +293,15 @@ export function sampleValue(marker, rng) {
         : high * (1.05 + rng() * 0.6);
     return round(v);
   }
-  const b = marker.plausibilityBounds;
-  if (b && b.min != null && b.max != null) {
+  const b = m.plausibilityBounds && typeof m.plausibilityBounds === 'object' ? m.plausibilityBounds : null;
+  const fmin = b ? Number(b.min ?? b.low) : NaN;
+  const fmax = b ? Number(b.max ?? b.high) : NaN;
+  if (b && Number.isFinite(fmin) && Number.isFinite(fmax) && fmax > fmin) {
     const u = rng() ** 1.7; // bias toward the lower/mid part of the physiologic span
-    return round(b.min + (b.max - b.min) * u);
+    return round(fmin + (fmax - fmin) * u);
   }
-  if (b && b.max != null) return round(b.max * (0.1 + rng() * 0.6));
-  if (b && b.min != null) return round(b.min * (1 + rng() * 3));
+  if (b && Number.isFinite(fmax) && fmax > 0) return round(fmax * (0.1 + rng() * 0.6));
+  if (b && Number.isFinite(fmin)) return round(fmin * (1 + rng() * 3));
   return round(1 + rng() * 100);
 }
 
@@ -226,16 +323,44 @@ function round(v) {
  * @returns {Array<{code, trueValue, line, cleanLine, corrupted, corruptionTypes, intensity, markerName, unit}>}
  */
 export function buildCorpus({ markers, perMarker = 2, intensities = [0, 1, 2, 3], seed = 20260917 }) {
-  const rng = makeRng(seed);
+  const list = Array.isArray(markers) ? markers.filter((m) => m && m.code) : [];
+  if (list.length === 0) throw new Error('buildCorpus: no markers provided — the knowledge base must be built first');
+  const per = Number.isInteger(perMarker) && perMarker > 0 ? Math.min(perMarker, 20) : 2;
+  const levels = Array.isArray(intensities) && intensities.length ? intensities.filter((i) => Number.isInteger(i) && i >= 0 && i <= 4) : [0];
+  if (levels.length === 0) throw new Error('buildCorpus: no valid intensity levels provided');
+  const rng = makeRng(Number.isFinite(seed) ? seed : 20260917);
   const examples = [];
-  for (const marker of markers) {
-    for (const intensity of intensities) {
-      for (let i = 0; i < perMarker; i += 1) {
-        const value = sampleValue(marker, rng);
-        const cleanLine = formatLine(marker, value, rng);
-        const types = corruptionsFor(intensity, rng);
+  for (const marker of list) {
+    for (const intensity of levels) {
+      for (let i = 0; i < per; i += 1) {
+        let value;
+        try {
+          value = sampleValue(marker, rng);
+        } catch {
+          continue;
+        }
+        if (!Number.isFinite(value)) continue;
+        let cleanLine;
+        try {
+          cleanLine = formatLine(marker, value, rng);
+        } catch {
+          continue;
+        }
+        let types;
+        try {
+          types = corruptionsFor(intensity, rng);
+        } catch {
+          types = [];
+        }
         let line = cleanLine;
-        for (const t of types) line = corrupt(line, t, rng);
+        for (const t of types) {
+          try {
+            line = corrupt(line, t, rng);
+          } catch {
+            /* keep the line as-is on a corruptor bug */
+          }
+        }
+        if (typeof line !== 'string' || !line) continue;
         examples.push({
           code: marker.code,
           markerName: marker.name,
@@ -255,17 +380,25 @@ export function buildCorpus({ markers, perMarker = 2, intensities = [0, 1, 2, 3]
 
 /** Deterministic split by marker so test markers never appear in training. */
 export function splitByMarker(examples, testFraction = 0.3, seed = 7) {
+  const list = Array.isArray(examples) ? examples : [];
+  if (list.length === 0) return { train: [], test: [] };
+  const frac = Number.isFinite(Number(testFraction)) ? Math.min(0.9, Math.max(0.05, Number(testFraction))) : 0.3;
   const byMarker = new Map();
-  for (const ex of examples) {
+  for (const ex of list) {
+    if (!ex || typeof ex.code !== 'string') continue;
     if (!byMarker.has(ex.code)) byMarker.set(ex.code, []);
     byMarker.get(ex.code).push(ex);
   }
   const train = [];
   const test = [];
-  for (const [code, list] of [...byMarker.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [code, items] of [...byMarker.entries()].sort(([a], [b]) => String(a).localeCompare(String(b)))) {
     const h = hashString(`${code}:${seed}`);
-    (h % 100 < testFraction * 100 ? test : train).push(...list);
+    (h % 100 < frac * 100 ? test : train).push(...items);
   }
+  // Guarantee non-empty splits: a degenerate seed must not produce an
+  // unmeasurable run (a single-marker corpus splits round-robin instead).
+  if (train.length === 0 && test.length > 1) train.push(...test.splice(0, Math.floor(test.length / 2)));
+  if (test.length === 0 && train.length > 1) test.push(...train.splice(0, Math.floor(train.length / 2)));
   return { train, test };
 }
 

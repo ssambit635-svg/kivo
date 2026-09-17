@@ -38,43 +38,58 @@ const GENERATED = path.resolve(HERE, '../../knowledge/generated');
 /* ------------------------------------------------------------ utilities --- */
 
 function sigmoid(z) {
-  if (z >= 0) return 1 / (1 + Math.exp(-z));
-  const e = Math.exp(z);
+  const c = Number.isFinite(z) ? Math.min(20, Math.max(-20, z)) : 0;
+  if (c >= 0) return 1 / (1 + Math.exp(-c));
+  const e = Math.exp(c);
   return e / (1 + e);
 }
 
+/** Keep only well-formed [probability, label] pairs — metrics never see NaN. */
+function cleanPairs(pairs) {
+  if (!Array.isArray(pairs)) return [];
+  return pairs.filter(
+    (pr) => Array.isArray(pr) && Number.isFinite(pr[0]) && (pr[1] === 1 || pr[1] === 0),
+  );
+}
+
 function brier(pairs) {
-  if (pairs.length === 0) return 0;
-  return pairs.reduce((s, [p, y]) => s + (p - y) ** 2, 0) / pairs.length;
+  const clean = cleanPairs(pairs);
+  if (clean.length === 0) return 0;
+  return clean.reduce((s, [p, y]) => s + (p - y) ** 2, 0) / clean.length;
 }
 
 /** Expected calibration error over equal-width bins. */
 export function expectedCalibrationError(pairs, bins = 10) {
-  if (pairs.length === 0) return 0;
-  const buckets = Array.from({ length: bins }, () => ({ n: 0, p: 0, y: 0 }));
-  for (const [p, y] of pairs) {
-    const idx = Math.min(bins - 1, Math.max(0, Math.floor(p * bins)));
+  const clean = cleanPairs(pairs);
+  if (clean.length === 0) return 0;
+  const b = Number.isInteger(bins) && bins > 0 ? Math.min(bins, 50) : 10;
+  const buckets = Array.from({ length: b }, () => ({ n: 0, p: 0, y: 0 }));
+  for (const [p, y] of clean) {
+    const idx = Math.min(b - 1, Math.max(0, Math.floor(p * b)));
     buckets[idx].n += 1;
     buckets[idx].p += p;
     buckets[idx].y += y;
   }
   let ece = 0;
-  for (const b of buckets) {
-    if (b.n === 0) continue;
-    ece += (b.n / pairs.length) * Math.abs(b.p / b.n - b.y / b.n);
+  for (const bucket of buckets) {
+    if (bucket.n === 0) continue;
+    ece += (bucket.n / clean.length) * Math.abs(bucket.p / bucket.n - bucket.y / bucket.n);
   }
-  return ece;
+  return Number.isFinite(ece) ? ece : 0;
 }
 
 function accuracyAt(pairs, threshold) {
-  const selected = pairs.filter(([p]) => p >= threshold);
+  const clean = cleanPairs(pairs);
+  const t = Number.isFinite(Number(threshold)) ? Number(threshold) : 0.5;
+  const selected = clean.filter(([p]) => p >= t);
   const correct = selected.filter(([, y]) => y === 1).length;
-  return { threshold, coverage: selected.length / (pairs.length || 1), accuracy: selected.length ? correct / selected.length : 0, n: selected.length };
+  return { threshold: t, coverage: selected.length / (clean.length || 1), accuracy: selected.length ? correct / selected.length : 0, n: selected.length };
 }
 
 /** Pool-adjacent-violators — monotone (isotonic) regression. */
 export function fitIsotonic(pairs) {
-  const sorted = [...pairs].sort((a, b) => a[0] - b[0]);
+  const sorted = cleanPairs(pairs).sort((a, b) => a[0] - b[0]);
+  if (sorted.length === 0) return [[0, 0.5], [1, 0.5]];
   const blocks = [];
   for (const [x, y] of sorted) {
     blocks.push({ x0: x, x1: x, sumY: y, n: 1 });
@@ -110,9 +125,10 @@ export function fitIsotonic(pairs) {
  * and does not detonate the Brier score.
  */
 export function fitSmoothedIsotonic(pairs, { minBin = 40, priorStrength = 25 } = {}) {
-  if (pairs.length === 0) return [[0, 0.5], [1, 0.5]];
-  const base = pairs.reduce((s, [, y]) => s + y, 0) / pairs.length;
-  const sorted = [...pairs].sort((a, b) => a[0] - b[0]);
+  const clean = cleanPairs(pairs);
+  if (clean.length === 0) return [[0, 0.5], [1, 0.5]];
+  const base = clean.reduce((s, [, y]) => s + y, 0) / clean.length;
+  const sorted = [...clean].sort((a, b) => a[0] - b[0]);
   const binCount = Math.max(1, Math.min(Math.floor(sorted.length / minBin), 50));
   const bins = [];
   for (let i = 0; i < binCount; i += 1) {
@@ -152,21 +168,36 @@ export function fitSmoothedIsotonic(pairs, { minBin = 40, priorStrength = 25 } =
 
 /** Area under the ROC curve (rank quality); unchanged by any monotone recalibration. */
 export function auc(pairs) {
-  const pos = pairs.filter(([, y]) => y === 1).map(([p]) => p);
-  const neg = pairs.filter(([, y]) => y === 0).map(([p]) => p);
+  const clean = cleanPairs(pairs);
+  const pos = clean.filter(([, y]) => y === 1).map(([p]) => p);
+  const neg = clean.filter(([, y]) => y === 0).map(([p]) => p);
   if (pos.length === 0 || neg.length === 0) return 0.5;
-  let wins = 0;
-  for (const p of pos) for (const q of neg) wins += p > q ? 1 : p === q ? 0.5 : 0;
-  return wins / (pos.length * neg.length);
+  // Rank-based AUC (Mann–Whitney): O(n log n) instead of O(pos × neg), so a
+  // bigger corpus trains in seconds rather than minutes.
+  const ranked = [...clean].sort((a, b) => a[0] - b[0]);
+  let rankSum = 0;
+  for (let i = 0; i < ranked.length; i += 1) {
+    if (ranked[i][1] === 1) rankSum += i + 1;
+  }
+  const u = rankSum - (pos.length * (pos.length + 1)) / 2;
+  const out = u / (pos.length * neg.length);
+  return Number.isFinite(out) ? out : 0.5;
 }
 
 /** Logistic regression by full-batch gradient descent with L2. */
 export function fitLogistic(rows, { epochs = 400, lr = 0.35, l2 = 1e-3 } = {}) {
   const weights = new Array(FEATURE_NAMES.length).fill(0);
-  const n = rows.length || 1;
-  for (let epoch = 0; epoch < epochs; epoch += 1) {
+  const clean = (Array.isArray(rows) ? rows : []).filter(
+    (r) => r && Array.isArray(r.x) && r.x.length === FEATURE_NAMES.length
+      && r.x.every(Number.isFinite) && (r.y === 1 || r.y === 0),
+  );
+  if (clean.length === 0) return weights.map(() => 0);
+  const n = clean.length;
+  const safeEpochs = Number.isInteger(epochs) && epochs > 0 ? Math.min(epochs, 2000) : 400;
+  const safeLr = Number.isFinite(lr) && lr > 0 ? Math.min(lr, 2) : 0.35;
+  for (let epoch = 0; epoch < safeEpochs; epoch += 1) {
     const grad = new Array(weights.length).fill(0);
-    for (const { x, y } of rows) {
+    for (const { x, y } of clean) {
       let z = 0;
       for (let i = 0; i < weights.length; i += 1) z += weights[i] * x[i];
       const err = sigmoid(z) - y;
@@ -174,50 +205,87 @@ export function fitLogistic(rows, { epochs = 400, lr = 0.35, l2 = 1e-3 } = {}) {
     }
     for (let i = 0; i < weights.length; i += 1) {
       const penalty = i === 0 ? 0 : l2 * weights[i];
-      weights[i] -= lr * ((grad[i] / n) + penalty);
+      const step = safeLr * ((grad[i] / n) + penalty);
+      weights[i] -= Number.isFinite(step) ? step : 0;
+      // Clamp: a degenerate feature column must not explode a weight.
+      if (!Number.isFinite(weights[i])) weights[i] = 0;
+      weights[i] = Math.min(10, Math.max(-10, weights[i]));
     }
   }
-  return weights.map((w) => Math.round(w * 1e6) / 1e6);
+  return weights.map((w) => (Number.isFinite(w) ? Math.round(w * 1e6) / 1e6 : 0));
 }
 
 /* ---------------------------------------------------------------- training -- */
 
-export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 20260917 } = {}) {
-  const markers = numericMarkers().filter((m) => m.aliases?.length);
+export function runTraining({ perMarker = 3, intensities = [0, 1, 2, 3, 4], seed = 20260917 } = {}) {
+  const markers = numericMarkers().filter((m) => m && Array.isArray(m.aliases) && m.aliases.length);
+  if (markers.length === 0) {
+    throw new Error('runTraining: knowledge base has no numeric markers with aliases — run `npm run knowledge:build` first');
+  }
   const examples = buildCorpus({ markers, perMarker, intensities, seed });
+  if (examples.length < 20) {
+    throw new Error(`runTraining: corpus too small to train on (${examples.length} examples) — refusing to write a meaningless artifact`);
+  }
   const { train, test } = splitByMarker(examples, 0.3, 7);
+  if (train.length === 0 || test.length === 0) {
+    throw new Error('runTraining: degenerate train/test split — refusing to write a meaningless artifact');
+  }
 
   const extractor = new LabExtractionService();
+  let evaluationFailures = 0;
 
   const evaluateExample = (ex, { normalize }) => {
-    const { extracted, normalization } = extractor.extract(ex.line, { normalize });
-    const row = extracted.find((e) => e.code === ex.code) || null;
-    const codeOk = Boolean(row);
-    const tol = Math.max(1e-9, Math.abs(ex.trueValue) * 0.005);
-    const valueOk = codeOk && Math.abs(row.value - ex.trueValue) <= tol;
-    return {
-      ex,
-      row,
-      correct: codeOk && valueOk,
-      codeOk,
-      valueOk,
-      suspicious: Boolean(row?.suspicious),
-      features: {
-        heuristicConfidence: row?.heuristicConfidence ?? 0.5,
-        hasUnit: Boolean(row?.unit),
-        hasReferenceRange: row ? row.refLow != null || row.refHigh != null : false,
-        aliasLength: row?.matchedAlias?.length ?? 0,
-        aliasAtLineStart: row ? row.rawLine.toLowerCase().startsWith(row.matchedAlias?.toLowerCase() ?? '') : false,
+    // One hostile example must never abort a training run — it counts as a
+    // miss and is tallied in diagnostics.evaluationFailures.
+    try {
+      const out = extractor.extract(ex.line, { normalize });
+      const extracted = Array.isArray(out?.extracted) ? out.extracted : [];
+      const normalization = out?.normalization || { corrections: [] };
+      const row = extracted.find((e) => e && e.code === ex.code) || null;
+      const codeOk = Boolean(row);
+      const trueValue = Number(ex.trueValue);
+      const tol = Number.isFinite(trueValue) ? Math.max(1e-9, Math.abs(trueValue) * 0.005) : 1e-9;
+      const valueOk = codeOk && Number.isFinite(row.value) && Number.isFinite(trueValue)
+        && Math.abs(row.value - trueValue) <= tol;
+      const h = Number(row?.heuristicConfidence);
+      return {
+        ex,
+        row,
+        correct: codeOk && valueOk,
+        codeOk,
+        valueOk,
         suspicious: Boolean(row?.suspicious),
-        glyphRepaired: (normalization?.corrections ?? []).some(
-          (c) => c.type === 'digit-glyph' || c.type === 'value-unit-split',
-        ),
-        decimalRepaired: (normalization?.corrections ?? []).some(
-          (c) => c.type === 'decimal-comma' || c.type === 'decimal-glyph',
-        ),
-      },
-      normalizations: normalization?.corrections?.length ?? 0,
-    };
+        features: {
+          heuristicConfidence: Number.isFinite(h) ? h : 0.5,
+          hasUnit: Boolean(row?.unit),
+          hasReferenceRange: row ? row.refLow != null || row.refHigh != null : false,
+          aliasLength: typeof row?.matchedAlias === 'string' ? row.matchedAlias.length : 0,
+          aliasAtLineStart: Boolean(
+            row && typeof row.rawLine === 'string' && typeof row.matchedAlias === 'string'
+            && row.rawLine.toLowerCase().startsWith(row.matchedAlias.toLowerCase()),
+          ),
+          suspicious: Boolean(row?.suspicious),
+          glyphRepaired: (normalization?.corrections ?? []).some(
+            (c) => c && (c.type === 'digit-glyph' || c.type === 'value-unit-split'),
+          ),
+          decimalRepaired: (normalization?.corrections ?? []).some(
+            (c) => c && (c.type === 'decimal-comma' || c.type === 'decimal-glyph'),
+          ),
+        },
+        normalizations: normalization?.corrections?.length ?? 0,
+      };
+    } catch {
+      evaluationFailures += 1;
+      return {
+        ex, row: null, correct: false, codeOk: false, valueOk: false, suspicious: false,
+        features: {
+          heuristicConfidence: 0.5, hasUnit: false, hasReferenceRange: false,
+          aliasLength: 0, aliasAtLineStart: false, suspicious: false,
+          glyphRepaired: false, decimalRepaired: false,
+        },
+        normalizations: 0,
+      };
+    }
   };
 
   const runSet = (set, opts) => set.map((ex) => evaluateExample(ex, opts));
@@ -271,6 +339,11 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
       Math.max(1, testWithNormalize.filter((r) => r.correct).length),
     ),
   };
+  doc.evaluationFailures = evaluationFailures;
+
+  // ── adversarial robustness probe: hostile inputs must degrade, never throw,
+  // and every emitted confidence must be a finite probability.
+  doc.robustness = probeRobustness(extractor);
 
   // ── model A: isotonic on the transparent heuristic
   const isoPairsTrain = withNormalize.map((r) => [r.features.heuristicConfidence, r.correct ? 1 : 0]);
@@ -359,6 +432,7 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
 
   const params = {
     schema: 'medtwin.extractionCalibration/1',
+    trainedAt: new Date().toISOString(),
     model: {
       kind: chosen.kind,
       featureNames: FEATURE_NAMES,
@@ -376,12 +450,13 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
     },
     diagnostics: doc,
     corpus: {
-      name: 'synthetic-lab-reading-v1',
+      name: 'synthetic-lab-reading-v2',
       description:
-        'Marker names/units/values sampled from the committed knowledge catalogue, corrupted with the documented OCR noise model in scripts/knowledge/corruptor.js.',
+        'Marker names/units/values sampled from the committed knowledge catalogue, corrupted with the documented OCR noise model in scripts/knowledge/corruptor.js (18 corruption families incl. case/punctuation/thousands-separator/sign/digit damage, 16 report layouts, intensity 0–4).',
       seed,
       perMarker,
       intensities,
+      corruptionFamilies: 18,
       patientsUsed: 0,
       note: 'No patient records are used or redistributed. This measures OCR reading reliability, not clinical accuracy.',
     },
@@ -405,9 +480,66 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
   return { params, modelSummary: { chosen: chosen.kind, baseline, isoOnly, logisticPlusIso, doc } };
 }
 
-const clamp01 = (p) => Math.min(0.999, Math.max(0.001, p));
-const ratio = (a, b) => (b === 0 ? 0 : a / b);
-const round4 = (x) => Math.round(x * 1e4) / 1e4;
+const clamp01 = (p) => {
+  const n = Number(p);
+  if (!Number.isFinite(n)) return 0.5;
+  return Math.min(0.999, Math.max(0.001, n));
+};
+const ratio = (a, b) => {
+  const x = Number(a);
+  const y = Number(b);
+  if (!Number.isFinite(x) || !Number.isFinite(y) || y === 0) return 0;
+  return x / y;
+};
+const round4 = (x) => {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n * 1e4) / 1e4;
+};
+
+/**
+ * Hostile-input probe over the extraction pipeline. Each case must (a) not
+ * throw and (b) emit only finite confidences in [0,1]. Recorded in the
+ * artifact so reviewers can see the "never crash" property is measured.
+ */
+export function probeRobustness(extractor) {
+  const cases = [
+    ['empty', ''],
+    ['whitespace', '   \n\t  \n'],
+    ['null-bytes', 'Glucose\x00126\x00 mg/dL'],
+    ['no-digits', 'Hemoglobin mg/dL reference range'],
+    ['nan-token', 'Glucose NaN mg/dL 70 - 100'],
+    ['infinity-token', 'Glucose Infinity mg/dL'],
+    ['huge-number', 'Glucose 99999999999999999999999 mg/dL 70 - 100'],
+    ['negative', 'Glucose -42 mg/dL 70 - 100'],
+    ['unicode-soup', 'Glucośe\u200b 12\u00a06 mg\u2044dL \u2191\u2193'],
+    ['long-line', `${'Glucose 126 mg/dL '.repeat(500)}70 - 100`],
+    ['many-lines', Array.from({ length: 3000 }, (_, i) => `Marker${i} ${i} mg/dL`).join('\n')],
+    ['sql-injection', "Glucose 126'; DROP TABLE lab_results; -- mg/dL"],
+    ['html-injection', '<script>alert(1)</script> Glucose 126 mg/dL'],
+    ['emoji', '💉 Glucose 😷 126 mg/dL ✅'],
+    ['tabs-crlf', 'Glucose\r\n\t126\r\n\tmg/dL\r\n'],
+  ];
+  const results = [];
+  for (const [name, input] of cases) {
+    try {
+      const out = extractor.extract(input);
+      const rows = Array.isArray(out?.extracted) ? out.extracted : [];
+      const bad = rows.filter(
+        (r) => !Number.isFinite(r?.confidence) || r.confidence < 0 || r.confidence > 1
+          || (r.value != null && !Number.isFinite(r.value)),
+      );
+      results.push({ case: name, threw: false, rows: rows.length, invalidConfidences: bad.length });
+    } catch (err) {
+      results.push({ case: name, threw: true, error: String(err?.message || err).slice(0, 200) });
+    }
+  }
+  return {
+    threw: results.filter((r) => r.threw).length,
+    invalidConfidences: results.reduce((s, r) => s + (r.invalidConfidences || 0), 0),
+    cases: results,
+  };
+}
 
 /* ------------------------------------------------------------------- CLI --- */
 
@@ -416,7 +548,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
     return hit ? Number(hit.split('=')[1]) : dflt;
   };
-  const perMarker = process.argv.includes('--quick') ? 1 : arg('per-marker', 2);
+  const perMarker = process.argv.includes('--quick') ? 1 : arg('per-marker', 3);
   const started = Date.now();
   resetPatternIndex();
   const { params, modelSummary } = runTraining({ perMarker });
@@ -444,5 +576,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(
     `  plausibility guard caught ${m.doc.plausibilityGuard.flaggedSuspicious}/${m.doc.plausibilityGuard.wrongReads} wrong reads ` +
       `(${(m.doc.plausibilityGuard.flagRate * 100).toFixed(1)}%), false-flagged ${(m.doc.plausibilityGuard.falseFlagRateOnCorrect * 100).toFixed(2)}% of correct reads`,
+  );
+  const rob = params.diagnostics.robustness;
+  console.log(
+    `  robustness probe: ${rob.threw} throws, ${rob.invalidConfidences} invalid confidences across ${rob.cases.length} hostile inputs` +
+      ` · evaluation failures: ${params.diagnostics.evaluationFailures}`,
   );
 }

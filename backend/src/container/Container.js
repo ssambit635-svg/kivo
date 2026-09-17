@@ -9,6 +9,7 @@ import { MemberRepository } from '../repositories/MemberRepository.js';
 import { ReportRepository } from '../repositories/ReportRepository.js';
 import { LabResultRepository } from '../repositories/LabResultRepository.js';
 import { ObservationRepository } from '../repositories/ObservationRepository.js';
+import { ReminderRepository } from '../repositories/ReminderRepository.js';
 import { AuditLogRepository } from '../repositories/AuditLogRepository.js';
 
 import { PasswordService } from '../services/PasswordService.js';
@@ -24,6 +25,10 @@ import { RiskModelService } from '../services/RiskModelService.js';
 import { DoctorSummaryService } from '../services/DoctorSummaryService.js';
 import { HealthScoreService } from '../services/HealthScoreService.js';
 import { MilestoneService } from '../services/MilestoneService.js';
+import { ReminderService } from '../services/ReminderService.js';
+import { GuidanceService } from '../services/GuidanceService.js';
+import { MedicationAwarenessService } from '../services/MedicationAwarenessService.js';
+import { PrivacyService } from '../services/PrivacyService.js';
 import { AdminService } from '../services/AdminService.js';
 import { LabExtractionService } from '../services/labs/LabExtractionService.js';
 import { knowledgeReport } from '../knowledge/report.js';
@@ -40,6 +45,7 @@ import { AuthController } from '../controllers/AuthController.js';
 import { MemberController } from '../controllers/MemberController.js';
 import { ReportController } from '../controllers/ReportController.js';
 import { HealthIntelController } from '../controllers/HealthIntelController.js';
+import { ReminderController } from '../controllers/ReminderController.js';
 import { AdminController } from '../controllers/AdminController.js';
 import { IntelligenceController } from '../controllers/IntelligenceController.js';
 
@@ -63,6 +69,7 @@ export class Container {
     this.reportRepository = new ReportRepository(this.db);
     this.labResultRepository = new LabResultRepository(this.db);
     this.observationRepository = new ObservationRepository(this.db);
+    this.reminderRepository = new ReminderRepository(this.db);
     this.auditLogRepository = new AuditLogRepository(this.db);
 
     // --- core services ---
@@ -109,6 +116,36 @@ export class Container {
       reportRepository: this.reportRepository,
       labResultRepository: this.labResultRepository,
       auditLogRepository: this.auditLogRepository,
+    });
+    this.guidanceService = new GuidanceService({
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      trendService: this.trendService,
+      policyService: this.policyService,
+      llmGateway: this.llmGateway,
+    });
+    this.medicationAwarenessService = new MedicationAwarenessService({
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      policyService: this.policyService,
+    });
+    this.reminderService = new ReminderService({
+      reminderRepository: this.reminderRepository,
+      policyService: this.policyService,
+      auditService: this.auditService,
+    });
+    this.privacyService = new PrivacyService({
+      userRepository: this.userRepository,
+      memberRepository: this.memberRepository,
+      reportRepository: this.reportRepository,
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      reminderRepository: this.reminderRepository,
+      refreshTokenRepository: this.refreshTokenRepository,
+      auditLogRepository: this.auditLogRepository,
+      passwordService: this.passwordService,
+      auditService: this.auditService,
+      db: this.db,
     });
 
     // --- Personal Health Intelligence Engine (ADD-ON: read-only, CPU-only) ---
@@ -171,7 +208,7 @@ export class Container {
     });
 
     // --- controllers + middleware factories ---
-    this.authController = new AuthController(this.authService);
+    this.authController = new AuthController(this.authService, this.privacyService);
     this.memberController = new MemberController(this.memberService);
     this.reportController = new ReportController(this.reportService);
     this.healthIntelController = new HealthIntelController({
@@ -181,10 +218,13 @@ export class Container {
       doctorSummaryService: this.doctorSummaryService,
       healthScoreService: this.healthScoreService,
       milestoneService: this.milestoneService,
+      guidanceService: this.guidanceService,
+      medicationAwarenessService: this.medicationAwarenessService,
       policyService: this.policyService,
       llmGateway: this.llmGateway,
       auditService: this.auditService,
     });
+    this.reminderController = new ReminderController(this.reminderService);
     this.adminController = new AdminController(this.adminService);
     this.intelligenceController = new IntelligenceController({
       orchestratorService: this.intelligenceOrchestratorService,

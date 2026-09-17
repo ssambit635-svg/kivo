@@ -155,6 +155,40 @@ const MIGRATIONS = [
       ALTER TABLE lab_results ADD COLUMN range_source TEXT;
     `,
   },
+  {
+    version: 3,
+    name: 'reminders-and-consent',
+    sql: `
+      -- Health reminders (§10.6 / §13 of the product spec): medication,
+      -- check-up, follow-up and report-upload nudges. Owned by the member's
+      -- data (cascade on member delete); the /due query powers in-app and
+      -- notification-style prompts without any external push service.
+      CREATE TABLE reminders (
+        id                   TEXT PRIMARY KEY,
+        member_id            TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+        created_by           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kind                 TEXT NOT NULL,
+        title                TEXT NOT NULL,
+        notes                TEXT,
+        due_at               TEXT NOT NULL,
+        repeat_interval_days INTEGER,
+        status               TEXT NOT NULL DEFAULT 'pending'
+                               CHECK (status IN ('pending','done','dismissed')),
+        snoozed_until        TEXT,
+        completed_at         TEXT,
+        created_at           TEXT NOT NULL,
+        updated_at           TEXT NOT NULL
+      );
+      CREATE INDEX idx_reminders_member ON reminders(member_id, status, due_at);
+
+      -- Explicit processing consent (§14): recorded at registration, travels
+      -- with the data export, and is shown on the profile.
+      ALTER TABLE users ADD COLUMN consented_at TEXT;
+      ALTER TABLE users ADD COLUMN consent_version TEXT;
+      UPDATE users SET consented_at = created_at, consent_version = '1.0'
+        WHERE consented_at IS NULL;
+    `,
+  },
 ];
 
 export function runMigrations(database) {

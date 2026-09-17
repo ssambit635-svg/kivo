@@ -23,6 +23,8 @@ export class User {
       displayName: this.display_name,
       role: this.role,
       status: this.status,
+      consentedAt: this.consented_at ?? null,
+      consentVersion: this.consent_version ?? null,
       createdAt: this.created_at,
       lastLoginAt: this.last_login_at,
     };

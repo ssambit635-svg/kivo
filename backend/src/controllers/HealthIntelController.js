@@ -31,13 +31,15 @@ export const healthSchemas = {
  * observations/journal, doctor summary, health score timeline, milestones.
  */
 export class HealthIntelController {
-  constructor({ trendService, riskModelService, observationService, doctorSummaryService, healthScoreService, milestoneService, policyService, llmGateway, auditService }) {
+  constructor({ trendService, riskModelService, observationService, doctorSummaryService, healthScoreService, milestoneService, guidanceService, medicationAwarenessService, policyService, llmGateway, auditService }) {
     this.trends = trendService;
     this.risk = riskModelService;
     this.observations = observationService;
     this.summaries = doctorSummaryService;
     this.healthScore = healthScoreService;
     this.milestones = milestoneService;
+    this.guidance = guidanceService;
+    this.medicationAwareness = medicationAwarenessService;
     this.policy = policyService;
     this.llm = llmGateway;
     this.audit = auditService;
@@ -135,6 +137,24 @@ export class HealthIntelController {
     try {
       const member = this.loadReadableMember(req);
       res.json(this.milestones.evaluate(member.id));
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  /** Personalized diet & lifestyle guidance (general information only). */
+  getGuidance = async (req, res, next) => {
+    try {
+      res.json(await this.guidance.forMember(req.actor, req.params.memberId));
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  /** Medication & lab awareness (discussion topics, not an interaction check). */
+  getMedicationAwareness = (req, res, next) => {
+    try {
+      res.json(this.medicationAwareness.forMember(req.actor, req.params.memberId));
     } catch (e) {
       next(e);
     }

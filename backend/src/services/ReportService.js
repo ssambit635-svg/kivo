@@ -63,8 +63,11 @@ export class ReportService {
 
     if (file) {
       buffer = file.buffer;
-      finalMime = (file.mimetype || 'application/octet-stream').toLowerCase();
-      originalName = file.originalname;
+      if (!buffer || typeof buffer.length !== 'number' || buffer.length === 0) {
+        throw new ValidationError('The uploaded file is empty or unreadable — please try again');
+      }
+      finalMime = String(file.mimetype || 'application/octet-stream').toLowerCase();
+      originalName = file.originalname ? String(file.originalname).slice(0, 255) : null;
       if (buffer.length > this.config.maxUploadBytes) {
         throw new ValidationError(`File exceeds the ${Math.round(this.config.maxUploadBytes / 1048576)} MB limit`);
       }
@@ -79,7 +82,14 @@ export class ReportService {
       storagePath = path.join(dir, fileName);
       fs.writeFileSync(storagePath, buffer);
     } else if (text != null) {
-      buffer = Buffer.from(String(text), 'utf8');
+      const asText = typeof text === 'string' ? text : String(text ?? '');
+      if (!asText.trim()) {
+        throw new ValidationError('Report text is empty — paste the report content or upload a file');
+      }
+      if (asText.length > 500_000) {
+        throw new ValidationError('Report text exceeds the 500 KB limit — split it across multiple reports');
+      }
+      buffer = Buffer.from(asText, 'utf8');
       finalMime = mimeType || 'text/plain';
     } else {
       throw new ValidationError('Provide either a file upload or report text');
@@ -114,7 +124,18 @@ export class ReportService {
       return { report: this.withBadge(updated), preview: { extracted: [], needsManualEntry: true, note: message } };
     }
 
-    const { extracted, detectedReportDate } = this.extractor.extract(ocrResult.text);
+    // Extraction must never strand a report in 'uploaded': a throw here becomes
+    // a needs_review report with zero drafts + manual-entry guidance.
+    let extracted = [];
+    let detectedReportDate = null;
+    let extractionNote = null;
+    try {
+      const out = this.extractor.extract(ocrResult.text);
+      extracted = Array.isArray(out?.extracted) ? out.extracted : [];
+      detectedReportDate = out?.detectedReportDate ?? null;
+    } catch (err) {
+      extractionNote = `Automatic value extraction stumbled on this report (${err?.message || 'unexpected error'}) — review the text below and add values manually.`;
+    }
     const updated = this.reports.setOcrResult(report.id, {
       status: 'needs_review',
       ocrText: this.clip(ocrResult.text, 20000),
@@ -160,6 +181,7 @@ export class ReportService {
         extracted: created.map((r) => r.toJSON()),
         needsManualEntry: created.length === 0,
         note: (() => {
+          if (extractionNote) return extractionNote;
           if (created.length === 0) {
             return 'No lab values were recognized — please review the text and add values manually.';
           }
@@ -283,11 +305,22 @@ export class ReportService {
     const { report } = this.policy.loadReportWithAccess(actor, this.reports, reportId);
     const { member } = this.policy.loadMemberWithAccess(actor, report.member_id);
     const results = this.labs.listByReport(reportId).map((r) => r.toJSON());
-    const narration = await this.llm.narrate('explain_report', {
-      memberName: member.name,
-      reportDate: report.report_date,
-      markers: results,
-    });
+    let narration;
+    try {
+      narration = await this.llm.narrate('explain_report', {
+        memberName: member.name,
+        reportDate: report.report_date,
+        markers: results,
+      });
+    } catch {
+      // Narration is advisory — the structured values are the payload.
+      narration = {
+        text: `Report for ${member.name} with ${results.length} recorded value(s). Automatic narration is temporarily unavailable — the values above are complete and can be reviewed directly.`,
+        provider: 'fallback',
+        deterministic: true,
+        grounding: { valuesFrom: 'structured-validated-input', markerCount: results.length },
+      };
+    }
     return { reportId, results, explanation: narration };
   }
 

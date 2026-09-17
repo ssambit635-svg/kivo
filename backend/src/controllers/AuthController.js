@@ -17,11 +17,13 @@ export const authSchemas = {
     currentPassword: passwordSchema,
     newPassword: z.string().min(12, 'Password must be at least 12 characters').max(128),
   }),
+  deleteAccount: z.object({ password: passwordSchema }),
 };
 
 export class AuthController {
-  constructor(authService) {
+  constructor(authService, privacyService = null) {
     this.auth = authService;
+    this.privacy = privacyService;
   }
 
   register = async (req, res, next) => {
@@ -76,5 +78,21 @@ export class AuthController {
 
   me = (req, res) => {
     res.json({ user: req.actor.toJSON() });
+  };
+
+  exportMyData = (req, res, next) => {
+    try {
+      res.json(this.privacy.exportFor(req.actor, ctxFromReq(req)));
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  deleteMe = async (req, res, next) => {
+    try {
+      res.json(await this.privacy.deleteAccount(req.actor, req.body, ctxFromReq(req)));
+    } catch (e) {
+      next(e);
+    }
   };
 }

@@ -10,14 +10,17 @@ export class UserRepository extends BaseRepository {
   create({ email, displayName, passwordHash, role = 'user' }) {
     const id = this.id();
     const now = this.now();
+    // Registration records processing consent (§14): creating the account is
+    // the consent gesture; the timestamp + version travel with data exports.
     this.db.run(
-      `INSERT INTO users (id, email, display_name, password_hash, role, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
+      `INSERT INTO users (id, email, display_name, password_hash, role, status, consented_at, consent_version, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'active', ?, '1.0', ?, ?)`,
       id,
       email.toLowerCase(),
       displayName,
       passwordHash,
       role,
+      now,
       now,
       now,
     );

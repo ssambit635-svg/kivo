@@ -66,20 +66,49 @@ export class CounterfactualTwinService {
    * detached copy; mutating it can never touch stored data.
    */
   snapshot(member) {
-    const latest = (code) => this.labs.latestForMember(member.id, code)?.value ?? null;
-    const weight = this.observations.latestOfKind(member.id, 'weight')?.data?.weightKg ?? null;
-    const bp = this.observations.latestOfKind(member.id, 'bp')?.data ?? {};
-    const activity = this.observations.latestOfKind(member.id, 'activity')?.data?.minutesPerWeek ?? null;
-    const sleep = this.observations.latestOfKind(member.id, 'sleep')?.data?.hours ?? null;
-    const bmi = weight != null && member.height_cm ? Number((weight / (member.height_cm / 100) ** 2).toFixed(1)) : null;
+    const memberId = member?.id ?? null;
+    // NOTE: null/'' must stay null — Number(null) === 0 would fabricate a reading.
+    const toNumOrNull = (v) => {
+      if (v == null || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+    const latest = (code) => {
+      try {
+        return memberId ? toNumOrNull(this.labs.latestForMember(memberId, code)?.value ?? null) : null;
+      } catch {
+        return null;
+      }
+    };
+    const latestObsField = (kind, field) => {
+      try {
+        return memberId ? toNumOrNull(this.observations.latestOfKind(memberId, kind)?.data?.[field] ?? null) : null;
+      } catch {
+        return null;
+      }
+    };
+    const weight = latestObsField('weight', 'weightKg');
+    let bp = {};
+    try {
+      bp = (memberId ? this.observations.latestOfKind(memberId, 'bp')?.data : null) || {};
+      if (typeof bp !== 'object') bp = {};
+    } catch {
+      bp = {};
+    }
+    const activity = latestObsField('activity', 'minutesPerWeek');
+    const sleep = latestObsField('sleep', 'hours');
+    const heightCm = Number(member?.height_cm ?? member?.heightCm);
+    const bmi = weight != null && Number.isFinite(heightCm) && heightCm >= 30 && heightCm <= 280
+      ? safeBmi(weight, heightCm)
+      : null;
     return {
       weightKg: weight,
       activityMinutesPerWeek: activity,
       sleepHours: sleep,
-      systolicBp: bp.systolic ?? null,
-      diastolicBp: bp.diastolic ?? null,
+      systolicBp: Number.isFinite(Number(bp.systolic)) ? Number(bp.systolic) : null,
+      diastolicBp: Number.isFinite(Number(bp.diastolic)) ? Number(bp.diastolic) : null,
       bmi,
-      heightCm: member.height_cm ?? null,
+      heightCm: Number.isFinite(Number(member?.height_cm ?? member?.heightCm)) ? Number(member?.height_cm ?? member?.heightCm) : null,
       hba1c: latest('hba1c'),
       fastingGlucose: latest('fasting_glucose'),
       hdl: latest('hdl'),
@@ -108,9 +137,10 @@ export class CounterfactualTwinService {
       changedFactors.push(mapped.factor);
     }
 
-    // BMI follows hypothetical weight when height is known.
-    if (clean.weightKg != null && member.height_cm) {
-      scenario.bmi = Number((clean.weightKg / (member.height_cm / 100) ** 2).toFixed(1));
+    // BMI follows hypothetical weight when height is known and sane.
+    const simHeight = Number(member?.height_cm ?? member?.heightCm);
+    if (clean.weightKg != null && Number.isFinite(simHeight) && simHeight >= 30 && simHeight <= 280) {
+      scenario.bmi = safeBmi(clean.weightKg, simHeight);
     }
 
     const modelBefore = this.risk.assess(member);
@@ -260,11 +290,12 @@ export class CounterfactualTwinService {
     const base = { field, label: SCENARIO_BOUNDS[field].label, unit: SCENARIO_BOUNDS[field].unit, from, to: value };
     switch (field) {
       case 'weightKg': {
-        if (!member.height_cm) {
+        const h = Number(member?.height_cm ?? member?.heightCm);
+        const bmi = safeBmi(value, h);
+        if (bmi == null) {
           return { overrides: {}, factor: { ...base, modelEffect: 'not_computable', note: 'Height is not recorded, so no hypothetical BMI can be derived — no model effect computed.' } };
         }
-        const bmi = Number((value / (member.height_cm / 100) ** 2).toFixed(1));
-        return { overrides: { bmi }, factor: { ...base, modelEffect: 'via_bmi', derivedBmi: bmi, note: `Mapped to hypothetical BMI ${bmi} (height ${member.height_cm} cm).` } };
+        return { overrides: { bmi }, factor: { ...base, modelEffect: 'via_bmi', derivedBmi: bmi, note: `Mapped to hypothetical BMI ${bmi} (height ${h} cm).` } };
       }
       case 'activityMinutesPerWeek': {
         const level = value < 60 ? 0 : value < 150 ? 1 : 2; // same bands as the risk model
@@ -305,21 +336,41 @@ export class CounterfactualTwinService {
   }
 }
 
+/** BMI with validated inputs — never Infinity/NaN (height is pre-validated by callers). */
+function safeBmi(weightKg, heightCm) {
+  try {
+    const w = Number(weightKg);
+    const h = Number(heightCm);
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h < 30 || h > 280) return null;
+    const out = Number((w / (h / 100) ** 2).toFixed(1));
+    return Number.isFinite(out) ? out : null;
+  } catch {
+    return null;
+  }
+}
+
 function diffContributions(before, after) {
-  const bMap = new Map(before.contributingFactors.map((f) => [f.feature, f]));
-  const aMap = new Map(after.contributingFactors.map((f) => [f.feature, f]));
+  const bFactors = Array.isArray(before?.contributingFactors) ? before.contributingFactors : [];
+  const aFactors = Array.isArray(after?.contributingFactors) ? after.contributingFactors : [];
+  const bMap = new Map(bFactors.filter((f) => f && f.feature).map((f) => [f.feature, f]));
+  const aMap = new Map(aFactors.filter((f) => f && f.feature).map((f) => [f.feature, f]));
   const features = new Set([...bMap.keys(), ...aMap.keys()]);
   const out = [];
   for (const feature of features) {
     const b = bMap.get(feature);
     const a = aMap.get(feature);
+    const cb = Number(b?.contribution);
+    const ca = Number(a?.contribution);
+    const contributionBefore = Number.isFinite(cb) ? cb : 0;
+    const contributionAfter = Number.isFinite(ca) ? ca : 0;
+    const delta = contributionAfter - contributionBefore;
     out.push({
       feature,
-      label: (a || b).label,
-      unit: (a || b).unit ?? null,
-      contributionBefore: b ? b.contribution : 0,
-      contributionAfter: a ? a.contribution : 0,
-      delta: Math.round(((a ? a.contribution : 0) - (b ? b.contribution : 0)) * 1000) / 1000,
+      label: (a || b)?.label || feature,
+      unit: (a || b)?.unit ?? null,
+      contributionBefore,
+      contributionAfter,
+      delta: Number.isFinite(delta) ? Math.round(delta * 1000) / 1000 : 0,
       valueBefore: b ? b.value : null,
       valueAfter: a ? a.value : null,
       overriddenAfter: a ? !!a.overridden : false,

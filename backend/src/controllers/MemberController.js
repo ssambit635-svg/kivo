@@ -73,6 +73,14 @@ export class MemberController {
     }
   };
 
+  familyHistory = (req, res, next) => {
+    try {
+      res.json(this.members.familyHistoryContext(req.actor, req.params.memberId));
+    } catch (e) {
+      next(e);
+    }
+  };
+
   listShares = (req, res, next) => {
     try {
       res.json({ items: this.members.listShares(req.actor, req.params.memberId) });

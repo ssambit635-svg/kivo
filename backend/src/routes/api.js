@@ -7,6 +7,7 @@ import { reportSchemas } from '../controllers/ReportController.js';
 import { healthSchemas } from '../controllers/HealthIntelController.js';
 import { adminSchemas } from '../controllers/AdminController.js';
 import { intelligenceSchemas } from '../controllers/IntelligenceController.js';
+import { reminderSchemas } from '../controllers/ReminderController.js';
 
 /** Builds and wires every API route against the container. */
 export function buildApiRouter(c) {
@@ -49,6 +50,8 @@ export function buildApiRouter(c) {
   const secure = (method, path, ...handlers) => r[method](path, c.authenticateMw, ...handlers);
 
   secure('get', '/profile', (req, res) => res.json({ user: req.actor.toJSON() }));
+  secure('get', '/profile/export', c.authController.exportMyData);
+  secure('delete', '/profile', validate({ body: authSchemas.deleteAccount }), c.authController.deleteMe);
 
   // members
   secure('get', '/members', c.memberController.list);
@@ -56,6 +59,7 @@ export function buildApiRouter(c) {
   secure('get', '/members/:memberId', validate({ params: memberSchemas.memberParams }), c.memberController.get);
   secure('patch', '/members/:memberId', validate({ params: memberSchemas.memberParams, body: memberSchemas.update }), c.memberController.update);
   secure('delete', '/members/:memberId', validate({ params: memberSchemas.memberParams }), c.memberController.remove);
+  secure('get', '/members/:memberId/family-history', validate({ params: memberSchemas.memberParams }), c.memberController.familyHistory);
   secure('get', '/members/:memberId/shares', validate({ params: memberSchemas.memberParams }), c.memberController.listShares);
   secure('post', '/members/:memberId/shares', validate({ params: memberSchemas.memberParams, body: memberSchemas.share }), c.memberController.grantShare);
   secure('delete', '/members/:memberId/shares/:granteeUserId', validate({ params: memberSchemas.revokeShareParams }), c.memberController.revokeShare);
@@ -95,6 +99,15 @@ export function buildApiRouter(c) {
   secure('get', '/members/:memberId/doctor-summary', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getDoctorSummary);
   secure('get', '/members/:memberId/health-score', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getHealthScore);
   secure('get', '/members/:memberId/milestones', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getMilestones);
+  secure('get', '/members/:memberId/guidance', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getGuidance);
+  secure('get', '/members/:memberId/medication-awareness', validate({ params: healthSchemas.memberParams }), c.healthIntelController.getMedicationAwareness);
+
+  // reminders (§10.6 + §13: medication / checkup / follow-up / report-upload nudges)
+  secure('post', '/members/:memberId/reminders', validate({ params: reminderSchemas.memberParams, body: reminderSchemas.create }), c.reminderController.create);
+  secure('get', '/members/:memberId/reminders', validate({ params: reminderSchemas.memberParams, query: reminderSchemas.listQuery }), c.reminderController.list);
+  secure('get', '/members/:memberId/reminders/due', validate({ params: reminderSchemas.memberParams }), c.reminderController.due);
+  secure('patch', '/reminders/:reminderId', validate({ params: reminderSchemas.reminderParams, body: reminderSchemas.update }), c.reminderController.update);
+  secure('delete', '/reminders/:reminderId', validate({ params: reminderSchemas.reminderParams }), c.reminderController.remove);
 
   // personal health intelligence engine (ADD-ON — read-only computations + hypothetical scenarios)
   secure('get', '/members/:memberId/intelligence', validate({ params: intelligenceSchemas.memberParams }), c.intelligenceController.getIntelligence);

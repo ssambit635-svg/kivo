@@ -33,28 +33,62 @@ export class IntelligenceOrchestratorService {
     this.cache = new Map(); // memberId → { fingerprint, at, evidence }
   }
 
-  /** Full evidence package (cached briefly; fingerprint-guarded). */
+  /** Full evidence package (cached briefly; fingerprint-guarded). Never throws — degrades. */
   getEvidence(member) {
-    const fingerprint = this.fingerprint(member);
-    const cached = this.cache.get(member.id);
-    if (cached && cached.fingerprint === fingerprint && Date.now() - cached.at < CACHE_TTL_MS) {
-      return cached.evidence;
+    try {
+      const memberId = member?.id ?? null;
+      const fingerprint = this.fingerprint(member);
+      const cached = memberId ? this.cache.get(memberId) : null;
+      if (cached && cached.fingerprint === fingerprint && Date.now() - cached.at < CACHE_TTL_MS) {
+        return cached.evidence;
+      }
+      const evidence = this.buildEvidence(member);
+      if (memberId) {
+        this.cache.set(memberId, { fingerprint, at: Date.now(), evidence });
+        if (this.cache.size > 500) {
+          // opportunistic bound — drop the oldest entries
+          const oldest = [...this.cache.entries()].sort((a, b) => a[1].at - b[1].at).slice(0, 100);
+          for (const [k] of oldest) this.cache.delete(k);
+        }
+      }
+      return evidence;
+    } catch {
+      return this.degradedEvidence(member);
     }
-    const evidence = this.buildEvidence(member);
-    this.cache.set(member.id, { fingerprint, at: Date.now(), evidence });
-    if (this.cache.size > 500) {
-      // opportunistic bound — drop the oldest entries
-      const oldest = [...this.cache.entries()].sort((a, b) => a[1].at - b[1].at).slice(0, 100);
-      for (const [k] of oldest) this.cache.delete(k);
-    }
-    return evidence;
+  }
+
+  /** Minimal package used only when a component throws — routes keep responding. */
+  degradedEvidence(member) {
+    return {
+      memberId: member?.id ?? null,
+      memberName: member?.name ?? null,
+      generatedAt: new Date().toISOString(),
+      degraded: true,
+      dataSummary: { signalCount: 0, verifiedLabCount: 0, observationCount: 0, symptomCount: 0, medicationCount: 0 },
+      baselines: { signalCount: 0, baselines: [], dataContext: { verifiedLabCount: 0, observationCount: 0, symptomCount: 0, medicationCount: 0 }, overallConfidence: { level: 'low' } },
+      anomalies: { findings: [] },
+      graph: { nodes: [], edges: [] },
+      risk: null,
+      uncertainty: { level: 'low', reasons: ['Intelligence is temporarily unavailable for this member.'], note: 'Partial results — try again shortly.' },
+      summaryCards: [],
+      disclaimers: [INTELLIGENCE_DISCLAIMER],
+    };
   }
 
   buildEvidence(member) {
-    const baselines = this.baselineService.baselinesFor(member);
-    const anomalies = this.anomalyService.analyze(member);
-    const graph = this.graphService.build(member);
-    const risk = this.risk.assess(member);
+    const build = (fn, fallback) => {
+      try {
+        const out = fn();
+        return out && typeof out === 'object' ? out : fallback;
+      } catch {
+        return fallback;
+      }
+    };
+    const degraded = this.degradedEvidence(member);
+    const baselines = build(() => this.baselineService.baselinesFor(member), degraded.baselines);
+    const anomalies = build(() => this.anomalyService.analyze(member), degraded.anomalies);
+    const graph = build(() => this.graphService.build(member), degraded.graph);
+    const risk = build(() => this.risk.assess(member), null);
     const uncertainty = this.overallUncertainty({ member, baselines, anomalies, risk });
     const summaryCards = this.summaryCards({ member, baselines, anomalies, graph, risk, uncertainty });
 
@@ -93,33 +127,45 @@ export class IntelligenceOrchestratorService {
 
   overallUncertainty({ member, baselines, anomalies, risk }) {
     const reasons = [];
-    const levels = baselines.baselines.map((b) => b.confidence.level);
-    const lowCount = levels.filter((l) => l === 'low').length;
-    const gapCount = anomalies.findings.filter((f) => f.type === 'data_gap').length;
+    let level = 'low';
+    try {
+      const list = Array.isArray(baselines?.baselines) ? baselines.baselines : [];
+      const levels = list.map((b) => b?.confidence?.level);
+      const lowCount = levels.filter((l) => l === 'low').length;
+      const findings = Array.isArray(anomalies?.findings) ? anomalies.findings : [];
+      const gapCount = findings.filter((f) => f?.type === 'data_gap').length;
+      const signalCount = Number(baselines?.signalCount) || 0;
+      const completeness = Number(risk?.result?.completeness);
 
-    reasons.push(
-      `${baselines.signalCount} signal(s): ${levels.filter((l) => l === 'high').length} high, ` +
-      `${levels.filter((l) => l === 'moderate').length} moderate, ${lowCount} low baseline confidence.`,
-    );
-    reasons.push(`Prototype risk model data completeness: ${Math.round(risk.result.completeness * 100)}%.`);
-    if (gapCount > 0) reasons.push(`${gapCount} data-gap finding(s) — some periods have no recorded values.`);
-    if (baselines.dataContext.medicationCount > 0 || baselines.dataContext.symptomCount > 0) {
-      reasons.push('Recorded symptoms/medications exist as context; the engines do not interpret them medically.');
-    }
-
-    let level = 'moderate';
-    if (baselines.signalCount === 0 || risk.result.completeness < 0.5) {
-      level = 'low';
       reasons.push(
-        baselines.signalCount === 0
-          ? 'No verified health signals yet — intelligence statements cannot be grounded.'
-          : 'Very low data completeness — intelligence statements are highly uncertain.',
+        `${signalCount} signal(s): ${levels.filter((l) => l === 'high').length} high, ` +
+        `${levels.filter((l) => l === 'moderate').length} moderate, ${lowCount} low baseline confidence.`,
       );
-    } else if (lowCount === 0 && risk.result.completeness >= 0.75 && gapCount === 0) {
-      level = 'high';
-      reasons.push('Repeated verified observations with good completeness — the firmest grounding this prototype offers.');
-    } else {
-      reasons.push('Mixed evidence strength — individual findings carry their own confidence levels; check each one.');
+      reasons.push(`Prototype risk model data completeness: ${Number.isFinite(completeness) ? Math.round(completeness * 100) : 0}%.`);
+      if (gapCount > 0) reasons.push(`${gapCount} data-gap finding(s) — some periods have no recorded values.`);
+      const ctx = baselines?.dataContext || {};
+      if (Number(ctx.medicationCount) > 0 || Number(ctx.symptomCount) > 0) {
+        reasons.push('Recorded symptoms/medications exist as context; the engines do not interpret them medically.');
+      }
+
+      level = 'moderate';
+      if (signalCount === 0 || !(completeness >= 0.5)) {
+        level = 'low';
+        reasons.push(
+          signalCount === 0
+            ? 'No verified health signals yet — intelligence statements cannot be grounded.'
+            : 'Very low data completeness — intelligence statements are highly uncertain.',
+        );
+      } else if (lowCount === 0 && completeness >= 0.75 && gapCount === 0) {
+        level = 'high';
+        reasons.push('Repeated verified observations with good completeness — the firmest grounding this prototype offers.');
+      } else {
+        reasons.push('Mixed evidence strength — individual findings carry their own confidence levels; check each one.');
+      }
+    } catch {
+      reasons.length = 0;
+      reasons.push('Uncertainty could not be computed from the available pieces — treating confidence as low.');
+      level = 'low';
     }
 
     void member;
@@ -136,48 +182,54 @@ export class IntelligenceOrchestratorService {
   summaryCards({ member, baselines, anomalies, graph, risk, uncertainty }) {
     void member;
     const cards = [];
+    const bList = Array.isArray(baselines?.baselines) ? baselines.baselines : [];
+    const signalCount = Number(baselines?.signalCount) || 0;
+    const findings = Array.isArray(anomalies?.findings) ? anomalies.findings : [];
+    const edges = Array.isArray(graph?.edges) ? graph.edges : [];
+    const factors = Array.isArray(risk?.result?.contributingFactors) ? risk.result.contributingFactors : [];
+    const completeness = Number(risk?.result?.completeness);
 
     // Personal Baseline card
-    const shifted = baselines.baselines.filter((b) => ['sudden_deviation', 'persistent_deviation', 'gradual_drift'].includes(b.status));
+    const shifted = bList.filter((b) => b && ['sudden_deviation', 'persistent_deviation', 'gradual_drift'].includes(b.status));
     cards.push({
       key: 'personal_baseline',
       title: 'Personal Baseline',
-      headline: baselines.signalCount === 0
+      headline: signalCount === 0
         ? 'No personal baselines yet — verify a report to start yours.'
-        : `${baselines.signalCount} personal baseline(s); ${shifted.length} showing a historical shift.`,
+        : `${signalCount} personal baseline(s); ${shifted.length} showing a historical shift.`,
       detail: shifted.length > 0
-        ? shifted.slice(0, 3).map((b) => b.summary)
-        : baselines.baselines.slice(0, 3).map((b) => b.summary),
-      level: baselines.overallConfidence.level,
+        ? shifted.slice(0, 3).map((b) => b.summary).filter(Boolean)
+        : bList.slice(0, 3).map((b) => b?.summary).filter(Boolean),
+      level: baselines?.overallConfidence?.level || 'low',
     });
 
     // Detected Shift card
-    const topFinding = anomalies.findings[0] || null;
+    const topFinding = findings[0] || null;
     cards.push({
       key: 'detected_shift',
       title: 'Detected Shift',
       headline: !topFinding
         ? 'No notable shifts detected in the recorded history.'
-        : `${anomalies.findings.length} pattern(s) noted — top: ${findingHeadline(topFinding)}.`,
-      detail: topFinding ? [topFinding.interpretation] : [],
-      level: topFinding ? topFinding.severity : 'informational',
+        : `${findings.length} pattern(s) noted — top: ${findingHeadline(topFinding)}.`,
+      detail: topFinding?.interpretation ? [topFinding.interpretation] : [],
+      level: topFinding?.severity || 'informational',
       ref: topFinding ? { type: topFinding.type, signals: topFinding.signals } : null,
     });
 
     // Health Pattern card
-    const topEdge = [...graph.edges].sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0))[0] || null;
+    const topEdge = [...edges].sort((a, b) => (Number(b?.strength) || 0) - (Number(a?.strength) || 0))[0] || null;
     cards.push({
       key: 'health_pattern',
       title: 'Health Pattern',
       headline: !topEdge
         ? 'No signal relationships described yet — more overlapping history is needed.'
         : `Strongest described relationship: ${edgeHeadline(topEdge)} (${topEdge.type}).`,
-      detail: topEdge ? topEdge.evidence.slice(0, 2) : [],
-      level: topEdge ? topEdge.confidence.level : 'low',
+      detail: Array.isArray(topEdge?.evidence) ? topEdge.evidence.slice(0, 2) : [],
+      level: topEdge?.confidence?.level || 'low',
     });
 
     // Model Contribution card
-    const topFactor = risk.result.contributingFactors[0] || null;
+    const topFactor = factors[0] || null;
     cards.push({
       key: 'model_contribution',
       title: 'Model Contribution',
@@ -185,24 +237,26 @@ export class IntelligenceOrchestratorService {
         ? 'The prototype model has no inputs yet.'
         : `Top model driver: ${topFactor.label} = ${topFactor.value}${topFactor.unit ? ` ${topFactor.unit}` : ''} (${topFactor.effectOnEstimate} the estimate).`,
       detail: topFactor
-        ? [`Prototype estimate: ${risk.result.percent}% (${risk.result.band}); completeness ${Math.round(risk.result.completeness * 100)}%.`]
+        ? [`Prototype estimate: ${risk?.result?.percent ?? '—'}% (${risk?.result?.band ?? 'unknown'}); completeness ${Number.isFinite(completeness) ? Math.round(completeness * 100) : 0}%.`]
         : [],
-      level: risk.result.completeness >= 0.75 ? 'moderate' : 'low',
+      level: completeness >= 0.75 ? 'moderate' : 'low',
     });
 
     // Confidence card
+    const uReasons = Array.isArray(uncertainty?.reasons) ? uncertainty.reasons : [];
+    const uLevel = uncertainty?.level || 'low';
     cards.push({
       key: 'confidence',
       title: 'Confidence',
-      headline: `Overall intelligence confidence: ${uncertainty.level}.`,
-      detail: uncertainty.reasons.slice(0, 4),
-      level: uncertainty.level,
+      headline: `Overall intelligence confidence: ${uLevel}.`,
+      detail: uReasons.slice(0, 4),
+      level: uLevel,
     });
 
     // What Changed card
-    const movers = baselines.baselines
-      .filter((b) => b.latest.deviationZ != null)
-      .sort((a, b) => Math.abs(b.latest.deviationZ) - Math.abs(a.latest.deviationZ))
+    const movers = bList
+      .filter((b) => b && Number.isFinite(Number(b.latest?.deviationZ)))
+      .sort((a, b) => Math.abs(Number(b.latest.deviationZ)) - Math.abs(Number(a.latest.deviationZ)))
       .slice(0, 3);
     cards.push({
       key: 'what_changed',
@@ -221,21 +275,31 @@ export class IntelligenceOrchestratorService {
 }
 
 function findingHeadline(f) {
-  const heads = {
-    sudden_shift: `sudden personal deviation in ${f.markers.join(', ')}`,
-    gradual_drift: `gradual drift in ${f.markers.join(', ')}`,
-    persistent_deviation: `persistent deviation in ${f.markers.join(', ')}`,
-    change_point: `candidate change point in ${f.markers.join(', ')}`,
-    multivariate_shift: `coordinated movement across ${f.markers.join(', ')}`,
-    conflicting_measurements: `divergent movement between ${f.markers.join(' and ')}`,
-    data_gap: `data gap in ${f.markers.join(', ')}`,
-    unusual_combination: `unusual combination across ${f.markers.join(', ')}`,
-  };
-  return heads[f.type] || f.type;
+  try {
+    const markers = Array.isArray(f?.markers) ? f.markers : [];
+    const joined = markers.join(', ');
+    const heads = {
+      sudden_shift: `sudden personal deviation in ${joined}`,
+      gradual_drift: `gradual drift in ${joined}`,
+      persistent_deviation: `persistent deviation in ${joined}`,
+      change_point: `candidate change point in ${joined}`,
+      multivariate_shift: `coordinated movement across ${joined}`,
+      conflicting_measurements: `divergent movement between ${markers.join(' and ')}`,
+      data_gap: `data gap in ${joined}`,
+      unusual_combination: `unusual combination across ${joined}`,
+    };
+    return heads[f?.type] || f?.type || 'pattern';
+  } catch {
+    return 'pattern';
+  }
 }
 
 function edgeHeadline(e) {
-  return `${e.source} ↔ ${e.target}`;
+  try {
+    return `${e?.source ?? '?'} ↔ ${e?.target ?? '?'}`;
+  } catch {
+    return 'relationship';
+  }
 }
 
 export { timeOf };

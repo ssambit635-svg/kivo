@@ -46,10 +46,20 @@ describe('mobile readiness', () => {
     expect(new Config({ NODE_ENV: 'development', MAX_UPLOAD_MB: '5' }).maxUploadBytes).toBe(5 * 1024 * 1024);
   });
 
-  it('rejects PDFs with PDF-specific guidance', async () => {
+  it('rejects scanned PDFs (no text layer) with PDF-specific guidance', async () => {
     const ocr = new OcrService();
     await expect(ocr.extractText({ buffer: Buffer.from('%PDF-1.4'), mimeType: 'application/pdf' }))
-      .rejects.toThrow(/PDF files can't be read automatically yet/);
+      .rejects.toThrow(/no readable text layer.*paste it into the upload dialog/s);
+    await ocr.close();
+  });
+
+  it('reads digital PDFs with a text layer (best-effort, no dependency)', async () => {
+    const { buildDigitalPdf } = await import('./pdf-ocr.fixture.js');
+    const ocr = new OcrService();
+    const out = await ocr.extractText({ buffer: buildDigitalPdf(), mimeType: 'application/pdf' });
+    expect(out.provider).toBe('pdf-text');
+    expect(out.text).toMatch(/Glucose/);
+    expect(out.text).toMatch(/126/);
     await ocr.close();
   });
 });

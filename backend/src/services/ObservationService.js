@@ -48,7 +48,10 @@ export class ObservationService {
   }
 
   validatePayload(kind, p) {
+    const payload = p && typeof p === 'object' && !Array.isArray(p) ? p : {};
     const num = (x) => typeof x === 'number' && Number.isFinite(x);
+    // Rebind for the switch below.
+    p = payload;
     switch (kind) {
       case 'weight':
         if (!num(p.weightKg) || p.weightKg <= 0 || p.weightKg > 500) {
