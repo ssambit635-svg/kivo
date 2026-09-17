@@ -3,6 +3,8 @@ import { checkPlausibility, loadClinicalKnowledge } from '../../knowledge/clinic
 import { normalizeOcrText } from '../../knowledge/textNormalizer.js';
 import { calibrateExtraction } from '../../knowledge/calibration.js';
 
+const EMPTY_SET = new Set();
+
 /** Canonical spelling for a unit token ("mmol/l" → "mmol/L", "k/ul" → "10^3/µL"). */
 function canonicalUnit(unit) {
   if (!unit) return unit;
@@ -118,6 +120,36 @@ const isWordChar = (c) => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9');
  * `indexOf` over a literal alias is several times faster than a regex test,
  * which matters once the dictionary carries ~2,700 aliases.
  */
+/**
+ * Unit spellings the extractor recognises after a value. Boundary-anchored on
+ * the left so "g/dl" can never match inside "ug/dl".
+ */
+/**
+ * Same alternation, anchored: does a unit spelling START this text (modulo
+ * leading blanks)? Used by the glued-value check.
+ */
+export const UNIT_AT_START_RE =
+  /^\s*(mg\/dl|mmol\/l|ug\/dl|µg\/dl|g\/dl|g\/l|u\/l|iu\/l|uiu\/ml|µiu\/ml|miu\/l|miu\/ml|ng\/ml|pg\/ml|pmol\/l|nmol\/l|umol\/l|µmol\/l|mmol\/mol|10\^3\/ul|10\^3\/µl|x10\^3\/ul|x10\^3\/µl|10\^6\/ul|10\^6\/µl|10\^9\/l|k\/ul|m\/ul|ml\/min\/1\.73m2|ml\/min|mm\/hr|meq\/l|fl|pg|%)/i;
+
+export const UNIT_TOKEN_RE =
+  /(?:^|[^a-z0-9])(mg\/dl|mmol\/l|ug\/dl|µg\/dl|g\/dl|g\/l|u\/l|iu\/l|uiu\/ml|µiu\/ml|miu\/l|miu\/ml|ng\/ml|pg\/ml|pmol\/l|nmol\/l|umol\/l|µmol\/l|mmol\/mol|10\^3\/ul|10\^3\/µl|x10\^3\/ul|x10\^3\/µl|10\^6\/ul|10\^6\/µl|10\^9\/l|k\/ul|m\/ul|ml\/min\/1\.73m2|ml\/min|mm\/hr|meq\/l|fl|pg|%)/i;
+
+/**
+ * OCR often glues a value to its label ("HbA1c5.7 %", "Sodium139 mmol/L").
+ * A label immediately followed by a number is only accepted when that number is
+ * followed by a unit within a short window — otherwise "CD45" would be read as
+ * CD4, or "Vitamin D3" as vitamin D.
+ */
+function gluedValueBoundary(line, aliasEnd) {
+  const ahead = line.slice(aliasEnd, aliasEnd + 24);
+  const m = ahead.match(/^(\d+(?:\.\d+)?)/);
+  if (!m) return false;
+  // The unit must follow the glued number directly: "HbA1c5.7 %" and
+  // "Sodium139 mmol/L" pass; "Vitamin D3 40 ng/mL" does not (3 is part of the
+  // test name, 40 is the value).
+  return UNIT_AT_START_RE.test(ahead.slice(m[1].length));
+}
+
 function boundaryMatch(line, alias) {
   let from = 0;
   for (;;) {
@@ -155,6 +187,17 @@ function findHits(lowerLine, index) {
     if (at >= 0) {
       hits.push({ code: p.code, alias: p.alias, def: p.def, index: at, endIndex: at + p.len });
       continue;
+    }
+    // Trailing-boundary failure only (a label glued to its value): retry it.
+    const glued = lowerLine.indexOf(p.alias);
+    if (glued >= 0) {
+      const before = glued === 0 ? '' : lowerLine[glued - 1];
+      const after = glued + p.len >= lowerLine.length ? '' : lowerLine[glued + p.len];
+      if ((before === '' || !isWordChar(before)) && after && /[0-9]/.test(after)
+        && gluedValueBoundary(lowerLine, glued + p.len)) {
+        hits.push({ code: p.code, alias: p.alias, def: p.def, index: glued, endIndex: glued + p.len });
+        continue;
+      }
     }
     const m = lowerLine.match(p.re);
     if (m) {
@@ -209,6 +252,16 @@ export class LabExtractionService {
     const detectedReportDate = this.detectDate(lines);
     const index = patternIndex();
 
+    // Which repairs were needed on which line — evidence about reading quality
+    // that the calibration model uses (see calibration.js).
+    const repairsByLine = new Map();
+    for (const c of normalization.corrections || []) {
+      const set = repairsByLine.get(c.line) ?? new Set();
+      set.add(c.type);
+      repairsByLine.set(c.line, set);
+    }
+    const repairsFor = (line) => repairsByLine.get(line) || EMPTY_SET;
+
     for (const line of lines) {
       const lower = line.toLowerCase();
       // Skip lines that are obviously headers/footers (no digits at all).
@@ -242,6 +295,7 @@ export class LabExtractionService {
 
       const plausibility = checkPlausibility(hit.code, parsed.value);
       const heuristicConfidence = parsed.confidence;
+      const repairs = repairsFor(line);
       const calibrated = calibrateExtraction({
         code: hit.code,
         heuristicConfidence,
@@ -250,6 +304,8 @@ export class LabExtractionService {
         aliasLength: hit.alias.length,
         aliasAtLineStart: hit.index === 0,
         suspicious: !plausibility.plausible,
+        glyphRepaired: repairs.has('digit-glyph') || repairs.has('value-unit-split'),
+        decimalRepaired: repairs.has('decimal-comma') || repairs.has('decimal-glyph'),
         marker: hit.def,
       });
       const confidence = !plausibility.plausible
@@ -333,9 +389,7 @@ export class LabExtractionService {
     if (value == null) return { value: null, unit: null, refLow: null, refHigh: null, confidence: 0 };
 
     // 2) unit: search tokens near the value for a known unit spelling.
-    const unitMatch = rest.match(
-      /(?:^|[^a-z0-9])(mg\/dl|mmol\/l|ug\/dl|µg\/dl|g\/dl|g\/l|u\/l|iu\/l|uiu\/ml|µiu\/ml|miu\/l|miu\/ml|ng\/ml|pg\/ml|pmol\/l|nmol\/l|umol\/l|µmol\/l|mmol\/mol|10\^3\/ul|x10\^3\/ul|k\/ul|m\/ul|ml\/min\/1\.73m2|ml\/min|mm\/hr|meq\/l|fl|pg|%)/i,
-    );
+    const unitMatch = rest.match(UNIT_TOKEN_RE);
     if (unitMatch) unit = unitMatch[1];
 
     unit = canonicalUnit(unit);

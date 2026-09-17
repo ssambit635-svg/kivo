@@ -379,7 +379,13 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
     // two upstream items merge into one marker.
     const analyteSlug = slugify(analyte);
     const fluidWords = slugify(row.fluid).split('_').filter(Boolean);
-    const trimmed = stripTrailingWords(analyteSlug, fluidWords) || 'body_fluid';
+    const trimmed = stripTrailingWords(analyteSlug, fluidWords);
+    if (!trimmed) {
+      // Upstream also carries specimen-default rows whose label IS the specimen
+      // ("Ascites", "Stool"): no analyte at all, never a marker.
+      excluded.push({ itemid: row.itemid, label: row.label, reason: 'label is only a specimen name' });
+      continue;
+    }
     const key = `name:${trimmed}|${row.fluid}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push({ ...row, analyteKey: slugify(analyte) });
@@ -449,8 +455,11 @@ export function buildKnowledge({ vendorDir = VENDOR, log = () => {} } = {}) {
     const displayName = isBlood || primary.analyteKey.endsWith(`_${fluidSlug}`)
       ? titleCase(analyteFromLabel(primary.label))
       : `${titleCase(analyteFromLabel(primary.label))} (${fluid})`;
-    addAlias(displayName); // the exact name this build publishes
-    addAlias(displayName.replace(/\([^)]*\)/g, ' ')); // and without the parenthetical
+    // The display name is what a report calling this test by its full name will
+    // print, so it must be matchable in both its exact and its parenthetical-free
+    // form ("Albumin, Body Fluid (Other Body Fluid)" / "Albumin, Body Fluid").
+    addAlias(displayName);
+    addAlias(displayName.replace(/\([^)]*\)/g, ' '));
     addAlias(primary.label);
     if (primary.analyteKey && primary.analyteKey.length >= 3) {
       if (isBlood || !multiFluid) addAlias(primary.analyteKey.replace(/_/g, ' '));

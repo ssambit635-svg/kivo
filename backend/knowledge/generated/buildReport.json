@@ -27,17 +27,17 @@
     }
   ],
   "counts": {
-    "markers": 1231,
+    "markers": 1226,
     "curatedMarkers": 17,
-    "generatedMarkers": 1214,
+    "generatedMarkers": 1209,
     "coreMarkers": 247,
-    "withLoinc": 1224,
+    "withLoinc": 1219,
     "withCuratedNarrative": 127,
     "withAuthoredRange": 17,
-    "numericMarkers": 1014,
+    "numericMarkers": 1009,
     "qualitativeMarkers": 217,
     "upstreamItemsFolded": 33,
-    "upstreamItemsExcluded": 311
+    "upstreamItemsExcluded": 316
   },
   "transport": "vendored (offline)",
   "conceptItemsRecognized": 89,
@@ -1047,8 +1047,8 @@
   "excludedByReason": {
     "non-analyte label (blocklist)": 40,
     "no unit and no LOINC identity": 262,
-    "no usable alias after collision resolution": 8,
-    "analyte name reduces to nothing usable": 1
+    "label is only a specimen name": 6,
+    "no usable alias after collision resolution": 8
   },
   "aliasCollisions": [
     {
@@ -1410,11 +1410,6 @@
       "alias": "bleeding time",
       "keptBy": "bleeding_time",
       "droppedFrom": "bleed_tm"
-    },
-    {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": ""
     },
     {
       "alias": "microscopic observation",
@@ -3570,31 +3565,6 @@
       "alias": "hemoglobin.gastrointestinal",
       "keptBy": "blood_occult_stool",
       "droppedFrom": "blood_occult_other_body_fluid"
-    },
-    {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": "_ascites"
-    },
-    {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": "_cerebrospinal_fluid"
-    },
-    {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": "_joint_fluid"
-    },
-    {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": "_pleural"
-    },
-    {
-      "alias": "albumin",
-      "keptBy": "albumin",
-      "droppedFrom": "_stool"
     },
     {
       "alias": "urea nitrogen",

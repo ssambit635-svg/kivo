@@ -209,6 +209,12 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
         aliasLength: row?.matchedAlias?.length ?? 0,
         aliasAtLineStart: row ? row.rawLine.toLowerCase().startsWith(row.matchedAlias?.toLowerCase() ?? '') : false,
         suspicious: Boolean(row?.suspicious),
+        glyphRepaired: (normalization?.corrections ?? []).some(
+          (c) => c.type === 'digit-glyph' || c.type === 'value-unit-split',
+        ),
+        decimalRepaired: (normalization?.corrections ?? []).some(
+          (c) => c.type === 'decimal-comma' || c.type === 'decimal-glyph',
+        ),
       },
       normalizations: normalization?.corrections?.length ?? 0,
     };
@@ -306,6 +312,22 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
     };
   };
 
+  // Discrimination among MATCHED rows only. The model is good at "was a row
+  // read at all?" and much weaker at "is this the right number for that row?"
+  // — the residual corpus errors are wrong-value-to-right-label, which the
+  // extractor cannot self-detect without the report's own range. The model card
+  // publishes this instead of quoting only the flattering number.
+  const matchedDiagnostics = (predict) => {
+    const rowsMatched = testWithNormalize.filter((r) => r.row);
+    const pairs = rowsMatched.map((r) => [predict(r), r.correct ? 1 : 0]);
+    return {
+      n: rowsMatched.length,
+      accuracy: round4(ratio(pairs.filter(([p, y]) => (p >= 0.5 ? 1 : 0) === y).length, pairs.length)),
+      auc: round4(auc(pairs)),
+      baseRate: round4(ratio(rowsMatched.filter((r) => r.correct).length, rowsMatched.length)),
+    };
+  };
+
   const baseline = evalTest((r) => clamp01(r.features.heuristicConfidence));
   const isoOnly = evalTest((r) => clamp01(interp(r.features.heuristicConfidence, iso)));
   const logisticPlusIso = evalTest((r) => {
@@ -325,6 +347,16 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
     .slice()
     .sort((a, b) => a.metrics.brier - b.metrics.brier || a.metrics.ece - b.metrics.ece)[0];
 
+  const predictFor = (kind) => (r) => {
+    if (kind === 'logistic+isotonic') {
+      const x = featurize(r.features);
+      let z = 0;
+      for (let i = 0; i < x.length; i += 1) z += weights[i] * x[i];
+      return clamp01(interp(sigmoid(z), isoOnLogistic));
+    }
+    return clamp01(interp(r.features.heuristicConfidence, iso));
+  };
+
   const params = {
     schema: 'medtwin.extractionCalibration/1',
     model: {
@@ -339,6 +371,8 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
       test: { baseline: baseline, isotonic: isoOnly, logisticPlusIso: logisticPlusIso },
       trainSize: train.length,
       testSize: test.length,
+      matchedSubset: matchedDiagnostics(predictFor(chosen.kind)),
+      unmatchedReadings: testWithNormalize.filter((r) => !r.row).length,
     },
     diagnostics: doc,
     corpus: {
@@ -359,6 +393,9 @@ export function runTraining({ perMarker = 2, intensities = [0, 1, 2, 3], seed = 
       limitations: [
         'Synthetic noise cannot cover every scanner, camera, font or paper condition.',
         'Calibration is per-reading quality, not clinical meaningfulness.',
+        'Overall discrimination mostly separates "a row was read" from "no row was read"; ' +
+          'among matched rows the confidence is far weaker at catching a wrong-but-plausible number ' +
+          '(see metrics.matchedSubset) — such a row is why every extraction stays a draft for review.',
         'Markers absent from the catalogue are never recovered, so coverage, not confidence, is the limiting factor for exotic tests.',
       ],
       reproduce: 'npm run knowledge:train',
@@ -398,6 +435,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   );
   console.log(
     `  normalization: raw ${(m.doc.normalization.rawAccuracy * 100).toFixed(1)}% → normalized ${(m.doc.normalization.normalizedAccuracy * 100).toFixed(1)}% correct`,
+  );
+  const matched = params.metrics.matchedSubset;
+  console.log(
+    `  matched rows: n ${matched.n}, accuracy ${(matched.accuracy * 100).toFixed(1)}%, AUC ${matched.auc} ` +
+      `(unmatched readings excluded: ${params.metrics.unmatchedReadings})`,
   );
   console.log(
     `  plausibility guard caught ${m.doc.plausibilityGuard.flaggedSuspicious}/${m.doc.plausibilityGuard.wrongReads} wrong reads ` +

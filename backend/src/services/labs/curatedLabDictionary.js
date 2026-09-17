@@ -44,7 +44,7 @@ export const CURATED_LAB_DICTIONARY = {
   },
   hdl: {
     name: 'HDL Cholesterol',
-    aliases: ['hdl', 'hdl cholesterol', 'hdl-c', 'high density lipoprotein', 'hdl chol'],
+    aliases: ['hdl', 'hdl cholesterol', 'cholesterol hdl', 'hdl-c', 'hdl-cholesterol', 'high density lipoprotein', 'hdl chol'],
     defaultUnit: 'mg/dL',
     units: ['mg/dl', 'mmol/l'],
     typicalRange: { low: 40, high: null, unit: 'mg/dL', note: 'Higher is generally protective' },
@@ -52,7 +52,7 @@ export const CURATED_LAB_DICTIONARY = {
   },
   ldl: {
     name: 'LDL Cholesterol',
-    aliases: ['ldl', 'ldl cholesterol', 'ldl-c', 'low density lipoprotein', 'ldl chol', 'calculated ldl'],
+    aliases: ['ldl', 'ldl cholesterol', 'cholesterol ldl', 'ldl-c', 'ldl-cholesterol', 'low density lipoprotein', 'ldl chol', 'calculated ldl'],
     defaultUnit: 'mg/dL',
     units: ['mg/dl', 'mmol/l'],
     typicalRange: { low: null, high: 100, unit: 'mg/dL', note: 'Optimal level; targets depend on personal risk' },

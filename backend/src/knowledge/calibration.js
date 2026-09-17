@@ -62,10 +62,24 @@ export const FEATURE_NAMES = [
   'aliasIsLong',
   'aliasAtLineStart',
   'suspicious',
+  // Repairs the normalizer had to make on this line. They are evidence about
+  // the reading itself: a value that needed a glyph repaired is measurably
+  // likelier to be wrong than one that came through cleanly.
+  'glyphRepaired',
+  'decimalRepaired',
 ];
 
 /** @returns {number[]} features in FEATURE_NAMES order */
-export function featurize({ heuristicConfidence = 0.5, hasUnit = false, hasReferenceRange = false, aliasLength = 0, aliasAtLineStart = false, suspicious = false }) {
+export function featurize({
+  heuristicConfidence = 0.5,
+  hasUnit = false,
+  hasReferenceRange = false,
+  aliasLength = 0,
+  aliasAtLineStart = false,
+  suspicious = false,
+  glyphRepaired = false,
+  decimalRepaired = false,
+}) {
   return [
     1,
     Number(heuristicConfidence) || 0,
@@ -74,6 +88,8 @@ export function featurize({ heuristicConfidence = 0.5, hasUnit = false, hasRefer
     aliasLength >= 5 ? 1 : 0,
     aliasAtLineStart ? 1 : 0,
     suspicious ? 1 : 0,
+    glyphRepaired ? 1 : 0,
+    decimalRepaired ? 1 : 0,
   ];
 }
 

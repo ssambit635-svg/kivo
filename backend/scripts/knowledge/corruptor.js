@@ -134,9 +134,16 @@ function corruptionsFor(intensity, rng, types = CORRUPTION_TYPES) {
  */
 export function labelFor(marker, rng) {
   const aliases = (marker.aliases || []).filter((a) => a.length >= 3);
-  const multiWord = aliases.filter((a) => /[^a-z0-9]/.test(a) && a.split(/[^a-z0-9]+/).filter(Boolean).length >= 2);
-  const pool = multiWord.length ? multiWord : aliases;
-  return pool.length ? pick(rng, pool) : marker.name;
+  // A printed report uses a short label ("Fasting Glucose", "SGPT"), not a
+  // LOINC long name (".../100 leukocytes in blood by automated count"). Sample
+  // the short forms most of the time, but keep the long form sometimes: some
+  // laboratory systems do print it, and the extractor should survive both.
+  const longForm = (a) => /\bby\b|\bin (blood|serum|plasma|urine)\b|\bper 100\b|\//.test(a) && a.split(' ').length >= 5;
+  const short = aliases.filter((a) => !longForm(a));
+  const pool = short.length && rng() < 0.9 ? short : aliases;
+  const multiWord = pool.filter((a) => /[^a-z0-9]/.test(a) && a.split(/[^a-z0-9]+/).filter(Boolean).length >= 2);
+  const chosen = multiWord.length ? multiWord : pool;
+  return chosen.length ? pick(rng, chosen) : marker.name;
 }
 
 export function formatLine(marker, value, rng) {
