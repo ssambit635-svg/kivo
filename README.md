@@ -19,7 +19,8 @@ grounded explanations → doctor-visit preparation.
 | AI pipeline | ✅ **Real image OCR (Tesseract)** + plain-text, extraction, trends, explainable risk, grounded local LLM, doctor summary |
 | Phone-first UI | ✅ Camera report scanner (`getUserMedia` + gallery fallback) · voice journaling · installable PWA (manifest + service worker) · mobile bottom-nav |
 | Engagement widgets | ✅ Health Score Timeline · Report Confidence Badges · Health Milestones (icon keys, no emojis) |
-| Tests | ✅ **232 passing** (`cd backend && npm test`) |
+| Health Intelligence | ✅ Personal baselines · multivariate anomaly detection · pattern graph · counterfactual twin + scenario explorer (read-only add-on, CPU-only) |
+| Tests | ✅ **297 passing** (`cd backend && npm test`) |
 | Frontend | ✅ Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
 
 ## Quick start (cost-free)

@@ -25,7 +25,20 @@ export function createApp(container) {
   app.set('trust proxy', 1); // preview/edge proxies terminate TLS in front of us
 
   app.use(requestId());
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          // blob: is required for client-side photo downscaling (gallery
+          // picks are loaded via object URLs, resized on canvas, then
+          // uploaded). Blob URLs can only be created by our own origin's
+          // scripts, so this stays same-origin safe.
+          'img-src': ["'self'", 'data:', 'blob:'],
+        },
+      },
+    }),
+  );
   app.use(
     cors({
       origin(origin, cb) {

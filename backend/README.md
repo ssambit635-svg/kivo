@@ -22,7 +22,7 @@ cd backend
 npm install
 cp .env.example .env      # optional; safe dev defaults baked in
 npm start                 # http://0.0.0.0:8080  (demo dashboard at /app/)
-npm test                  # 232 tests: unit + integration (in-memory DB)
+npm test                  # 297 tests: unit + integration (in-memory DB)
 npm run ocr:setup         # one-time: vendor Tesseract language data for offline image OCR
 npm run dev               # same, with --watch
 npm run seed:demo         # demo@medtwin.dev with a full 3-report journey
@@ -133,8 +133,57 @@ Response includes `earned/total`, the `next` milestone to pursue, and icon keys 
 | GET | `/api/members/:id/doctor-summary` | sections + disclaimers (audited → milestone) |
 | GET | `/api/members/:id/health-score` | verified-only score timeline + breakdowns |
 | GET | `/api/members/:id/milestones` | achievement evaluation + progress |
+| GET | `/api/members/:id/intelligence` | full intelligence evidence package (see below) |
+| GET | `/api/members/:id/intelligence/baseline[?signal=]` | personal baselines, all or one signal |
+| GET | `/api/members/:id/intelligence/patterns[?type=&minStrength=]` | pattern graph edges + multivariate findings |
+| POST | `/api/members/:id/intelligence/simulate` | counterfactual twin: hypothetical scenario |
+| POST | `/api/members/:id/intelligence/scenarios` | model scenario explorer (ranked presets) |
+| GET | `/api/members/:id/intelligence/explanation` | grounded narration of the evidence package |
 | GET | `/api/admin/users`, POST `/api/admin/users/:uid/status`, GET `/api/admin/audit` | admin role |
 | GET | `/api/health`, `/api/meta/lab-dictionary` | public |
+
+## Personal Health Intelligence Engine (add-on)
+
+A read-only, CPU-only reasoning layer over **verified** data — pure add-on, no existing
+behavior changed. It answers four questions: *what is normal for THIS person? what unusual
+changes are happening? which signals move together, with what evidence? what happens to the
+MODELLED state under hypothetical changes?*
+
+- **Personal baselines** (`PersonalBaselineService`) — per-signal mean/median/spread,
+  recent vs long-term split, latest deviation, confidence + reasons, and one of
+  `insufficient_data | stable | normal_variation | gradual_drift | sudden_deviation |
+  persistent_deviation`. Deviations are reported as *personal* deviations — never as
+  medically abnormal.
+- **Temporal anomalies** (`TemporalAnomalyService`) — sudden shifts (robust z-score),
+  drift (least-squares slope), persistent deviation, change points (split-mean scan),
+  coordinated multi-signal movement, divergent same-group measurements, data gaps, and
+  unusual combinations (personal typical-state distance). Every finding names its
+  `method`, `score` and `threshold`; severity caps at `informational | watch`.
+- **Pattern graph** (`HealthPatternGraphService`) — nodes per recorded signal plus the
+  existing risk model; edges typed `OBSERVED | TEMPORAL_ASSOCIATION |
+  STATISTICAL_ASSOCIATION | MODEL_CONTRIBUTION` (with `UNKNOWN` examples when overlap is
+  too thin). Association is never presented as causation.
+- **Counterfactual twin** (`CounterfactualTwinService`) — snapshots the real state into
+  a detached copy (stored data is never touched), applies hypothetical changes within
+  plausible prototype bounds, and re-runs the **existing** risk model. Fields the model
+  doesn't consume are reported as context-only with no invented effect. Every output is
+  labeled *Model-based scenario projection / Not a prediction / Not a treatment
+  recommendation / Not a guaranteed outcome*.
+- **Scenario explorer** — preset hypothetical deltas (weight/activity, solo + combined),
+  ranked ONLY by mathematical model effect, with infeasible presets skipped + explained.
+- **Uncertainty** — per-signal, per-finding and overall confidence from observation
+  counts, time spans, extraction confidence, gaps and model completeness; low-confidence
+  results explain why and omit precise scores.
+- **Grounded explanation** — the existing `LlmGateway` narrates the structured evidence
+  package (`explain_intelligence` task); the LLM computes nothing and every number in
+  the text is traceable to the evidence.
+
+`GET /intelligence` returns the whole package plus frontend-ready `summaryCards`
+(Personal Baseline · Detected Shift · Health Pattern · Model Contribution · Confidence ·
+What Changed?). Results are cached 60s per member behind a data fingerprint, so reads
+stay cheap and never go stale. Same auth model as trends/risk: owners/editors/viewers
+may read; strangers get 404; admins get no health access. No new tables — intelligence
+is recomputed from source-of-truth health data.
 
 ## Error contract
 
@@ -161,4 +210,4 @@ tests/
                  security (headers/CORS/rate-limit/JSON/SQLi/413/404)
 ```
 
-`npm test` — **232 passing tests**, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`.
+`npm test` — **297 passing tests**, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`; the Personal Health Intelligence Engine is covered in `tests/unit/{personal-baseline,temporal-anomaly,pattern-graph,counterfactual-twin}.test.js` + `tests/integration/intelligence.test.js`.
