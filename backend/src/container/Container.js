@@ -156,4 +156,10 @@ export class Container {
   close() {
     this.db.close();
   }
+
+  /** Async teardown — releases the cached Tesseract worker, then the DB. */
+  async shutdown() {
+    await this.ocrService.close();
+    this.close();
+  }
 }

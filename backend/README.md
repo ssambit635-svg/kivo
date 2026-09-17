@@ -10,7 +10,7 @@ Backend for **MedTwin AI — AI-Powered Digital Health Twin** (iQOO Hackathon 20
 |---|---|
 | Database | Node's built-in SQLite (`node:sqlite`) — file or in-memory. No server, no cloud bill. |
 | Password hashing | `scrypt` from `node:crypto` — no paid/native dependency. |
-| OCR | Pluggable providers; the always-on **plain-text** provider is free. `tesseract.js` kicks in automatically **if installed** (still free). |
+| OCR | Pluggable providers. Always-on **plain-text** provider (free). **`tesseract.js` is installed** and provides real image OCR; run `npm run ocr:setup` once to vendor language data so photo OCR works **offline**. With neither data nor network it degrades gracefully with actionable guidance. |
 | "LLM" explanations | `grounded-local` provider — deterministic narration built **only** from validated structured data. No API keys, no hallucinated numbers. |
 | ML risk model | Transparent logistic model with hand-specified, FINDRISC-inspired prototype coefficients — runs in-process, deterministic. |
 | Rate limiting | In-memory fixed-window limiter — no Redis needed. |
@@ -22,7 +22,8 @@ cd backend
 npm install
 cp .env.example .env      # optional; safe dev defaults baked in
 npm start                 # http://0.0.0.0:8080  (demo dashboard at /app/)
-npm test                  # 220 tests: unit + integration (in-memory DB)
+npm test                  # 232 tests: unit + integration (in-memory DB)
+npm run ocr:setup         # one-time: vendor Tesseract language data for offline image OCR
 npm run dev               # same, with --watch
 npm run seed:demo         # demo@medtwin.dev with a full 3-report journey
 node scripts/create-admin.js admin@clinic.dev 'Admin' 'Str0ng!Passw0rd#x'
@@ -143,9 +144,10 @@ tests/
 └── integration/ auth (rotation/reuse/lockout/password-change)
                  authorization (isolation/viewer/editor/admin/self-admin)
                  reports (ingest→review→verify→immutability→explain)
+                 image-ocr (photo→extract→verify→trends + Tesseract availability/offline)
                  health-intel (trends/risk/what-if/summary)
                  engagement (score timeline/milestones/badges/viewer+stranger authz)
                  security (headers/CORS/rate-limit/JSON/SQLi/413/404)
 ```
 
-`npm test` — **220 passing assertions**, each with an in-memory DB and low-cost scrypt parameters.
+`npm test` — **232 passing tests**, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`.
