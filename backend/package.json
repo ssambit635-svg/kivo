@@ -5,11 +5,12 @@
   "description": "MedTwin AI - AI-Powered Digital Health Twin backend (cost-free MVP, hackathon prototype)",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.13.0"
   },
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --watch --disable-warning=ExperimentalWarning src/server.js",
+    "kill-port": "node scripts/free-port.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:admin": "node scripts/create-admin.js",

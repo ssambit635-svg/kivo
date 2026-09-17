@@ -29,6 +29,17 @@ npm run seed:demo         # demo@medtwin.dev with a full 3-report journey
 node scripts/create-admin.js admin@clinic.dev 'Admin' 'Str0ng!Passw0rd#x'
 ```
 
+### Troubleshooting
+
+- **`EADDRINUSE: address already in use 0.0.0.0:8080`** — another process
+  (usually a previous `npm start`/`npm run dev` still running in another
+  terminal) already holds port 8080. Either stop that process, run
+  `npm run kill-port` to free the port automatically, or start on another
+  port with `PORT=8081 npm start` (Windows: `set PORT=8081 && npm start`).
+- **`ExperimentalWarning: SQLite is an experimental feature`** — harmless;
+  the backend uses Node's built-in `node:sqlite`. The npm scripts already
+  silence it; if you run `node src/server.js` directly you may still see it.
+
 ## Architecture (OOP, layered)
 
 ```
