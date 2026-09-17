@@ -4,10 +4,16 @@ import { createApp } from '../src/app.js';
 
 export const STRONG_PASSWORD = 'Str0ng!Passw0rd#2026';
 
-/** Build a fresh app+container per test file (in-memory DB, low scrypt cost). */
-export function makeTestContext(configOverrides = {}) {
+/**
+ * Build a fresh app+container per test file (in-memory DB, low scrypt cost).
+ * `ocrService` can be overridden to inject a deterministic OCR provider — the
+ * real Tesseract provider needs vendored language data, so image-path tests
+ * inject a stand-in OCR *engine* while still exercising the genuine
+ * ingest → extract → verify → trend pipeline.
+ */
+export function makeTestContext(configOverrides = {}, { ocrService = null } = {}) {
   const config = new Config({ NODE_ENV: 'test', JWT_SECRET: 'test-secret-not-for-prod', ...configOverrides });
-  const container = new Container({ config });
+  const container = new Container({ config, ocrService });
   const app = createApp(container);
   return { config, container, app };
 }

@@ -544,7 +544,7 @@
       return;
     }
     if (!data.items || data.items.length === 0) {
-      body.appendChild(emptyState('file-text', 'No reports yet — paste one above and the scanner will draft values for review.'));
+      body.appendChild(emptyState('file-text', 'No reports yet — scan one with your camera or paste its text; the pipeline drafts values for your review.'));
       return;
     }
 
@@ -622,6 +622,196 @@
   }
 
   /* ---------------------------------------------------------------- */
+  /* multipart upload helper (files can't go through the JSON api())   */
+  /* ---------------------------------------------------------------- */
+
+  function apiUpload(path, formData) {
+    var headers = {};
+    if (state.tokens && state.tokens.accessToken) headers.Authorization = 'Bearer ' + state.tokens.accessToken;
+    return fetch('/api' + path, { method: 'POST', headers: headers, body: formData }).then(function (res) {
+      return res.json().then(function (body) {
+        if (!res.ok) {
+          var err = new Error((body && body.error && body.error.message) || 'Upload failed (' + res.status + ')');
+          err.status = res.status;
+          throw err;
+        }
+        return body;
+      });
+    });
+  }
+
+  function ingestFile(file, source) {
+    var fd = new FormData();
+    fd.append('file', file, file.name || (source === 'camera' ? 'camera-scan.png' : 'upload.png'));
+    return apiUpload('/members/' + state.member.id + '/reports', fd);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Phone-first #1 — camera report scanner                            */
+  /* ---------------------------------------------------------------- */
+
+  var scanStream = null;
+
+  function openScanner() {
+    var view = $('scanner-view');
+    var err = $('scan-error');
+    err.hidden = true;
+    view.classList.remove('hidden');
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      // No camera API (older browsers / non-secure context) — offer gallery.
+      err.textContent = 'Live camera unavailable here — use the Gallery button to pick a photo.';
+      err.hidden = false;
+      return;
+    }
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then(function (stream) {
+        scanStream = stream;
+        var video = $('scan-video');
+        video.srcObject = stream;
+        video.play().catch(function () { /* autoplay quirks */ });
+      })
+      .catch(function () {
+        err.textContent = 'Could not open the camera — grant permission, or use Gallery.';
+        err.hidden = false;
+      });
+  }
+
+  function closeScanner() {
+    if (scanStream) {
+      scanStream.getTracks().forEach(function (t) { t.stop(); });
+      scanStream = null;
+    }
+    $('scan-video').srcObject = null;
+    $('scanner-view').classList.add('hidden');
+  }
+
+  function captureFrame() {
+    var video = $('scan-video');
+    if (!video.videoWidth) { toast('Camera not ready yet.'); return; }
+    var canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(function (blob) {
+      if (!blob) { toast('Could not capture the frame.'); return; }
+      var file = new File([blob], 'camera-scan.png', { type: 'image/png' });
+      closeScanner();
+      submitCapture(file, 'camera');
+    }, 'image/png');
+  }
+
+  function submitCapture(file, source) {
+    toast('Reading your report…');
+    ingestFile(file, source)
+      .then(function (out) {
+        var badge = out && out.report && out.report.badge ? out.report.badge.label : 'Needs review';
+        var count = out && out.preview && out.preview.extracted ? out.preview.extracted.length : 0;
+        toast('Scanned ' + count + ' value' + (count === 1 ? '' : 's') + ' — badge: ' + badge + '. Verify to feed your twin.');
+        return refreshAll();
+      })
+      .catch(function (err) { toast(err.message || 'Scan failed'); });
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Phone-first #2 — voice journaling (on-device speech)              */
+  /* ---------------------------------------------------------------- */
+
+  var recognition = null;
+  var listening = false;
+
+  function speechCtor() {
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  }
+
+  function toggleVoice() {
+    var err = $('voice-error');
+    err.classList.add('hidden');
+    var Ctor = speechCtor();
+    if (!Ctor) {
+      err.textContent = 'Voice input needs a browser with speech recognition (Chrome on the iQOO works).';
+      err.classList.remove('hidden');
+      return;
+    }
+    if (listening) { stopVoice(); return; }
+
+    recognition = new Ctor();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    listening = true;
+    setVoiceUI(true);
+
+    recognition.onresult = function (ev) {
+      var text = ev.results[0][0].transcript;
+      $('voice-transcript').textContent = '“' + text + '”';
+      $('voice-transcript').classList.remove('hidden');
+      saveVoiceObservation(text);
+    };
+    recognition.onerror = function (ev) {
+      stopVoice();
+      err.textContent = 'Voice error: ' + (ev && ev.error ? ev.error : 'unknown');
+      err.classList.remove('hidden');
+    };
+    recognition.onend = function () { stopVoice(); };
+    recognition.start();
+  }
+
+  function stopVoice() {
+    listening = false;
+    setVoiceUI(false);
+    try { recognition && recognition.stop(); } catch (e) { /* already stopped */ }
+  }
+
+  function setVoiceUI(active) {
+    var label = $('voice-label');
+    label.textContent = active ? 'Listening… tap to stop' : 'Start voice journal';
+    Icons.set($('voice-icon'), active ? 'stop' : 'mic', 16);
+    $('btn-voice').classList.toggle('listening', active);
+  }
+
+  /** Deterministic, rule-based mapping of a spoken sentence to an observation. */
+  function parseObservation(text) {
+    var t = (text || '').toLowerCase();
+    var num = (t.match(/(\d+(?:\.\d+)?)/) || [null, null])[1];
+    if (/sleep|slept|soya|neend/.test(t)) return { kind: 'sleep', payload: { note: text, quality: /bad|poor|kharab|badly/.test(t) ? 'poor' : 'good' } };
+    if (/walk|run|exercise|gym|workout|vyayam/.test(t)) return { kind: 'activity', payload: { note: text, minutes: num ? Number(num) : null } };
+    if (/weight|wajan|vajan|kg/.test(t)) return { kind: 'weight', payload: { note: text, kg: num ? Number(num) : null } };
+    if (/blood pressure|bp\b|pressure/.test(t)) return { kind: 'bp', payload: { note: text, reading: num } };
+    if (/medicine|tablet|dawai|medication|dose/.test(t)) return { kind: 'medication', payload: { note: text } };
+    return { kind: 'symptom', payload: { note: text } };
+  }
+
+  function saveVoiceObservation(text) {
+    if (!state.member) return;
+    var obs = parseObservation(text);
+    api('/members/' + state.member.id + '/observations', {
+      method: 'POST',
+      body: { kind: obs.kind, payload: obs.payload, source: 'voice' },
+    })
+      .then(function () { toast('Voice note saved as a ' + obs.kind + ' observation.'); return refreshAll(); })
+      .catch(function (err) { toast(err.message || 'Could not save the voice note'); });
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Phone-first #3 — installable PWA (service worker)                 */
+  /* ---------------------------------------------------------------- */
+
+  function setTab(tab) {
+    var home = $('nav-home');
+    var reports = $('nav-reports');
+    home.classList.toggle('active', tab === 'home');
+    reports.classList.toggle('active', tab === 'reports');
+  }
+
+  function registerServiceWorker() {
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('./sw.js').catch(function () { /* offline is optional */ });
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
   /* shared bits                                                       */
   /* ---------------------------------------------------------------- */
 
@@ -648,7 +838,16 @@
     [['brand-logo', 'pulse', 22], ['user-icon', 'user', 16], ['logout-icon', 'log-out', 15],
      ['member-icon', 'user', 18], ['refresh-icon', 'refresh-cw', 15], ['score-head-ic', 'activity', 19],
      ['mile-head-ic', 'trophy', 19], ['rep-head-ic', 'file-text', 19], ['upload-icon', 'upload', 15],
+     ['scan-icon', 'camera', 18], ['voice-head-ic', 'mic', 19],
     ].forEach(function (t) { Icons.set($(t[0]), t[1], t[2]); });
+    // bottom nav + scanner buttons
+    Icons.set(document.querySelector('#nav-home .nav-ic'), 'home', 20);
+    Icons.set(document.querySelector('#nav-reports .nav-ic'), 'file-text', 20);
+    Icons.set(document.querySelector('#nav-scan .nav-ic'), 'camera', 26);
+    Icons.set(document.querySelector('#scan-close .btn-ic'), 'x', 16);
+    Icons.set(document.querySelector('#scan-capture .btn-ic'), 'camera', 20);
+    Icons.set(document.querySelector('#scan-gallery .btn-ic'), 'upload', 16);
+    Icons.set($('voice-icon'), 'mic', 16);
   }
 
   var resizeTimer = null;
@@ -669,6 +868,24 @@
     $('upload-form').addEventListener('submit', onUpload);
     window.addEventListener('resize', onResize);
 
+    // phone-first: camera scanner, gallery fallback, voice journal, bottom nav
+    $('btn-scan').addEventListener('click', openScanner);
+    $('nav-scan').addEventListener('click', openScanner);
+    $('scan-close').addEventListener('click', closeScanner);
+    $('scan-capture').addEventListener('click', captureFrame);
+    $('scan-file').addEventListener('change', function (ev) {
+      var f = ev.target.files && ev.target.files[0];
+      if (f) { closeScanner(); submitCapture(f, 'gallery'); }
+    });
+    $('btn-voice').addEventListener('click', toggleVoice);
+    $('nav-home').addEventListener('click', function () { setTab('home'); scrollTo(0, 0); });
+    $('nav-reports').addEventListener('click', function () {
+      setTab('reports');
+      var r = document.querySelector('.widget-reports');
+      if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    registerServiceWorker();
     loadTokens();
     if (state.tokens && state.tokens.accessToken) {
       api('/auth/me').then(function (me) {

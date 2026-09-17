@@ -186,9 +186,11 @@ describe('Report Confidence Badge — derived badge on report payloads', () => {
     await request(ctx.app).delete(`/api/reports/${ingest.body.report.id}`).set(auth(sess.accessToken));
   });
 
-  it('an unreadable upload (image file, no OCR engine in this env) → red "ocr_issue" badge', async () => {
-    // Minimal PNG magic bytes — no image OCR provider is installed in this
-    // cost-free test env, so the pipeline must fail loudly into ocr_failed.
+  it('an upload whose OCR FAILED → red "ocr_issue" badge', async () => {
+    // Minimal PNG magic bytes with no image OCR engine configured in this
+    // container, so ingest lands in ocr_failed. This asserts the BADGE for a
+    // failed scan; the success path for images is covered in
+    // tests/integration/image-ocr.test.js.
     const fakePng = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01, 0x02, 0x03]);
     const ingest = await request(ctx.app)
       .post(`/api/members/${memberId}/reports`)

@@ -291,3 +291,81 @@ textarea { resize: vertical; }
   font-size: 13.5px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); z-index: 50;
   max-width: min(90vw, 560px); text-align: center;
 }
+
+/* ============================================================ */
+/* Phone-first: capture, voice, scanner overlay, bottom nav     */
+/* ============================================================ */
+
+:root { --rose: #be185d; --rose-soft: #fce7f0; }
+.ic-rose { background: var(--rose-soft); color: var(--rose); }
+
+/* capture block */
+.capture { margin-bottom: 16px; }
+.manual { margin-top: 10px; border: 1px dashed #cbd8e1; border-radius: 12px; background: #fbfdfe; }
+.manual summary { cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.manual form { padding: 0 14px 14px; }
+.manual .upload { border: 0; padding: 0; margin: 0; background: transparent; }
+
+/* voice journal */
+.voice { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fbfdfe; }
+.voice-transcript { margin: 12px 0 0; font-style: italic; }
+.btn.listening { background: var(--red-soft); color: var(--red); }
+.btn.listening .btn-ic { animation: mt-pulse 1s infinite; }
+@keyframes mt-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* camera scanner overlay */
+.scanner {
+  position: fixed; inset: 0; z-index: 60; background: #05090d;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+.scanner.hidden { display: none; }
+.scanner video {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+}
+.scan-frame { position: relative; width: min(88vw, 460px); margin: auto; z-index: 2; }
+.scan-corners {
+  width: 100%; height: min(60vw, 320px); border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06); position: relative;
+}
+.scan-corners::before, .scan-corners::after,
+.scan-corners i::before, .scan-corners i::after { content: ""; }
+.scan-corners::before, .scan-corners::after {
+  position: absolute; width: 42px; height: 42px; border: 4px solid #2dd4bf;
+}
+.scan-corners::before { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 16px; }
+.scan-corners::after { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 16px; }
+.scan-hint { position: absolute; bottom: -34px; width: 100%; text-align: center; color: #d3e6e2; font-size: 13px; }
+.scan-controls { position: relative; z-index: 2; display: flex; align-items: center; gap: 14px; padding-bottom: 26px; }
+.scanner .btn.ghost { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.25); }
+.btn.big { padding: 16px 26px; border-radius: 999px; font-size: 15px; }
+.scanner .error { position: relative; z-index: 2; margin: 0 16px 12px; background: rgba(185,28,28,0.9); color: #fff; }
+
+/* bottom navigation (thumb-reachable, fixed) */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: space-around;
+  background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border: 0; background: transparent; color: var(--muted);
+  font: inherit; font-size: 11px; font-weight: 600; cursor: pointer;
+  padding: 8px 22px; border-radius: 12px;
+}
+.nav-item .nav-ic { display: inline-flex; }
+.nav-item.active { color: var(--teal); }
+.nav-fab {
+  width: 56px; height: 56px; margin-top: -26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--teal), #2563eb); color: #fff;
+  border: 0; cursor: pointer; box-shadow: 0 8px 20px rgba(13, 148, 136, 0.45);
+}
+.nav-fab .nav-ic { display: inline-flex; }
+
+/* keep content clear of the fixed bottom nav on phones */
+@media (max-width: 1023px) {
+  #dash-view { padding-bottom: 96px; }
+}

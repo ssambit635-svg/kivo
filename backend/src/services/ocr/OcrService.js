@@ -1,11 +1,31 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { OcrUnavailableError } from '../../common/errors.js';
 
 /**
  * OCR provider interface + registry. Providers declare which MIME types
- * they support and an `isAvailable()` probe. Cost-free MVP ships the
- * PlainText provider (always available) and, if the optional tesseract.js
- * dependency is installed, a real image OCR provider.
+ * they support and an `isAvailable()` probe.
+ *
+ * The registry ships two providers:
+ *   - PlainTextOcrProvider  (always available, zero cost)
+ *   - TesseractJsOcrProvider (real image OCR; needs `tesseract.js` installed
+ *     AND Tesseract language data present — see `npm run ocr:setup`)
+ *
+ * Language data is deliberately resolvable from a LOCAL directory so OCR keeps
+ * working with no network at all (offline demo, flaky venue wifi). Run
+ * `npm run ocr:setup` once on a connected machine to vendor `eng.traineddata.gz`
+ * into `backend/data/ocr-lang/`.
  */
+
+/** Default location of vendored Tesseract language data. */
+export const DEFAULT_LANG_DIR = path.resolve(
+  path.dirname(new URL(import.meta.url).pathname),
+  '../../../data/ocr-lang',
+);
+
+/** Tesseract language data is served gzipped from the CDN by default. */
+const DEFAULT_LANG_CDN = 'https://tessdata.projectnaptha.com/4.0.0';
+
 export class PlainTextOcrProvider {
   name = 'plain-text';
 
@@ -23,6 +43,11 @@ export class PlainTextOcrProvider {
     return true;
   }
 
+  /** Human-readable reason when unavailable; null when available. */
+  async unavailabilityReason() {
+    return null;
+  }
+
   async extract({ buffer }) {
     const text = buffer.toString('utf8');
     const printable = /^[\x09\x0A\x0D\x20-\x7E\u00A0-\uFFFF]*$/.test(text);
@@ -33,15 +58,56 @@ export class PlainTextOcrProvider {
   }
 }
 
-/** Optional tesseract.js-backed provider — loaded only if dependency exists. */
+/**
+ * Tesseract.js-backed image OCR.
+ *
+ * The worker is created once and reused: Tesseract worker startup (WASM init +
+ * language model load) dominates per-scan latency, so caching it turns repeat
+ * scans from seconds into sub-second work. Call `terminate()` on shutdown.
+ */
 export class TesseractJsOcrProvider {
   name = 'tesseract.js';
+
+  /**
+   * @param {object} [opts]
+   * @param {string} [opts.lang='eng']
+   * @param {string|null} [opts.langDir] directory holding `<lang>.traineddata[.gz]`;
+   *   when the file is absent we fall back to the public CDN.
+   * @param {number} [opts.oem=1] LSTM engine mode
+   */
+  constructor({ lang = 'eng', langDir = DEFAULT_LANG_DIR, oem = 1, probeTtlMs = 60_000, probeTimeoutMs = 4_000 } = {}) {
+    this.lang = lang;
+    this.langDir = langDir;
+    this.oem = oem;
+    this.probeTtlMs = probeTtlMs;
+    this.probeTimeoutMs = probeTimeoutMs;
+    this._workerPromise = null;
+    this._probe = null; // cached CDN reachability verdict
+  }
 
   supports(mimeType) {
     return /^image\/(png|jpe?g|bmp|webp|tiff?)$/.test(mimeType || '');
   }
 
-  async isAvailable() {
+  /** Resolves the vendored language-data file, or null to use the CDN. */
+  resolveLocalLangData() {
+    if (!this.langDir) return null;
+    for (const gz of [true, false]) {
+      const file = path.join(this.langDir, `${this.lang}.traineddata${gz ? '.gz' : ''}`);
+      if (fs.existsSync(file)) return { file, gzip: gz };
+    }
+    return null;
+  }
+
+  /** Tesseract `langPath` + `gzip` options derived from local data or the CDN. */
+  langOptions() {
+    const local = this.resolveLocalLangData();
+    if (local) return { langPath: this.langDir, gzip: local.gzip };
+    return { langPath: DEFAULT_LANG_CDN, gzip: true };
+  }
+
+  /** Is the `tesseract.js` module resolvable? */
+  async moduleAvailable() {
     try {
       await import('tesseract.js');
       return true;
@@ -50,15 +116,75 @@ export class TesseractJsOcrProvider {
     }
   }
 
+  /**
+   * Available when the module resolves AND language data is reachable
+   * (vendored locally, or the CDN is reachable). Probing the CDN avoids
+   * surfacing a cryptic `fetch failed` to the user mid-scan.
+   *
+   * The CDN verdict is cached (see `probeTtlMs`): re-probing the network on
+   * every upload would add latency to each scan and make an offline venue
+   * fail slowly instead of instantly. Vendored data short-circuits entirely —
+   * no network is touched at all in that case.
+   */
+  async unavailabilityReason() {
+    if (!(await this.moduleAvailable())) {
+      return 'the tesseract.js dependency is not installed (run `npm install`)';
+    }
+    if (this.resolveLocalLangData()) return null; // offline-capable: vendored data present
+
+    const fresh = this._probe && Date.now() - this._probe.at < this.probeTtlMs;
+    if (!fresh) {
+      let reason = null;
+      try {
+        const res = await fetch(`${DEFAULT_LANG_CDN}/${this.lang}.traineddata.gz`, {
+          method: 'HEAD',
+          signal: AbortSignal.timeout(this.probeTimeoutMs),
+        });
+        if (!res.ok) reason = `language data responded ${res.status} from ${DEFAULT_LANG_CDN}`;
+      } catch (e) {
+        reason =
+          `no language data vendored in ${this.langDir} and ${DEFAULT_LANG_CDN} is unreachable ` +
+          `(${e?.cause?.code || e?.message || 'network error'}) — run \`npm run ocr:setup\` to vendor it for offline use`;
+      }
+      this._probe = { at: Date.now(), reason };
+    }
+    return this._probe.reason;
+  }
+
+  async isAvailable() {
+    return (await this.unavailabilityReason()) === null;
+  }
+
+  /** Lazily creates and caches the Tesseract worker. */
+  worker() {
+    if (!this._workerPromise) {
+      this._workerPromise = (async () => {
+        const { createWorker } = await import('tesseract.js');
+        return createWorker(this.lang, this.oem, this.langOptions());
+      })().catch((err) => {
+        this._workerPromise = null; // allow a retry after a transient failure
+        throw err;
+      });
+    }
+    return this._workerPromise;
+  }
+
   async extract({ buffer }) {
-    const { createWorker } = await import('tesseract.js');
-    const worker = await createWorker('eng');
+    const worker = await this.worker();
+    const { data } = await worker.recognize(buffer);
+    const confidence = typeof data.confidence === 'number' ? data.confidence / 100 : null;
+    return { text: data.text || '', confidence, provider: this.name };
+  }
+
+  /** Releases the cached worker (call on process shutdown). */
+  async terminate() {
+    if (!this._workerPromise) return;
+    const p = this._workerPromise;
+    this._workerPromise = null;
     try {
-      const { data } = await worker.recognize(buffer);
-      const confidence = typeof data.confidence === 'number' ? data.confidence / 100 : null;
-      return { text: data.text || '', confidence, provider: this.name };
-    } finally {
-      await worker.terminate();
+      await (await p).terminate();
+    } catch {
+      /* already gone */
     }
   }
 }
@@ -77,17 +203,39 @@ export class OcrService {
   }
 
   /**
+   * Explains why no provider could handle `mimeType`, collecting each
+   * candidate provider's own reason. Used to turn a dead end into
+   * actionable guidance instead of a bare failure.
+   */
+  async diagnose(mimeType) {
+    const reasons = [];
+    for (const p of this.providers) {
+      if (!p.supports(mimeType)) continue;
+      const why = p.unavailabilityReason ? await p.unavailabilityReason() : null;
+      reasons.push(`${p.name}: ${why || 'available'}`);
+    }
+    return reasons;
+  }
+
+  /**
    * @returns {{text, confidence, provider}} or throws OcrUnavailableError.
    */
   async extractText({ buffer, mimeType }) {
     const provider = await this.providerFor(mimeType);
     if (!provider) {
+      const detail = (await this.diagnose(mimeType)).join('; ');
       throw new OcrUnavailableError(
         `No OCR provider available for '${mimeType}'. ` +
-          `The cost-free MVP reads plain-text reports directly. ` +
-          `For image/PDF reports, paste the report text into the upload dialog.`,
+          (detail ? `[${detail}] ` : '') +
+          `To read photo/image reports install language data with \`npm run ocr:setup\`, ` +
+          `or paste the report text into the upload dialog.`,
       );
     }
     return provider.extract({ buffer, mimeType });
+  }
+
+  /** Releases provider resources (cached Tesseract workers). */
+  async close() {
+    await Promise.all(this.providers.map((p) => (p.terminate ? p.terminate() : null)));
   }
 }

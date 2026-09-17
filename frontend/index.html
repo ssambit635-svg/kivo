@@ -2,8 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#0F766E" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
     <title>MedTwin AI — Digital Health Twin</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -103,22 +110,47 @@
               </div>
             </div>
 
-            <form id="upload-form" class="upload" novalidate>
-              <label class="field">
-                <span>Add a report (paste its text)</span>
-                <textarea id="in-report-text" rows="3" placeholder="HbA1c 5.9 % (4.0 - 5.6)&#10;Fasting Blood Sugar 108 mg/dL 70 - 100"></textarea>
-              </label>
-              <div class="upload-row">
-                <label class="field-inline">
-                  <span>Report date</span>
-                  <input id="in-report-date" type="date" />
-                </label>
-                <button class="btn secondary" type="submit" id="btn-upload">
-                  <span id="upload-icon" class="btn-ic" aria-hidden="true"></span>Scan report
-                </button>
+            <!-- Phone-first capture: camera is primary, paste text is the fallback -->
+            <div class="capture">
+              <button id="btn-scan" class="btn primary block" type="button">
+                <span id="scan-icon" class="btn-ic" aria-hidden="true"></span>Scan a report with your camera
+              </button>
+              <details id="manual-entry" class="manual">
+                <summary>No camera? Paste the report text</summary>
+                <form id="upload-form" novalidate>
+                  <label class="field">
+                    <span>Report text</span>
+                    <textarea id="in-report-text" rows="3" placeholder="HbA1c 5.9 % (4.0 - 5.6)&#10;Fasting Blood Sugar 108 mg/dL 70 - 100"></textarea>
+                  </label>
+                  <div class="upload-row">
+                    <label class="field-inline">
+                      <span>Report date</span>
+                      <input id="in-report-date" type="date" />
+                    </label>
+                    <button class="btn secondary" type="submit" id="btn-upload">
+                      <span id="upload-icon" class="btn-ic" aria-hidden="true"></span>Add
+                    </button>
+                  </div>
+                  <p id="upload-error" class="error hidden" role="alert"></p>
+                </form>
+              </details>
+            </div>
+
+            <!-- ============ VOICE JOURNAL ============ -->
+            <section class="voice card" aria-labelledby="voice-h">
+              <div class="widget-head">
+                <span id="voice-head-ic" class="widget-ic ic-rose" aria-hidden="true"></span>
+                <div>
+                  <h2 id="voice-h">Voice Journal</h2>
+                  <p class="muted">Say how you feel — we turn it into a structured note</p>
+                </div>
               </div>
-              <p id="upload-error" class="error hidden" role="alert"></p>
-            </form>
+              <button id="btn-voice" class="btn secondary block" type="button">
+                <span id="voice-icon" class="btn-ic" aria-hidden="true"></span><span id="voice-label">Start voice journal</span>
+              </button>
+              <p id="voice-transcript" class="voice-transcript muted hidden"></p>
+              <p id="voice-error" class="error hidden" role="alert"></p>
+            </section>
 
             <div id="reports-body"></div>
           </section>
@@ -130,6 +162,39 @@
             diagnosis engine. Always discuss your results with a qualified healthcare professional.
           </p>
         </footer>
+
+        <!-- Mobile bottom navigation -->
+        <nav id="bottom-nav" class="bottom-nav" aria-label="Primary">
+          <button class="nav-item active" type="button" data-tab="home" id="nav-home">
+            <span class="nav-ic" aria-hidden="true"></span>
+            <span class="nav-label">Twin</span>
+          </button>
+          <button class="nav-fab" type="button" id="nav-scan" aria-label="Scan a report">
+            <span class="nav-ic" aria-hidden="true"></span>
+          </button>
+          <button class="nav-item" type="button" data-tab="reports" id="nav-reports">
+            <span class="nav-ic" aria-hidden="true"></span>
+            <span class="nav-label">Reports</span>
+          </button>
+        </nav>
+      </section>
+
+      <!-- ============ CAMERA SCANNER OVERLAY ============ -->
+      <section id="scanner-view" class="scanner hidden" role="dialog" aria-modal="true" aria-label="Scan a lab report">
+        <video id="scan-video" playsinline autoplay muted></video>
+        <div class="scan-frame" aria-hidden="true">
+          <div class="scan-corners"></div>
+          <p class="scan-hint">Fit the lab report inside the frame</p>
+        </div>
+        <div class="scan-controls">
+          <button id="scan-close" class="btn ghost sm" type="button"><span class="btn-ic" aria-hidden="true"></span>Close</button>
+          <button id="scan-capture" class="btn primary big" type="button"><span class="btn-ic" aria-hidden="true"></span>Capture</button>
+          <label class="btn ghost sm" id="scan-gallery">
+            <span class="btn-ic" aria-hidden="true"></span>Gallery
+            <input id="scan-file" type="file" accept="image/*" capture="environment" hidden />
+          </label>
+        </div>
+        <p id="scan-error" class="error" role="alert" hidden></p>
       </section>
     </main>
 
