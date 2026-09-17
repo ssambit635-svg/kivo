@@ -42,7 +42,14 @@ import { CURATED_LAB_DICTIONARY, CURATED_CODES } from './curatedLabDictionary.js
  */
 export function generatedLabMarkers() {
   const out = {};
-  for (const m of Object.values(loadClinicalKnowledge().markers)) {
+  let markers = {};
+  try {
+    markers = loadClinicalKnowledge().markers || {};
+  } catch {
+    markers = {};
+  }
+  for (const m of Object.values(markers)) {
+    if (!m || typeof m.code !== 'string') continue;
     if (CURATED_CODES.has(m.code)) continue;
     out[m.code] = {
       name: m.name,
@@ -79,9 +86,15 @@ export function generatedLabMarkers() {
  * generated one.
  */
 function curatedLayerWithKnowledge() {
-  const knowledge = loadClinicalKnowledge();
+  let knowledge = { markers: {} };
+  try {
+    knowledge = loadClinicalKnowledge() || knowledge;
+  } catch {
+    /* degraded: curated defaults still work, knowledge fields stay null */
+  }
   const out = {};
-  for (const [code, def] of Object.entries(CURATED_LAB_DICTIONARY)) {
+  const curated = CURATED_LAB_DICTIONARY && typeof CURATED_LAB_DICTIONARY === 'object' ? CURATED_LAB_DICTIONARY : {};
+  for (const [code, def] of Object.entries(curated)) {
     if (!def) continue;
     const m = knowledge.markers[code] ?? null;
     out[code] = {
@@ -111,14 +124,20 @@ export const LAB_DICTIONARY = Object.freeze({ ...generatedLabMarkers(), ...curat
 /** Sorted alias list (longest-first) so 'fasting glucose' beats 'glucose'. */
 export function aliasEntries({ includeQualitative = false } = {}) {
   const entries = [];
-  for (const [code, def] of Object.entries(LAB_DICTIONARY)) {
-    if (!def) continue;
-    if (!includeQualitative && def.valueKind === 'qualitative') continue;
-    for (const alias of def.aliases) {
-      entries.push({ code, alias, def });
+  try {
+    for (const [code, def] of Object.entries(LAB_DICTIONARY || {})) {
+      if (!def) continue;
+      if (!includeQualitative && def.valueKind === 'qualitative') continue;
+      const aliases = Array.isArray(def.aliases) ? def.aliases : [];
+      for (const alias of aliases) {
+        if (typeof alias !== 'string' || !alias) continue;
+        entries.push({ code, alias, def });
+      }
     }
+    entries.sort((a, b) => b.alias.length - a.alias.length);
+  } catch {
+    /* degraded dictionary still returns whatever was collected */
   }
-  entries.sort((a, b) => b.alias.length - a.alias.length);
   return entries;
 }
 

@@ -45,6 +45,36 @@ export class MemberService {
     return updated.toJSON(this.policy.accessLevel(actor, updated));
   }
 
+  /**
+   * Family-history risk context (§10.1 of the product spec).
+   *
+   * Family history is NOT genetic testing — this endpoint states that
+   * plainly, shows what is recorded, and explains exactly how it feeds the
+   * prototype risk model (the diabetes flag) and nothing else.
+   */
+  familyHistoryContext(actor, memberId) {
+    const { member } = this.policy.loadMemberWithAccess(actor, memberId);
+    this.policy.assertRead(actor, member);
+    const stored = member.familyHistory && typeof member.familyHistory === 'object' ? member.familyHistory : {};
+    const diabetes = stored.diabetes;
+    return {
+      memberId,
+      stored,
+      howItIsUsed: [
+        diabetes === true
+          ? 'Recorded family history of diabetes is used as one input of the prototype diabetes risk estimate.'
+          : diabetes === false
+            ? 'Recorded absence of family diabetes history is used as one input of the prototype diabetes risk estimate.'
+            : 'No family diabetes history is recorded, so the prototype risk estimate treats that input as missing.',
+        'No other model consumes family history today.',
+      ],
+      isGeneticTesting: false,
+      disclaimer:
+        'Family history is not genetic testing. These are conditions you reported for relatives — they add context to a ' +
+        'prototype risk estimate, not a genetic risk analysis. Discuss hereditary concerns with a qualified healthcare professional.',
+    };
+  }
+
   remove(actor, memberId, ctx = {}) {
     const { member } = this.policy.loadMemberWithAccess(actor, memberId);
     if (member.relationship === 'self') {

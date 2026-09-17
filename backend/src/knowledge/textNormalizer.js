@@ -249,58 +249,82 @@ function repairDecimalSeparator(token, corrections) {
  * Normalizes one OCR line.
  * @returns {{ line: string, corrections: Array, flags: string[] }}
  */
-export function normalizeOcrLine(line, { vocab = markerVocabulary() } = {}) {
-  let working = String(line ?? '');
-  const corrections = [];
-  for (const [re, rep] of FULLWIDTH) working = working.replace(re, rep);
-
-  const flags = [];
-  const flagMatch = working.match(FLAG_RE);
-  if (flagMatch) flags.push(flagMatch[1]);
-
-  // Casing mangles inside known units ("MG/DL") are repaired by the unit pass.
-  const rawTokens = working.split(/(\s+)/); // keep separators so spacing survives
-  const tokens = rawTokens;
-  const out = [];
-
-  for (let i = 0; i < tokens.length; i += 1) {
-    const tok = tokens[i];
-    if (/^\s+$/.test(tok) || tok === '') {
-      out.push(tok);
-      continue;
+export function normalizeOcrLine(line, { vocab = null } = {}) {
+  const fallback = { line: typeof line === 'string' ? line : String(line ?? ''), corrections: [], flags: [] };
+  try {
+    const v = vocab || markerVocabulary();
+    let working = String(line ?? '');
+    // A single pathological line (megabyte-long, no newlines) must not hang
+    // the pipeline — normalize a prefix, keep the rest verbatim.
+    let tail = '';
+    if (working.length > 4000) {
+      tail = working.slice(4000);
+      working = working.slice(0, 4000);
     }
-    const next = tokens[i + 2] ?? '';
-    const followedByUnit = /[/%^]|[A-Za-z]/.test(next) && /^[([{]?[A-Za-zµμ\u00B5^0-9%/.]{1,10}[)\]}.,;:]?$/.test(next) && /[/%]|^[A-Za-z]{1,3}$/.test(next);
+    const corrections = [];
+    for (const [re, rep] of FULLWIDTH) working = working.replace(re, rep);
 
-    // 1) unit repair (closed vocabulary)
-    if (/[A-Za-z%]/.test(tok) && !/^\d+$/.test(tok) && (/[/%^]/.test(tok) || followedByUnit || tok.length <= 8)) {
-      const repairedUnit = repairUnitToken(tok, corrections);
-      if (repairedUnit !== tok) {
-        out.push(repairedUnit);
+    const flags = [];
+    const flagMatch = working.match(FLAG_RE);
+    if (flagMatch) flags.push(flagMatch[1]);
+
+    // Casing mangles inside known units ("MG/DL") are repaired by the unit pass.
+    const tokens = working.split(/(\s+)/); // keep separators so spacing survives
+    const out = [];
+    // Cap tokens per line: a pathological no-space blob must not hang the loop.
+    const capped = tokens.length > 600 ? [...tokens.slice(0, 600), tokens.slice(600).join('')] : tokens;
+
+    for (let i = 0; i < capped.length; i += 1) {
+      const tok = capped[i];
+      if (/^\s+$/.test(tok) || tok === '') {
+        out.push(tok);
         continue;
+      }
+      let pushed = false;
+      try {
+        const next = capped[i + 2] ?? '';
+        const followedByUnit = /[/%^]|[A-Za-z]/.test(next) && /^[([{]?[A-Za-zµμ\u00B5^0-9%/.]{1,10}[)\]}.,;:]?$/.test(next) && /[/%]|^[A-Za-z]{1,3}$/.test(next);
+
+        // 1) unit repair (closed vocabulary)
+        if (/[A-Za-z%]/.test(tok) && !/^\d+$/.test(tok) && (/[/%^]/.test(tok) || followedByUnit || tok.length <= 8)) {
+          const repairedUnit = repairUnitToken(tok, corrections);
+          if (repairedUnit !== tok) {
+            out.push(repairedUnit);
+            pushed = true;
+          }
+        }
+
+        if (!pushed) {
+          // 2) numeric glyph repair
+          const numeric = repairNumericToken(tok, {
+            followedByUnit,
+            hasDecimalSeparator: /[.,·•]/.test(tok),
+            vocab: v,
+          });
+          if (numeric != null && numeric !== tok) {
+            corrections.push({ type: 'digit-glyph', from: tok, to: numeric });
+            out.push(tok.replace(tok.replace(/[()[\],;:]+$/g, '').replace(/^[([{]+/, ''), numeric));
+            pushed = true;
+          }
+        }
+
+        if (!pushed) {
+          // 3) decimal separator repair
+          const dec = repairDecimalSeparator(tok, corrections);
+          out.push(dec);
+          pushed = true;
+        }
+      } catch {
+        if (!pushed) out.push(tok); // one hostile token never kills the line
       }
     }
 
-    // 2) numeric glyph repair
-    const numeric = repairNumericToken(tok, {
-      followedByUnit,
-      hasDecimalSeparator: /[.,·•]/.test(tok),
-      vocab,
-    });
-    if (numeric != null && numeric !== tok) {
-      corrections.push({ type: 'digit-glyph', from: tok, to: numeric });
-      out.push(tok.replace(tok.replace(/[()[\],;:]+$/g, '').replace(/^[([{]+/, ''), numeric));
-      continue;
-    }
-
-    // 3) decimal separator repair
-    const dec = repairDecimalSeparator(tok, corrections);
-    out.push(dec);
+    // 4) collapse runs of spaces created by column alignment (report tables).
+    const normalized = `${out.join('').replace(/[ \t]{2,}/g, '  ').replace(/\s+$/, '')}${tail}`;
+    return { line: normalized, corrections, flags };
+  } catch {
+    return fallback;
   }
-
-  // 4) collapse runs of spaces created by column alignment (report tables).
-  const normalized = out.join('').replace(/[ \t]{2,}/g, '  ').replace(/\s+$/, '');
-  return { line: normalized, corrections, flags };
 }
 
 /**
@@ -308,21 +332,43 @@ export function normalizeOcrLine(line, { vocab = markerVocabulary() } = {}) {
  * @returns {{ text: string, corrections: Array, flags: string[], changedLines: number }}
  */
 export function normalizeOcrText(text) {
-  const vocab = markerVocabulary();
-  const lines = String(text ?? '').split(/\r?\n/);
-  const corrections = [];
-  const flags = [];
-  let changedLines = 0;
-  const outLines = lines.map((line) => {
-    const res = normalizeOcrLine(line, { vocab });
-    if (res.corrections.length > 0) {
-      changedLines += 1;
-      corrections.push(...res.corrections.map((c) => ({ ...c, line: res.line })));
+  try {
+    let vocab;
+    try {
+      vocab = markerVocabulary();
+    } catch {
+      vocab = new Set();
     }
-    flags.push(...res.flags);
-    return res.line;
-  });
-  return { text: outLines.join('\n'), corrections, flags, changedLines };
+    const input = typeof text === 'string' ? text : String(text ?? '');
+    // Hard cap: normalize the first chunk of a pathological blob, keep the rest.
+    const MAX_CHARS = 200_000;
+    const head = input.length > MAX_CHARS ? input.slice(0, MAX_CHARS) : input;
+    const rest = input.length > MAX_CHARS ? input.slice(MAX_CHARS) : '';
+    const lines = head.split(/\r?\n/).slice(0, 5000);
+    const corrections = [];
+    const flags = [];
+    let changedLines = 0;
+    const outLines = lines.map((line) => {
+      let res;
+      try {
+        res = normalizeOcrLine(line, { vocab });
+      } catch {
+        res = { line, corrections: [], flags: [] };
+      }
+      if (res.corrections.length > 0) {
+        changedLines += 1;
+        if (corrections.length < 2000) {
+          corrections.push(...res.corrections.map((c) => ({ ...c, line: res.line })).slice(0, 2000 - corrections.length));
+        }
+      }
+      if (flags.length < 200) flags.push(...res.flags.slice(0, 200 - flags.length));
+      return res.line;
+    });
+    return { text: `${outLines.join('\n')}${rest}`, corrections, flags, changedLines };
+  } catch {
+    const raw = typeof text === 'string' ? text : '';
+    return { text: raw, corrections: [], flags: [], changedLines: 0 };
+  }
 }
 
 /** Exposes the vendored glyph knowledge for callers that want to show their work. */

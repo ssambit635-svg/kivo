@@ -136,6 +136,46 @@ export class RefreshToken {
   }
 }
 
+export class Reminder {
+  constructor(row) {
+    Object.assign(this, row);
+  }
+
+  static fromRow(row) {
+    return row ? new Reminder(row) : null;
+  }
+
+  /** True when the reminder should surface right now (pending + due + not snoozed). */
+  get isDue() {
+    if (this.status !== 'pending') return false;
+    const due = new Date(this.due_at).getTime();
+    if (!Number.isFinite(due) || due > Date.now()) return false;
+    if (this.snoozed_until) {
+      const snooze = new Date(this.snoozed_until).getTime();
+      if (Number.isFinite(snooze) && snooze > Date.now()) return false;
+    }
+    return true;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      memberId: this.member_id,
+      kind: this.kind,
+      title: this.title,
+      notes: this.notes,
+      dueAt: this.due_at,
+      repeatIntervalDays: this.repeat_interval_days,
+      status: this.status,
+      snoozedUntil: this.snoozed_until,
+      completedAt: this.completed_at,
+      isDue: this.isDue,
+      createdAt: this.created_at,
+      updatedAt: this.updated_at,
+    };
+  }
+}
+
 export class AuditEvent {
   constructor(row) {
     Object.assign(this, row);

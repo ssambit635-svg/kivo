@@ -104,4 +104,12 @@ export class PolicyService {
     if (write) this.assertWrite(actor, member);
     return { observation, member, access };
   }
+
+  loadReminderWithAccess(actor, reminderRepository, reminderId, { write = false } = {}) {
+    const reminder = reminderRepository.findById(reminderId);
+    if (!reminder) throw new NotFoundError('Reminder not found');
+    const { member, access } = this.loadMemberWithAccess(actor, reminder.member_id);
+    if (write) this.assertWrite(actor, member);
+    return { reminder, member, access };
+  }
 }

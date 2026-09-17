@@ -35,10 +35,32 @@ let cached = null;
  * marker on every matched row, so re-parsing per call would dominate extraction
  * cost (measured at ~60 ms per report before caching was fixed).
  */
+/**
+ * Minimal knowledge shape used when the committed artifact is missing or
+ * corrupt. The pipeline degrades (no markers match, no repairs apply) instead
+ * of throwing — a damaged data file must never crash report ingestion.
+ */
+export function emptyKnowledge() {
+  return {
+    schema: 'medtwin.clinicalKnowledge/1',
+    markers: {},
+    panels: {},
+    stats: { markers: 0, degraded: true },
+    unitEquivalences: {},
+    ocrLexicon: { confusionClasses: [] },
+    degraded: true,
+  };
+}
+
 export function loadClinicalKnowledge(file = null) {
   if (!file) {
     if (cached) return cached;
-    cached = parseKnowledge(fs.readFileSync(KNOWLEDGE_ARTIFACT, 'utf8'));
+    try {
+      cached = parseKnowledge(fs.readFileSync(KNOWLEDGE_ARTIFACT, 'utf8'));
+    } catch (err) {
+      console.warn(`clinical knowledge artifact unreadable — running degraded: ${err?.message || err}`);
+      cached = emptyKnowledge();
+    }
     return cached;
   }
   return parseKnowledge(fs.readFileSync(file, 'utf8'));
@@ -61,12 +83,21 @@ export function resetClinicalKnowledgeCache() {
 
 /** All markers (curated + generated), keyed by code. */
 export function allMarkers() {
-  return loadClinicalKnowledge().markers;
+  try {
+    const m = loadClinicalKnowledge().markers;
+    return m && typeof m === 'object' ? m : {};
+  } catch {
+    return {};
+  }
 }
 
 /** Markers readable from a report as numbers (excludes qualitative findings). */
 export function numericMarkers() {
-  return Object.values(allMarkers()).filter((m) => m.valueKind !== 'qualitative');
+  try {
+    return Object.values(allMarkers()).filter((m) => m && m.valueKind !== 'qualitative');
+  } catch {
+    return [];
+  }
 }
 
 /** Marker codes whose aliases should be matched during extraction. */
@@ -75,19 +106,36 @@ export function extractableMarkers() {
 }
 
 export function marker(code) {
-  return allMarkers()[code] || null;
+  try {
+    const m = allMarkers();
+    return (typeof code === 'string' && m[code]) || null;
+  } catch {
+    return null;
+  }
 }
 
 export function panels() {
-  return loadClinicalKnowledge().panels;
+  try {
+    return loadClinicalKnowledge().panels || {};
+  } catch {
+    return {};
+  }
 }
 
 export function knowledgeStats() {
-  return loadClinicalKnowledge().stats;
+  try {
+    return loadClinicalKnowledge().stats || { markers: 0 };
+  } catch {
+    return { markers: 0 };
+  }
 }
 
 export function ocrLexicon() {
-  return loadClinicalKnowledge().ocrLexicon;
+  try {
+    return loadClinicalKnowledge().ocrLexicon || { confusionClasses: [] };
+  } catch {
+    return { confusionClasses: [] };
+  }
 }
 
 /** Converts a marker into the dictionary shape the API/frontend consumes. */
@@ -117,19 +165,23 @@ export function toDictionaryEntry(m) {
  * @returns {{plausible: boolean, reason: string|null}}
  */
 export function checkPlausibility(code, value) {
-  const m = marker(code);
-  const v = Number(value);
-  if (!m || !Number.isFinite(v)) return { plausible: true, reason: null };
-  const b = m.plausibilityBounds;
-  if (!b) return { plausible: true, reason: null };
-  if (b.min != null && b.max != null && (v < b.min || v > b.max)) {
-    return { plausible: false, reason: `${m.name} of ${v}${m.defaultUnit ? ` ${m.defaultUnit}` : ''} is outside the physically plausible range (${b.min}–${b.max}) — check the value against your report` };
+  try {
+    const m = marker(code);
+    const v = Number(value);
+    if (!m || !Number.isFinite(v)) return { plausible: true, reason: null };
+    const b = m.plausibilityBounds;
+    if (!b) return { plausible: true, reason: null };
+    if (b.min != null && b.max != null && (v < b.min || v > b.max)) {
+      return { plausible: false, reason: `${m.name} of ${v}${m.defaultUnit ? ` ${m.defaultUnit}` : ''} is outside the physically plausible range (${b.min}–${b.max}) — check the value against your report` };
+    }
+    if (b.min != null && v < b.min) {
+      return { plausible: false, reason: `${m.name} of ${v}${m.defaultUnit ? ` ${m.defaultUnit}` : ''} is below the physically plausible minimum (${b.min}) — check the value against your report` };
+    }
+    if (b.max != null && v > b.max) {
+      return { plausible: false, reason: `${m.name} of ${v}${m.defaultUnit ? ` ${m.defaultUnit}` : ''} is above the physically plausible maximum (${b.max}) — check the value against your report` };
+    }
+    return { plausible: true, reason: null };
+  } catch {
+    return { plausible: true, reason: null };
   }
-  if (b.min != null && v < b.min) {
-    return { plausible: false, reason: `${m.name} of ${v}${m.defaultUnit ? ` ${m.defaultUnit}` : ''} is below the physically plausible minimum (${b.min}) — check the value against your report` };
-  }
-  if (b.max != null && v > b.max) {
-    return { plausible: false, reason: `${m.name} of ${v}${m.defaultUnit ? ` ${m.defaultUnit}` : ''} is above the physically plausible maximum (${b.max}) — check the value against your report` };
-  }
-  return { plausible: true, reason: null };
 }

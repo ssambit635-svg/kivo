@@ -54,75 +54,104 @@ export class HealthScoreService {
    * @returns {{memberId: string, current: object|null, timeline: Array, methodology: object, disclaimer: string}}
    */
   timelineFor(memberId) {
-    // One snapshot per verified report that actually carries verified values.
-    const reports = this.reports.verifiedWithValuesForMember(memberId);
-    if (reports.length === 0) {
+    try {
+      if (!memberId) return this.emptyTimeline(memberId);
+      // One snapshot per verified report that actually carries verified values.
+      const reports = this.reports.verifiedWithValuesForMember(memberId) || [];
+      if (reports.length === 0) return this.emptyTimeline(memberId);
+
+      const allVerified = this.labs.verifiedValuesForMember(memberId) || []; // ASC by measured_at
+      const byCode = new Map();
+      for (const row of allVerified) {
+        if (!row || !row.code) continue;
+        if (!byCode.has(row.code)) byCode.set(row.code, []);
+        byCode.get(row.code).push(row);
+      }
+
+      // Collapse reports sharing a calendar day into one snapshot (end-of-day state).
+      const snapshots = [];
+      const byDay = new Map();
+      for (const r of reports) {
+        const at = r.report_date || r.created_at;
+        const day = asDay(at);
+        if (!day) continue; // corrupt date — skip the snapshot, keep the timeline
+        byDay.set(day, { day, reportId: r.id, at });
+      }
+      const days = [...byDay.values()].sort((a, b) => (a.day < b.day ? -1 : 1));
+
+      let previousScore = null;
+      for (const snap of days) {
+        let entry;
+        try {
+          entry = this.snapshotScore(snap, byCode);
+        } catch {
+          continue;
+        }
+        entry.delta = previousScore == null || entry.score == null || previousScore == null
+          ? null
+          : entry.score - previousScore;
+        if (entry.score != null) previousScore = entry.score;
+        snapshots.push(entry);
+      }
+
+      if (snapshots.length === 0) return this.emptyTimeline(memberId);
+      const last = snapshots[snapshots.length - 1];
       return {
         memberId,
-        current: null,
-        timeline: [],
+        current: {
+          score: last.score,
+          band: last.band,
+          at: last.at,
+          label: last.label,
+          delta: last.delta,
+          markerCount: last.markerCount,
+          outOfRangeCount: last.outOfRangeCount,
+        },
+        timeline: snapshots,
         methodology: this.methodology(),
-        message: 'No verified reports yet — upload and verify a report to start your health score timeline.',
         disclaimer: DISCLAIMER,
       };
+    } catch {
+      return this.emptyTimeline(memberId);
     }
+  }
 
-    const allVerified = this.labs.verifiedValuesForMember(memberId); // ASC by measured_at
-    const byCode = new Map();
-    for (const row of allVerified) {
-      if (!byCode.has(row.code)) byCode.set(row.code, []);
-      byCode.get(row.code).push(row);
-    }
-
-    // Collapse reports sharing a calendar day into one snapshot (end-of-day state).
-    const snapshots = [];
-    const byDay = new Map();
-    for (const r of reports) {
-      const at = r.report_date || r.created_at;
-      const day = asDay(at);
-      byDay.set(day, { day, reportId: r.id, at });
-    }
-    const days = [...byDay.values()].sort((a, b) => (a.day < b.day ? -1 : 1));
-
-    let previousScore = null;
-    for (const snap of days) {
-      const entry = this.snapshotScore(snap, byCode);
-      entry.delta = previousScore == null ? null : entry.score - previousScore;
-      previousScore = entry.score;
-      snapshots.push(entry);
-    }
-
-    const last = snapshots[snapshots.length - 1];
+  emptyTimeline(memberId) {
     return {
       memberId,
-      current: {
-        score: last.score,
-        band: last.band,
-        at: last.at,
-        label: last.label,
-        delta: last.delta,
-        markerCount: last.markerCount,
-        outOfRangeCount: last.outOfRangeCount,
-      },
-      timeline: snapshots,
+      current: null,
+      timeline: [],
       methodology: this.methodology(),
+      message: 'No verified reports yet — upload and verify a report to start your health score timeline.',
       disclaimer: DISCLAIMER,
     };
   }
 
   /** Score the member's state at one snapshot day. */
   snapshotScore(snap, byCode) {
-    const cutoffMs = endOfDayMs(snap.day);
+    if (!snap || typeof snap !== 'object') {
+      return {
+        at: null, day: null, label: 'Unknown', reportId: null, score: null,
+        band: null, markerCount: 0, outOfRangeCount: 0, delta: null, drivers: [], breakdown: [],
+      };
+    }
+    const cutoffMs = endOfDayMs(snap?.day);
     const breakdown = [];
+    const codes = byCode instanceof Map ? byCode.entries() : [];
 
-    for (const [code, points] of byCode.entries()) {
+    for (const [code, points] of codes) {
       let latest = null;
-      for (const p of points) {
-        if (new Date(p.measured_at).getTime() <= cutoffMs) latest = p;
-        else break; // rows are ASC — first point beyond cutoff ends the scan for this code
+      for (const p of points || []) {
+        const t = new Date(p?.measured_at).getTime();
+        if (Number.isFinite(t) && t <= cutoffMs) latest = p;
+        else if (Number.isFinite(t)) break; // rows are ASC — first point beyond cutoff ends the scan for this code
       }
       if (!latest) continue; // marker not known yet at this snapshot
-      breakdown.push(this.scorePoint(code, latest));
+      try {
+        breakdown.push(this.scorePoint(code, latest));
+      } catch {
+        continue;
+      }
     }
 
     breakdown.sort((a, b) => a.points - b.points || a.code.localeCompare(b.code));
@@ -149,49 +178,63 @@ export class HealthScoreService {
 
   /** Points for one marker's value at the snapshot. */
   scorePoint(code, point) {
-    const def = LAB_DICTIONARY[code] || {};
-    const refLow = point.ref_low ?? def.typicalRange?.low ?? null;
-    const refHigh = point.ref_high ?? def.typicalRange?.high ?? null;
-    const rangeSource = point.ref_low != null || point.ref_high != null ? 'report' : 'typical-default';
+    const safeCode = typeof code === 'string' && code ? code : 'unknown';
+    try {
+      const def = (LAB_DICTIONARY && LAB_DICTIONARY[safeCode]) || {};
+      const p = point && typeof point === 'object' ? point : {};
+      const value = p.value == null ? null : Number(p.value);
+      const finiteValue = value != null && Number.isFinite(value) ? value : null;
+      const refLow = finiteOrNull(p.ref_low ?? def.typicalRange?.low ?? null);
+      const refHigh = finiteOrNull(p.ref_high ?? def.typicalRange?.high ?? null);
+      const rangeSource = p.ref_low != null || p.ref_high != null ? 'report' : 'typical-default';
 
-    let status = 'unknown';
-    let points = POINTS.UNKNOWN;
-    let overshootPct = null;
+      let status = 'unknown';
+      let points = POINTS.UNKNOWN;
+      let overshootPct = null;
 
-    if (point.value != null && (refLow != null || refHigh != null)) {
-      if (refHigh != null && point.value > refHigh) {
-        status = 'high';
-        overshootPct = round1(((point.value - refHigh) / scale(refHigh)) * 100);
-      } else if (refLow != null && point.value < refLow) {
-        status = 'low';
-        overshootPct = round1(((refLow - point.value) / scale(refLow)) * 100);
-      } else {
-        status = 'normal';
+      if (finiteValue != null && (refLow != null || refHigh != null)) {
+        if (refHigh != null && finiteValue > refHigh) {
+          status = 'high';
+          overshootPct = round1(((finiteValue - refHigh) / scale(refHigh)) * 100);
+        } else if (refLow != null && finiteValue < refLow) {
+          status = 'low';
+          overshootPct = round1(((refLow - finiteValue) / scale(refLow)) * 100);
+        } else {
+          status = 'normal';
+        }
+        if (!Number.isFinite(overshootPct)) overshootPct = null;
+        if (status === 'normal') {
+          points = POINTS.IN_RANGE;
+        } else if (status !== 'unknown') {
+          const fraction = (overshootPct ?? 0) / 100;
+          points =
+            fraction <= MILD_MAX_FRACTION
+              ? POINTS.OUT_MILD
+              : fraction <= MODERATE_MAX_FRACTION
+                ? POINTS.OUT_MODERATE
+                : POINTS.OUT_FAR;
+        }
       }
-      if (status === 'normal') {
-        points = POINTS.IN_RANGE;
-      } else if (status !== 'unknown') {
-        const fraction = overshootPct / 100;
-        points =
-          fraction <= MILD_MAX_FRACTION
-            ? POINTS.OUT_MILD
-            : fraction <= MODERATE_MAX_FRACTION
-              ? POINTS.OUT_MODERATE
-              : POINTS.OUT_FAR;
-      }
+
+      return {
+        code: safeCode,
+        markerName: def.name || p.test_name || safeCode,
+        value: finiteValue,
+        unit: p.unit || def.defaultUnit || null,
+        status,
+        points,
+        overshootPct,
+        referenceRange: { low: refLow, high: refHigh, source: rangeSource },
+        measuredAt: p.measured_at ?? null,
+      };
+    } catch {
+      return {
+        code: safeCode, markerName: safeCode, value: null, unit: null,
+        status: 'unknown', points: POINTS.UNKNOWN, overshootPct: null,
+        referenceRange: { low: null, high: null, source: 'typical-default' },
+        measuredAt: null,
+      };
     }
-
-    return {
-      code,
-      markerName: def.name || point.test_name || code,
-      value: point.value,
-      unit: point.unit || def.defaultUnit || null,
-      status,
-      points,
-      overshootPct,
-      referenceRange: { low: refLow, high: refHigh, source: rangeSource },
-      measuredAt: point.measured_at,
-    };
   }
 
   methodology() {
@@ -221,10 +264,18 @@ export class HealthScoreService {
 }
 
 export function bandFor(score) {
-  if (score >= 90) return 'strong';
-  if (score >= 75) return 'good';
-  if (score >= 60) return 'watch';
+  const s = Number(score);
+  if (!Number.isFinite(s)) return 'watch'; // fail toward the middle band, never throw
+  if (s >= 90) return 'strong';
+  if (s >= 75) return 'good';
+  if (s >= 60) return 'watch';
   return 'attention';
+}
+
+function finiteOrNull(v) {
+  if (v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 /** Overshoot denominator; guards against a 0 bound (never divides by zero). */
@@ -237,14 +288,31 @@ function round1(x) {
 }
 
 function asDay(iso) {
-  return new Date(iso).toISOString().slice(0, 10);
+  try {
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t)) return null;
+    return new Date(t).toISOString().slice(0, 10);
+  } catch {
+    return null;
+  }
 }
 
 function endOfDayMs(day) {
-  return new Date(`${day}T23:59:59.999Z`).getTime();
+  try {
+    if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return 0;
+    const t = new Date(`${day}T23:59:59.999Z`).getTime();
+    return Number.isFinite(t) ? t : 0;
+  } catch {
+    return 0;
+  }
 }
 
 function dayLabel(day) {
-  const d = new Date(`${day}T00:00:00Z`);
-  return `${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  try {
+    const d = new Date(`${day}T00:00:00Z`);
+    if (Number.isNaN(d.getTime())) return 'Unknown';
+    return `${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  } catch {
+    return 'Unknown';
+  }
 }

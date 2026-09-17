@@ -67,15 +67,26 @@ export class MilestoneService {
    * @returns {{memberId: string, earned: number, total: number, next: object|null, milestones: Array}}
    */
   evaluate(memberId) {
-    const firstReport = this.reports.earliestForMember(memberId);
-    const firstVerified = this.reports.firstVerifiedForMember(memberId);
-    const firstTrendAt = this.firstTrendDetectedAt(memberId);
-    const summaryEvent = this.auditLog.firstForAction({
-      action: 'summary.doctor_generated',
-      resourceType: 'member',
-      resourceId: memberId,
-    });
-    const history = this.historySpan(memberId);
+    let firstReport = null;
+    let firstVerified = null;
+    let firstTrendAt = null;
+    let summaryEvent = null;
+    let history = { spanDays: 0, crossedAt: null };
+    try {
+      if (memberId) {
+        firstReport = this.reports.earliestForMember(memberId);
+        firstVerified = this.reports.firstVerifiedForMember(memberId);
+        firstTrendAt = this.firstTrendDetectedAt(memberId);
+        summaryEvent = this.auditLog.firstForAction({
+          action: 'summary.doctor_generated',
+          resourceType: 'member',
+          resourceId: memberId,
+        });
+        history = this.historySpan(memberId);
+      }
+    } catch {
+      /* milestones degrade to locked rather than failing the request */
+    }
 
     const facts = {
       first_report_added: { achieved: !!firstReport, achievedAt: firstReport?.created_at ?? null },
@@ -114,25 +125,37 @@ export class MilestoneService {
    * The unlock moment is the SECOND point of the earliest such marker.
    */
   firstTrendDetectedAt(memberId) {
-    const codes = this.labs.codesWithVerifiedData(memberId, 2);
-    let earliest = null;
-    for (const code of codes) {
-      const series = this.labs.seriesForMember(memberId, code);
-      if (series.length >= 2) {
-        const secondAt = series[1].measured_at;
-        if (earliest == null || secondAt < earliest) earliest = secondAt;
+    try {
+      const codes = this.labs.codesWithVerifiedData(memberId, 2) || [];
+      let earliest = null;
+      for (const code of codes) {
+        try {
+          const series = this.labs.seriesForMember(memberId, code) || [];
+          if (series.length >= 2) {
+            const secondAt = series[1]?.measured_at;
+            if (secondAt && (earliest == null || secondAt < earliest)) earliest = secondAt;
+          }
+        } catch {
+          continue;
+        }
       }
+      return earliest;
+    } catch {
+      return null;
     }
-    return earliest;
   }
 
   /** Span of verified health data + the exact date the 3-month mark was crossed. */
   historySpan(memberId) {
-    const dates = this.labs.verifiedMeasuredDates(memberId);
-    if (dates.length === 0) return { spanDays: 0, crossedAt: null };
-    const first = dates[0];
-    const spanDays = Math.floor(daysBetween(first, dates[dates.length - 1]));
-    const crossed = dates.find((d) => daysBetween(first, d) >= THREE_MONTHS_DAYS) || null;
-    return { spanDays, crossedAt: crossed };
+    try {
+      const dates = (this.labs.verifiedMeasuredDates(memberId) || []).filter(Boolean);
+      if (dates.length === 0) return { spanDays: 0, crossedAt: null };
+      const first = dates[0];
+      const spanDays = Math.floor(daysBetween(first, dates[dates.length - 1]));
+      const crossed = dates.find((d) => daysBetween(first, d) >= THREE_MONTHS_DAYS) || null;
+      return { spanDays: Number.isFinite(spanDays) ? Math.max(0, spanDays) : 0, crossedAt: crossed };
+    } catch {
+      return { spanDays: 0, crossedAt: null };
+    }
   }
 }

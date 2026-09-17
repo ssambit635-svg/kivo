@@ -72,33 +72,59 @@ export class RiskModelService {
 
   /** Assemble model inputs from the member's verified data. Mathe overrides enable what-if scenarios. */
   assembleInputs(member, overrides = {}) {
-    const latest = (code) => this.labs.latestForMember(member.id, code);
-    const weightObs = this.observations.latestOfKind(member.id, 'weight');
-    const bpObs = this.observations.latestOfKind(member.id, 'bp');
-    const activityObs = this.observations.latestOfKind(member.id, 'activity');
+    const safeMember = member && typeof member === 'object' ? member : {};
+    const memberId = safeMember.id ?? null;
+    const latest = (code) => {
+      try {
+        return memberId ? this.labs.latestForMember(memberId, code) : null;
+      } catch {
+        return null;
+      }
+    };
+    const latestObs = (kind) => {
+      try {
+        return memberId ? this.observations.latestOfKind(memberId, kind) : null;
+      } catch {
+        return null;
+      }
+    };
+    const weightObs = latestObs('weight');
+    const bpObs = latestObs('bp');
+    const activityObs = latestObs('activity');
 
-    const weightKg = weightObs?.data?.weightKg ?? null;
-    const bmi =
-      weightKg != null && member.height_cm
-        ? Number((weightKg / (member.height_cm / 100) ** 2).toFixed(1))
-        : null;
-
-    let activityLevel = null;
-    if (activityObs?.data?.minutesPerWeek != null) {
-      const m = activityObs.data.minutesPerWeek;
-      activityLevel = m < 60 ? 0 : m < 150 ? 1 : 2;
+    const finiteOrNull = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+    const weightKg = finiteOrNull(weightObs?.data?.weightKg);
+    const heightCm = finiteOrNull(safeMember.height_cm ?? safeMember.heightCm);
+    let bmi = null;
+    // Height must be a sane positive number — a zero/negative/NaN height must
+    // never produce Infinity/NaN BMI (division guard).
+    if (weightKg != null && weightKg > 0 && weightKg <= 500 && heightCm != null && heightCm >= 30 && heightCm <= 280) {
+      const h = heightCm / 100;
+      const raw = weightKg / (h * h);
+      bmi = Number.isFinite(raw) ? Number(raw.toFixed(1)) : null;
     }
 
-    const familyHistory = member.familyHistory || {};
+    let activityLevel = null;
+    const minutes = finiteOrNull(activityObs?.data?.minutesPerWeek);
+    if (minutes != null && minutes >= 0 && minutes <= 5000) {
+      activityLevel = minutes < 60 ? 0 : minutes < 150 ? 1 : 2;
+    }
+
+    const familyHistory = safeMember.familyHistory && typeof safeMember.familyHistory === 'object'
+      ? safeMember.familyHistory
+      : {};
 
     const assembled = {
-      age: member.dob ? ageFromDob(member.dob) : null,
+      age: safeMember.dob ? ageFromDob(safeMember.dob) : null,
       bmi,
-      fastingGlucose: latest('fasting_glucose')?.value ?? null,
-      hba1c: latest('hba1c')?.value ?? null,
-      systolicBp: bpObs?.data?.systolic ?? null,
-      hdl: latest('hdl')?.value ?? null,
-      triglycerides: latest('triglycerides')?.value ?? null,
+      fastingGlucose: finiteOrNull(latest('fasting_glucose')?.value),
+      hba1c: finiteOrNull(latest('hba1c')?.value),
+      systolicBp: finiteOrNull(bpObs?.data?.systolic),
+      hdl: finiteOrNull(latest('hdl')?.value),
+      triglycerides: finiteOrNull(latest('triglycerides')?.value),
       familyDiabetes: familyHistory.diabetes === true ? 1 : familyHistory.diabetes === false ? 0 : null,
       activityLevel,
     };
@@ -123,19 +149,35 @@ export class RiskModelService {
   compute(sources) {
     const used = [];
     let logit = MODEL.intercept;
+    const srcs = sources && typeof sources === 'object' ? sources : {};
 
     for (const [feature, w] of Object.entries(MODEL.weights)) {
-      const src = sources[feature];
-      if (!src || src.value == null || Number.isNaN(Number(src.value))) continue;
-      const value = Number(src.value);
-      const { mean, sd } = MODEL.stats[feature];
-      const z = (value - mean) / sd;
-      const contribution = w * z;
-      logit += contribution;
-      used.push({ feature, value, z, weight: w, contribution, overridden: !!src.overridden });
+      try {
+        const src = srcs[feature];
+        if (!src || src.value == null) continue;
+        const value = Number(src.value);
+        if (!Number.isFinite(value)) continue;
+        const stat = MODEL.stats[feature] || {};
+        const mean = Number(stat.mean);
+        const sd = Number(stat.sd);
+        // A zero/missing sd would divide by zero — skip the feature instead.
+        if (!Number.isFinite(mean) || !Number.isFinite(sd) || sd === 0) continue;
+        const z = (value - mean) / sd;
+        if (!Number.isFinite(z)) continue;
+        const contribution = w * z;
+        if (!Number.isFinite(contribution)) continue;
+        logit += contribution;
+        used.push({ feature, value, z, weight: w, contribution, overridden: !!src.overridden });
+      } catch {
+        continue; // one bad feature never kills the estimate
+      }
     }
 
-    const probability = 1 / (1 + Math.exp(-logit));
+    // Clamp the logit so Math.exp can never overflow to Infinity.
+    if (!Number.isFinite(logit)) logit = MODEL.intercept;
+    logit = Math.min(20, Math.max(-20, logit));
+    let probability = 1 / (1 + Math.exp(-logit));
+    if (!Number.isFinite(probability)) probability = 1 / (1 + Math.exp(-MODEL.intercept));
     const totalFeatures = Object.keys(MODEL.weights).length;
     const completeness = used.length / totalFeatures;
 
@@ -198,9 +240,13 @@ export class RiskModelService {
 }
 
 export function bandFor(p) {
-  if (p < 0.15) return 'low';
-  if (p < 0.35) return 'moderate';
-  if (p < 0.6) return 'elevated';
+  const v = Number(p);
+  // Non-finite input can never happen from compute(), but the guard keeps the
+  // exported helper total for any future caller (fail toward the middle band).
+  if (!Number.isFinite(v)) return 'moderate';
+  if (v < 0.15) return 'low';
+  if (v < 0.35) return 'moderate';
+  if (v < 0.6) return 'elevated';
   return 'high';
 }
 
