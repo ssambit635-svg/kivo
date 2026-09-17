@@ -26,6 +26,7 @@ import { HealthScoreService } from '../services/HealthScoreService.js';
 import { MilestoneService } from '../services/MilestoneService.js';
 import { AdminService } from '../services/AdminService.js';
 import { LabExtractionService } from '../services/labs/LabExtractionService.js';
+import { knowledgeReport } from '../knowledge/report.js';
 import { OcrService } from '../services/ocr/OcrService.js';
 import { LlmGateway } from '../services/llm/LlmGateway.js';
 import { PersonalBaselineService } from '../services/intelligence/PersonalBaselineService.js';
@@ -83,6 +84,9 @@ export class Container {
     // --- AI layer (cost-free, deterministic) ---
     this.ocrService = ocrService || new OcrService();
     this.extractionService = new LabExtractionService();
+    // Public transparency surface for the clinical knowledge base (read-only,
+    // no user data) — served by GET /api/meta/knowledge.
+    this.knowledgeReport = () => knowledgeReport();
     this.llmGateway = new LlmGateway(config.llmProvider);
     this.trendService = new TrendService(this.labResultRepository);
     this.riskModelService = new RiskModelService({

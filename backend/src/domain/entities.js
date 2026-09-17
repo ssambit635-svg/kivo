@@ -69,6 +69,15 @@ export class LabResult {
       rawLine: this.raw_line,
       measuredAt: this.measured_at,
       verified: !!this.verified,
+      // Review aids from the clinical knowledge layer. A flagged row is still a
+      // draft: the flag tells the user to look at the raw line, nothing more.
+      suspicious: !!this.suspicious,
+      suspiciousReason: this.suspicious_reason ?? null,
+      loinc: this.loinc ?? null,
+      panel: this.panel ?? null,
+      rangeSource: this.range_source ?? null,
+      heuristicConfidence: this.heuristic_confidence ?? null,
+      needsAttention: !this.verified && !!this.suspicious,
       createdAt: this.created_at,
       updatedAt: this.updated_at,
     };

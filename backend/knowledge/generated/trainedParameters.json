@@ -1,0 +1,311 @@
+{
+  "schema": "medtwin.extractionCalibration/1",
+  "model": {
+    "kind": "logistic+isotonic",
+    "featureNames": [
+      "bias",
+      "heuristicConfidence",
+      "hasUnit",
+      "hasReferenceRange",
+      "aliasIsLong",
+      "aliasAtLineStart",
+      "suspicious",
+      "glyphRepaired",
+      "decimalRepaired"
+    ],
+    "weights": [
+      -1.999946,
+      -0.405256,
+      0.772999,
+      0.819412,
+      3.163908,
+      1.096131,
+      -0.127776,
+      -0.218298,
+      -0.126725
+    ],
+    "isotonic": [
+      [
+        0.09168,
+        0.133165
+      ],
+      [
+        0.09952,
+        0.134303
+      ],
+      [
+        0.235781,
+        0.512404
+      ],
+      [
+        0.704999,
+        0.847657
+      ],
+      [
+        0.839259,
+        0.875031
+      ],
+      [
+        0.885757,
+        0.878651
+      ],
+      [
+        0.917192,
+        0.884232
+      ],
+      [
+        0.925667,
+        0.884667
+      ],
+      [
+        0.93498,
+        0.886086
+      ],
+      [
+        0.955205,
+        0.892849
+      ],
+      [
+        0.970916,
+        0.90146
+      ],
+      [
+        0.971898,
+        0.906564
+      ],
+      [
+        0.972038,
+        0.913864
+      ]
+    ],
+    "suspiciousBranch": "short-circuits to <=0.25 (an implausible value is never \"probably correct\")"
+  },
+  "metrics": {
+    "chosen": "logistic+isotonic",
+    "test": {
+      "baseline": {
+        "brier": 0.1528,
+        "ece": 0.2634,
+        "auc": 0.8896,
+        "accuracy": 0.7138,
+        "thresholds": [
+          {
+            "threshold": 0.5,
+            "coverage": 1,
+            "accuracy": 0.7138263665594855,
+            "n": 2488
+          },
+          {
+            "threshold": 0.6,
+            "coverage": 0.7733118971061094,
+            "accuracy": 0.9152806652806653,
+            "n": 1924
+          },
+          {
+            "threshold": 0.8,
+            "coverage": 0.14630225080385853,
+            "accuracy": 0.945054945054945,
+            "n": 364
+          }
+        ]
+      },
+      "isotonic": {
+        "brier": 0.07,
+        "ece": 0.057,
+        "auc": 0.8896,
+        "accuracy": 0.9285,
+        "thresholds": [
+          {
+            "threshold": 0.5,
+            "coverage": 0.7733118971061094,
+            "accuracy": 0.9152806652806653,
+            "n": 1924
+          },
+          {
+            "threshold": 0.6,
+            "coverage": 0.7733118971061094,
+            "accuracy": 0.9152806652806653,
+            "n": 1924
+          },
+          {
+            "threshold": 0.8,
+            "coverage": 0.7733118971061094,
+            "accuracy": 0.9152806652806653,
+            "n": 1924
+          }
+        ]
+      },
+      "logisticPlusIso": {
+        "brier": 0.0675,
+        "ece": 0.0591,
+        "auc": 0.8935,
+        "accuracy": 0.9333,
+        "thresholds": [
+          {
+            "threshold": 0.5,
+            "coverage": 0.7773311897106109,
+            "accuracy": 0.9162357807652534,
+            "n": 1934
+          },
+          {
+            "threshold": 0.6,
+            "coverage": 0.7733118971061094,
+            "accuracy": 0.9158004158004158,
+            "n": 1924
+          },
+          {
+            "threshold": 0.8,
+            "coverage": 0.7568327974276527,
+            "accuracy": 0.9144981412639405,
+            "n": 1883
+          }
+        ]
+      }
+    },
+    "trainSize": 5584,
+    "testSize": 2488,
+    "matchedSubset": {
+      "n": 1939,
+      "accuracy": 0.9144,
+      "auc": 0.5358,
+      "baseRate": 0.9159
+    },
+    "unmatchedReadings": 549
+  },
+  "diagnostics": {
+    "examples": 8072,
+    "train": 5584,
+    "test": 2488,
+    "markers": 1009,
+    "byIntensity": [
+      {
+        "intensity": 0,
+        "n": 622,
+        "codeRecovery": 0.9967845659163987,
+        "valueRecovery": 0.9967845659163987
+      },
+      {
+        "intensity": 1,
+        "n": 622,
+        "codeRecovery": 0.819935691318328,
+        "valueRecovery": 0.7556270096463023
+      },
+      {
+        "intensity": 2,
+        "n": 622,
+        "codeRecovery": 0.702572347266881,
+        "valueRecovery": 0.6318327974276527
+      },
+      {
+        "intensity": 3,
+        "n": 622,
+        "codeRecovery": 0.5980707395498392,
+        "valueRecovery": 0.47106109324758844
+      }
+    ],
+    "normalization": {
+      "normalizedAccuracy": 0.7138263665594855,
+      "rawAccuracy": 0.6651929260450161,
+      "linesChanged": 460
+    },
+    "byCorruptionType": {
+      "range-dash": {
+        "n": 439,
+        "normalizedAccuracy": 0.724373576309795,
+        "rawAccuracy": 0.6605922551252847
+      },
+      "digit-glyph": {
+        "n": 411,
+        "normalizedAccuracy": 0.537712895377129,
+        "rawAccuracy": 0.41362530413625304
+      },
+      "space-noise": {
+        "n": 427,
+        "normalizedAccuracy": 0.6791569086651054,
+        "rawAccuracy": 0.5807962529274004
+      },
+      "decimal-comma": {
+        "n": 448,
+        "normalizedAccuracy": 0.6785714285714286,
+        "rawAccuracy": 0.5625
+      },
+      "decimal-drop": {
+        "n": 431,
+        "normalizedAccuracy": 0.5823665893271461,
+        "rawAccuracy": 0.5498839907192575
+      },
+      "flag-glyph": {
+        "n": 401,
+        "normalizedAccuracy": 0.6783042394014963,
+        "rawAccuracy": 0.6234413965087282
+      },
+      "letter-glyph": {
+        "n": 467,
+        "normalizedAccuracy": 0.3083511777301927,
+        "rawAccuracy": 0.28693790149892934
+      },
+      "unit-mangle": {
+        "n": 415,
+        "normalizedAccuracy": 0.6698795180722892,
+        "rawAccuracy": 0.6072289156626506
+      },
+      "column-merge": {
+        "n": 433,
+        "normalizedAccuracy": 0.2517321016166282,
+        "rawAccuracy": 0.2517321016166282
+      }
+    },
+    "plausibilityGuard": {
+      "wrongReads": 163,
+      "flaggedSuspicious": 1,
+      "flagRate": 0.006134969325153374,
+      "falseFlagRateOnCorrect": 0
+    }
+  },
+  "corpus": {
+    "name": "synthetic-lab-reading-v1",
+    "description": "Marker names/units/values sampled from the committed knowledge catalogue, corrupted with the documented OCR noise model in scripts/knowledge/corruptor.js.",
+    "seed": 20260917,
+    "perMarker": 2,
+    "intensities": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "patientsUsed": 0,
+    "note": "No patient records are used or redistributed. This measures OCR reading reliability, not clinical accuracy."
+  },
+  "sources": [
+    {
+      "id": "mimic-code",
+      "repo": "MIT-LCP/mimic-code",
+      "commit": "303d26c623dcc9c49cc0f204468d4acc2f063797",
+      "licence": "MIT"
+    },
+    {
+      "id": "ocr-for-medical-laboratory-reports",
+      "repo": "xuewenyuan/OCR-for-Medical-Laboratory-Reports",
+      "commit": "44504ee7a1d27c605e7e0e5d811026f297f876f6",
+      "licence": "MIT (detection fork: MIT, endernewton/tf-faster-rcnn) · MIT (recognition: MIT, meijieru/crnn.pytorch)"
+    },
+    {
+      "id": "blood-report-parser",
+      "repo": "garg-tejas/blood-report-parser",
+      "commit": "a3cf5be2a71d8b8505ea0a6c43ac6baa5f898744",
+      "licence": "NONE DECLARED — reference only, nothing vendored"
+    }
+  ],
+  "modelCard": {
+    "intendedUse": "Rank and gate DRAFT extracted lab rows for review; never a clinical decision, never a diagnosis.",
+    "trainedOn": "Synthetic readings derived from the committed marker catalogue + documented OCR noise model.",
+    "notTrainedOn": "Patient data (MIMIC-IV itself is credentialed and is NOT used or shipped — only its public item↔LOINC mapping tables and concept SQL are vendored).",
+    "limitations": [
+      "Synthetic noise cannot cover every scanner, camera, font or paper condition.",
+      "Calibration is per-reading quality, not clinical meaningfulness.",
+      "Overall discrimination mostly separates \"a row was read\" from \"no row was read\"; among matched rows the confidence is far weaker at catching a wrong-but-plausible number (see metrics.matchedSubset) — such a row is why every extraction stays a draft for review.",
+      "Markers absent from the catalogue are never recovered, so coverage, not confidence, is the limiting factor for exotic tests."
+    ],
+    "reproduce": "npm run knowledge:train"
+  }
+}

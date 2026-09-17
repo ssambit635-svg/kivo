@@ -751,8 +751,17 @@
     ingestFile(file, source)
       .then(function (out) {
         var badge = out && out.report && out.report.badge ? out.report.badge.label : 'Needs review';
-        var count = out && out.preview && out.preview.extracted ? out.preview.extracted.length : 0;
-        toast('Scanned ' + count + ' value' + (count === 1 ? '' : 's') + ' — badge: ' + badge + '. Verify to feed your twin.');
+        var rows = out && out.preview && out.preview.extracted ? out.preview.extracted : [];
+        var flagged = rows.filter(function (r) { return r.suspicious; }).length;
+        var msg = 'Scanned ' + rows.length + ' value' + (rows.length === 1 ? '' : 's') + ' — badge: ' + badge + '.';
+        if (flagged > 0) {
+          // A physically implausible reading is usually a misread: say so before
+          // the user verifies anything.
+          msg += ' ' + flagged + ' value' + (flagged === 1 ? '' : 's') + ' look' + (flagged === 1 ? 's' : '') +
+            ' implausible for that test — check against the report.';
+        }
+        msg += ' Verify to feed your twin.';
+        toast(msg);
         return refreshAll();
       })
       .catch(function (err) { toast(err.message || 'Scan failed'); });

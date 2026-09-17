@@ -21,7 +21,15 @@ export function buildApiRouter(c) {
   r.get('/health', (_req, res) => {
     res.json({ status: 'ok', version: c.config.appVersion, uptimeSec: Math.round(process.uptime()), time: new Date().toISOString() });
   });
-  r.get('/meta/lab-dictionary', (_req, res) => res.json({ markers: c.extractionService.dictionary() }));
+  // The lab dictionary is public (read-only knowledge, no user data): clients
+  // render ranges and names from it. `?tier=all` exposes the full catalogue.
+  r.get('/meta/lab-dictionary', (req, res) =>
+    res.json({ markers: c.extractionService.dictionary({ tier: req.query.tier === 'all' ? 'all' : 'core' }) }),
+  );
+  // Transparency surface: exactly what the clinical knowledge base contains,
+  // where it came from (commit pin + licence), and how the extraction
+  // confidence was calibrated. No patient data, no user data.
+  r.get('/meta/knowledge', (_req, res) => res.json(c.knowledgeReport ? c.knowledgeReport() : { stats: null }));
 
   // ---------- auth (strict rate limit bucket) ----------
   const auth = Router();

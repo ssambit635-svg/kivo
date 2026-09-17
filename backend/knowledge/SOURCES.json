@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-09-17T16:54:56.799Z",
+  "sources": [
+    {
+      "id": "mimic-code",
+      "repo": "MIT-LCP/mimic-code",
+      "commit": "303d26c623dcc9c49cc0f204468d4acc2f063797",
+      "licence": "MIT",
+      "homepage": "https://github.com/MIT-LCP/mimic-code",
+      "role": "Canonical laboratory item catalogue: analyte names, specimen, category, unit and LOINC identity, with aggregate assay frequency.",
+      "files": [
+        {
+          "path": "vendor/mimic-code/LICENSE",
+          "bytes": 1100,
+          "sha256": "fa5b4187cc5da20dc4f27d76d59c8507d1389a76559b5f56ab48a222d1eb3bb5"
+        },
+        {
+          "path": "vendor/mimic-code/README.md",
+          "bytes": 8705,
+          "sha256": "4998c63c09459aea0943132a6fc8a888eb22054415a3c113c75f21daf1b4a335"
+        },
+        {
+          "path": "vendor/mimic-code/mapping/d_labitems_to_loinc.csv",
+          "bytes": 361048,
+          "sha256": "f7ef583bb2669cbf8f450e1b629dd83161c1d3f2f3ebe6abd2ff8111570e86b8"
+        },
+        {
+          "path": "vendor/mimic-code/mapping/lab_itemid_to_loinc.csv",
+          "bytes": 79970,
+          "sha256": "2e4994fa858b55cae48286728fb6ba8dde019716080e34759fbde3d604d8ce64"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/chemistry.sql",
+          "bytes": 2969,
+          "sha256": "b674ae2e12fe859c44850a5e8268f3a18ccb934fb9f0ab47112af0c346364d70"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/complete_blood_count.sql",
+          "bytes": 1409,
+          "sha256": "8eb94ba8891e0effa66c7a62c76e648d9f42e8941f97f052c92a0823434bae92"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/blood_differential.sql",
+          "bytes": 6864,
+          "sha256": "a93f21dfb29e00b1450fabff5572830a2a5930f1229dbe43f816dd1b8b8235f1"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/enzyme.sql",
+          "bytes": 1686,
+          "sha256": "5c719b94ec9947366f4eb191687e12f2b80931764272c3c6988506ef716647cd"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/coagulation.sql",
+          "bytes": 1164,
+          "sha256": "d6f9ba24d8872e3eaed92707522dd2f24a51f879dd77feebe25ee9c6b08225dc"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/inflammation.sql",
+          "bytes": 519,
+          "sha256": "88b7cc933d2832aed284a489ee67a3a156e67365c96e60706fb6eb6c537590c9"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/bg.sql",
+          "bytes": 8367,
+          "sha256": "90a7f58852b5af97cfce799e9e76a9754c765e2fb9593860ca6bf85b60a5cd55"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/vitalsign.sql",
+          "bytes": 3498,
+          "sha256": "9a618fb7f6bf74ed1571e08088b09d1f27a8ccf8b1054082a94270cde456ab0d"
+        },
+        {
+          "path": "vendor/mimic-code/concepts/icp.sql",
+          "bytes": 645,
+          "sha256": "d7a6ad8f8c455f2f177c26749a0fbf80d000e652dfda276b9782fa7dcd99f62c"
+        }
+      ]
+    },
+    {
+      "id": "ocr-for-medical-laboratory-reports",
+      "repo": "xuewenyuan/OCR-for-Medical-Laboratory-Reports",
+      "commit": "44504ee7a1d27c605e7e0e5d811026f297f876f6",
+      "licence": "MIT (detection fork: MIT, endernewton/tf-faster-rcnn) · MIT (recognition: MIT, meijieru/crnn.pytorch)",
+      "homepage": "https://github.com/xuewenyuan/OCR-for-Medical-Laboratory-Reports",
+      "role": "Laboratory-report OCR character set (the glyph inventory a report recognizer must cover) and the patch-based detection strategy.",
+      "files": [
+        {
+          "path": "vendor/ocr-for-medical-laboratory-reports/README.md",
+          "bytes": 3335,
+          "sha256": "ea88c32cf4087a6157e997d2e910acf077ccc0dbaf997a4307d25b2a14e5a0a5"
+        },
+        {
+          "path": "vendor/ocr-for-medical-laboratory-reports/recognition/keys.py",
+          "bytes": 2355,
+          "sha256": "4a77deaf0607b8c89d867455dc26bb85aa0285780481a9cc4ec800d16ad964ef"
+        },
+        {
+          "path": "vendor/ocr-for-medical-laboratory-reports/recognition/LICENSE.md",
+          "bytes": 1097,
+          "sha256": "ca3d53e04088c5752274d53d981c321db6f962a8d6740fcde7d1a0789532d1f8"
+        },
+        {
+          "path": "vendor/ocr-for-medical-laboratory-reports/detection/LICENSE",
+          "bytes": 1068,
+          "sha256": "4f3b645db9b9e1d8054c3cca989f2cf96db5c36eb07dd235eba26640e5de7a7f"
+        },
+        {
+          "path": "vendor/ocr-for-medical-laboratory-reports/detection/tools/printResults_with_crop.py",
+          "bytes": 9136,
+          "sha256": "9ffde87e4c9bd9bfdd2f0f4a0bbad4102dbd9280fd70d7301d62f798fab7e6da"
+        }
+      ]
+    },
+    {
+      "id": "blood-report-parser",
+      "repo": "garg-tejas/blood-report-parser",
+      "commit": "a3cf5be2a71d8b8505ea0a6c43ac6baa5f898744",
+      "licence": "NONE DECLARED — reference only, nothing vendored",
+      "homepage": "https://github.com/garg-tejas/blood-report-parser",
+      "role": "Consulted for its published panel taxonomy (CBC, CMP, Lipid, LFT, KFT, Thyroid, Coagulation, Electrolytes) only. No file, schema, code or prose from it is copied anywhere in this repository; the taxonomy is standard clinical grouping and is re-authored in curated/curatedMappings.js.",
+      "files": [],
+      "noVendorReason": "The repository declares no licence, so vendoring its files would be a redistribution without permission. It also depends on hosted LLM APIs (GLM-OCR/Gemini) for extraction, which this cost-free, offline-first build cannot and does not use."
+    }
+  ]
+}
