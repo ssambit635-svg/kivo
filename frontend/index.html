@@ -13,6 +13,7 @@
     <link rel="icon" type="image/png" href="./icons/icon-192.png" />
     <title>MedTwin AI — Digital Health Twin</title>
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./care.css" />
   </head>
   <body>
     <header class="topbar">
@@ -74,6 +75,9 @@
             <span id="refresh-icon" class="btn-ic" aria-hidden="true"></span>
           </button>
         </div>
+
+        <!-- Care+ teaser (plans, doctors, shorts) — filled by care.js -->
+        <div id="care-teaser"></div>
 
         <div class="grid">
           <!-- ============ 1. HEALTH SCORE TIMELINE ============ -->
@@ -161,6 +165,10 @@
             MedTwin AI is a hackathon prototype for risk awareness and understanding — not a medical device and not a
             diagnosis engine. Always discuss your results with a qualified healthcare professional.
           </p>
+          <p class="foot-doctor">
+            Are you a doctor? <a href="/doctor/">Open the doctor console</a> — verification and payments are simulated
+            (mock) in this build.
+          </p>
         </footer>
 
         <!-- Mobile bottom navigation -->
@@ -176,8 +184,15 @@
             <span class="nav-ic" aria-hidden="true"></span>
             <span class="nav-label">Reports</span>
           </button>
+          <button class="nav-item" type="button" data-tab="care" id="nav-care">
+            <span class="nav-ic" aria-hidden="true"></span>
+            <span class="nav-label">Care</span>
+          </button>
         </nav>
       </section>
+
+      <!-- ================= CARE (subscription + doctors + shorts) ================= -->
+      <section id="care-view" class="hidden" aria-labelledby="care-h"></section>
 
       <!-- ============ CAMERA SCANNER OVERLAY ============ -->
       <section id="scanner-view" class="scanner hidden" role="dialog" aria-modal="true" aria-label="Scan a lab report">
@@ -202,5 +217,6 @@
 
     <script src="./icons.js"></script>
     <script src="./app.js"></script>
+    <script src="./care.js"></script>
   </body>
 </html>

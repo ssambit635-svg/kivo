@@ -24,7 +24,10 @@ grounded explanations → doctor-visit preparation.
 | Health Intelligence | ✅ Personal baselines · multivariate anomaly detection · pattern graph · counterfactual twin + scenario explorer (read-only add-on, CPU-only) |
 | Clinical knowledge base | ✅ **1,226 markers** (1,219 with a LOINC code, 18 panels) built offline from pinned MIT-licensed sources — see [`backend/knowledge/README.md`](backend/knowledge/README.md) |
 | Extraction model | ✅ Calibrated confidence trained on a documented OCR-noise corpus (Brier 0.15 → 0.07, ECE 0.26 → 0.06) with a shipped model card |
-| Tests | ✅ **460 passing** (`cd backend && npm test`) + 89-check live endpoint smoke (`npm run smoke`) |
+| Care network | ✅ Mock subscription (Care+) → doctor consultations + doctor-recorded shorts · consent-scoped chart sharing · payout ledger (70/30 consults, 25/35/40 subscription pools) |
+| Doctor console | ✅ **Separate frontend at `/doctor/`** — self-onboarding (mock KYC), shorts studio, one-screen clinical brief, AI medicine draft the doctor edits/approves, shareable identity card, earnings statement |
+| RBAC | ✅ `user_roles` table (`patient` / `doctor` / `admin`), server-side grants, re-read per request · doctors cannot touch the patient API · patients cannot open the console |
+| Tests | ✅ **518 passing** (`cd backend && npm test`) + 120-check live endpoint smoke (`npm run smoke`) |
 | Frontend | ✅ Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
 
 ## Quick start (cost-free)
@@ -33,14 +36,55 @@ grounded explanations → doctor-visit preparation.
 cd backend
 npm install
 npm start          # API on :8080 — SQLite file DB, zero external services
-                   # demo dashboard: http://localhost:8080/app/
+                   # patient app:     http://localhost:8080/app/
+                   # doctor console:  http://localhost:8080/doctor/
 npm test           # full unit + integration suite, in-memory DB
 npm run ocr:setup  # ONE-TIME: vendors Tesseract language data for offline image OCR
-npm run seed:demo  # demo@medtwin.dev — 3 verified reports, 5/5 milestones
-npm run smoke      # boots the real server & exercises EVERY endpoint (89 checks)
+npm run seed:demo  # demo patient + demo doctor + 2 shorts (prints both logins)
+npm run smoke      # boots the real server & exercises EVERY endpoint (120 checks)
 npm run security:all  # secret scan + security-posture check + dependency audit
 node scripts/create-admin.js admin@clinic.dev 'Admin' 'Str0ng!Passw0rd#x'
 ```
+
+## Care network — subscription → consultation + doctor shorts
+
+After the twin gives you the picture, the care network gives you the people. It is built as a
+**mock-money MVP** on purpose: the plan, the payment intents and the payout ledger are real rows
+in the database, but **no gateway is ever contacted and no card/UPI detail is ever collected**
+(`mode: 'mock'`, `provider: 'mock-gateway'` appear on every payment row, and the demo KYC is labelled
+`mock` everywhere it is shown).
+
+- **Care+ subscription** — `free` / `care_monthly` (₹199, 4 consults) / `care_yearly` (₹1499).
+  The subscription is stored (period, status, plan) and drives entitlements: 4 plan-funded
+  consultations per month plus the full doctor-shorts library (previews stay free).
+- **Personal doctor consultation** — pick a specialty → pick a doctor → describe the problem →
+  choose **exactly which parts of your chart** that doctor may open (`labs / trends / vitals /
+  medications / risk / reports`), scoped to that visit and expiring. Revoking consent instantly
+  removes the doctor's brief and blocks further clinical replies.
+- **Doctor-recorded shorts** — a doctor answers one recurring doubt in 45–60 s. The doctor gets a
+  share of every plan (25 % of subscription revenue goes into the shorts pool, split by **watched
+  seconds**, not clicks) and, in return, spends no consultation time on the ten questions the chart
+  already answers.
+- **Why a doctor uploads** — `GET /api/doctor/earnings` shows the honest arithmetic: consults pay
+  70 % of the fee to the doctor, the subscription pools pay 25 % (shorts) / 35 % (consult pool) /
+  40 % (platform) by largest-remainder so every paise is accounted for.
+
+### The doctor console (`/doctor/`) — a separate frontend for a separate role
+
+A doctor signs in at `/doctor/` (patients signing in at `/app/` are redirected there automatically),
+and gets a workspace patients can never open:
+
+1. **Shorts studio** — record/upload a video (mp4/webm/mov) or publish a caption short; claim
+   language ("cure", "guaranteed") is rejected at upload by the content lint.
+2. **One-screen clinical brief** — active problems, meaningful changes, vitals, current medicines,
+   the prototype risk flag, recent reports and a *gap list* of only the things the chart genuinely
+   cannot answer. Verified records only; OCR drafts never enter a brief.
+3. **AI medicine preview** — deterministic rules over the patient's **verified** lab values suggest a
+   therapy *class* (never a dose), with the rationale, cautions, duplicate-medicine check and
+   follow-up markers. The doctor edits, includes or skips each line and must tick the 4-point safety
+   checklist before anything reaches the patient; rejected drafts are invisible to patients.
+4. **Identity card** — a self-created profile ("Dr Mohan Charan · Bone & joint specialist") with a
+   stable card number (`MT-DOC-XXXXXXXX`), a public verify link and a mock-verification badge.
 
 ## Phone-first experience (built for the iQOO)
 

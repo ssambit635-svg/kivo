@@ -5,13 +5,19 @@
  * auth tokens must always hit the live server, and stale auth offline would be
  * a security footgun. On-device OCR (when enabled) still needs the camera,
  * which obviously works offline.
+ *
+ * The doctor console at /doctor is intentionally outside this scope: it is a
+ * separate frontend for a separate role, and clinical screens should never be
+ * served stale from a cache.
  */
-const VERSION = 'medtwin-v1';
+const VERSION = 'medtwin-v2';
 const SHELL = [
   '/app/',
   '/app/index.html',
   '/app/styles.css',
+  '/app/care.css',
   '/app/app.js',
+  '/app/care.js',
   '/app/icons.js',
   '/app/manifest.webmanifest',
   '/app/icons/icon-192.png',

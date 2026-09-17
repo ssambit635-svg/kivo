@@ -154,6 +154,8 @@
     $('dash-view').classList.add('hidden');
     $('userbox').classList.add('hidden');
     $('auth-view').classList.remove('hidden');
+    var care = $('care-view');
+    if (care) care.classList.add('hidden');
   }
 
   function showDash() {
@@ -161,6 +163,35 @@
     $('dash-view').classList.remove('hidden');
     $('userbox').classList.remove('hidden');
     $('user-email').textContent = state.user && state.user.email ? state.user.email : '';
+    var care = $('care-view');
+    if (care) care.classList.add('hidden');
+  }
+
+  /** Third top-level view: the Care tab (subscription / doctors / shorts). */
+  function showCare() {
+    $('auth-view').classList.add('hidden');
+    $('dash-view').classList.add('hidden');
+    $('userbox').classList.remove('hidden');
+    var care = $('care-view');
+    if (care) care.classList.remove('hidden');
+    scrollTo(0, 0);
+  }
+
+  function showView(name) {
+    if (name === 'care') return showCare();
+    if (name === 'auth') return showAuth();
+    return showDash();
+  }
+
+  /* Cross-module hooks: care.js (a separate file) drives its own screens
+     through this tiny surface instead of reaching into dashboard internals. */
+  var sessionListeners = [];
+  var memberListeners = [];
+  function notifySession() {
+    sessionListeners.forEach(function (cb) { try { cb(state.user); } catch (e) { /* isolate */ } });
+  }
+  function notifyMember() {
+    memberListeners.forEach(function (cb) { try { cb(state.member); } catch (e) { /* isolate */ } });
   }
 
   function setAuthMode(mode) {
@@ -195,6 +226,12 @@
     promise.then(function (session) {
       saveTokens({ accessToken: session.accessToken, refreshToken: session.refreshToken });
       state.user = session.user;
+      notifySession();
+      if (session.user && session.user.accountType === 'doctor') {
+        // Two user categories, two frontends: doctors work in the console.
+        location.href = '/doctor/';
+        return null;
+      }
       return bootDashboard();
     }).catch(function (err) {
       errBox.textContent = err.message || 'Something went wrong';
@@ -209,6 +246,7 @@
     clearTokens();
     state.user = null;
     state.member = null;
+    notifySession();
     showAuth();
     if (rt) {
       api('/auth/logout', { method: 'POST', body: { refreshToken: rt } }, false).catch(function () { /* best effort */ });
@@ -229,6 +267,7 @@
         owned.find(function (m) { return m.relationship === 'self'; }) || owned[0] || all[0];
       $('member-name').textContent = state.member.name;
       $('member-sub').textContent = (state.member.relationship || 'self') + ' · digital health twin';
+      notifyMember();
       showDash();
       return refreshAll();
     }).catch(function (err) {
@@ -911,6 +950,12 @@
     }, 220);
   }
 
+  var readyDone = false;
+  function ready(cb) {
+    if (readyDone) return cb();
+    document.addEventListener('DOMContentLoaded', cb, { once: true });
+  }
+
   function init() {
     setStaticIcons();
     $('tab-login').addEventListener('click', function () { setAuthMode('login'); });
@@ -943,17 +988,41 @@
       if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
+    readyDone = true;
+
     registerServiceWorker();
     loadTokens();
     if (state.tokens && state.tokens.accessToken) {
       api('/auth/me').then(function (me) {
         state.user = me.user;
+        notifySession();
+        if (me.user && me.user.accountType === 'doctor') {
+          location.href = '/doctor/';
+          return null;
+        }
         return bootDashboard();
       }).catch(function () { showAuth(); });
     } else {
       showAuth();
     }
   }
+
+  /* Cross-module bridge for sibling modules (care.js). Defined at evaluation
+     time — not inside init() — because sibling <script> tags capture it before
+     DOMContentLoaded fires. `ready()` is what waits for the shell's own init. */
+  window.MtApp = {
+    $: $,
+    el: el,
+    icon: icon,
+    toast: toast,
+    api: api,
+    member: function () { return state.member; },
+    user: function () { return state.user; },
+    showView: showView,
+    onSession: function (cb) { sessionListeners.push(cb); if (state.user) cb(state.user); },
+    onMember: function (cb) { memberListeners.push(cb); if (state.member) cb(state.member); },
+    ready: ready,
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

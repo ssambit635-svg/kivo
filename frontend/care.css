@@ -1,0 +1,161 @@
+/* MedTwin AI — Care tab styles (subscription · doctors · consultations · shorts)
+   Extends styles.css tokens; nothing here touches the health-twin screens. */
+
+#care-view { padding-bottom: 96px; }
+#care-view .care-section, #care-view .care-plan { padding: 16px; margin-bottom: 16px; }
+
+.care-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.care-head h2 { font-size: 16px; margin: 0; }
+.care-head .care-head-ic { color: var(--teal); flex: none; margin-top: 2px; }
+
+.care-teaser-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; margin-bottom: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, var(--teal-soft) 100%);
+}
+.care-teaser-main { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.care-teaser-main > div { display: flex; flex-direction: column; }
+.care-teaser-main strong { font-size: 14.5px; }
+
+/* ---------- plan ---------- */
+.care-plan-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.care-plan-main { display: flex; flex-direction: column; }
+.care-plan-main strong { font-size: 15px; }
+.care-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip.mock { background: #fff4d6; color: #8a5a00; border: 1px dashed #e0b64d; font-weight: 700; letter-spacing: 0.04em; }
+
+/* ---------- lists ---------- */
+.care-list { display: flex; flex-direction: column; gap: 10px; }
+.care-consult {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fbfdfe;
+  cursor: pointer;
+}
+.care-consult:hover { background: #f4faf9; border-color: #cfe8e4; }
+.care-consult-main { display: flex; flex-direction: column; min-width: 0; }
+.care-consult-main strong { font-size: 14px; }
+.care-consult-side { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+
+.care-search { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; margin-bottom: 10px; color: var(--muted); }
+.care-search input { border: 0; background: transparent; padding: 4px 0; }
+.care-search input:focus { box-shadow: none; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip-btn {
+  border: 1px solid var(--line); background: #fff; color: var(--ink-2);
+  border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.chip-btn.active { background: var(--teal-soft); border-color: #bfe6e1; color: var(--teal-dark); }
+.chip-row .chip { margin: 0; }
+
+/* ---------- doctor cards ---------- */
+.doctor-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: #fff; }
+.doctor-top { display: flex; gap: 10px; margin-bottom: 8px; }
+.doctor-who { display: flex; flex-direction: column; min-width: 0; }
+.doctor-who strong { font-size: 15px; }
+.doctor-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+/* ---------- shorts ---------- */
+.shorts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 720px) { .shorts-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.short-card { border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; font: inherit; color: inherit; }
+.short-poster {
+  position: relative; display: block; aspect-ratio: 9 / 13; border-radius: 14px; overflow: hidden;
+  background: linear-gradient(160deg, #0f766e 0%, #134e4a 55%, #0b1220 100%);
+}
+.short-poster[data-topic='cardiology'] { background: linear-gradient(160deg, #b91c1c 0%, #7f1d1d 60%, #1f1315 100%); }
+.short-poster[data-topic='endocrinology'] { background: linear-gradient(160deg, #b45309 0%, #78350f 60%, #1a1207 100%); }
+.short-poster[data-topic='dermatology'] { background: linear-gradient(160deg, #be185d 0%, #831843 60%, #1b0f16 100%); }
+.short-poster[data-topic='psychiatry'] { background: linear-gradient(160deg, #4f46e5 0%, #312e81 60%, #111034 100%); }
+.short-poster[data-topic='paediatrics'] { background: linear-gradient(160deg, #0891b2 0%, #0e7490 60%, #082f36 100%); }
+.short-poster[data-topic='nutrition'] { background: linear-gradient(160deg, #15803d 0%, #14532d 60%, #08130c 100%); }
+.short-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; opacity: 0.92; }
+.short-dur { position: absolute; right: 8px; bottom: 8px; font-size: 11px; color: #fff; background: rgba(0,0,0,0.45); border-radius: 6px; padding: 1px 6px; }
+.short-free { position: absolute; left: 8px; top: 8px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; color: #06301f; background: #d9f7e7; border-radius: 6px; padding: 2px 6px; }
+.short-card.locked .short-poster { filter: saturate(0.5) brightness(0.75); }
+.short-title { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+.short-card .muted { font-size: 11.5px; }
+
+.care-upsell {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  background: var(--gold-soft); color: #7a5410; border: 1px solid #f0dfb8; border-radius: 12px; padding: 8px 10px; font-size: 13px;
+}
+.care-upsell .btn { margin-left: auto; }
+.care-note { font-size: 12px; }
+.care-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 22px 8px; color: var(--muted); text-align: center; }
+
+/* ---------- sheets / modals ---------- */
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 60; background: rgba(9, 22, 30, 0.55);
+  display: flex; align-items: flex-end; justify-content: center; padding: 12px;
+}
+@media (min-width: 720px) { .sheet-overlay { align-items: center; } }
+.sheet {
+  background: #fff; width: min(640px, 100%); max-height: 88vh; overflow: auto;
+  border-radius: 18px 18px 14px 14px; box-shadow: 0 24px 60px rgba(6, 24, 33, 0.35);
+}
+.sheet-wide { width: min(760px, 100%); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px 6px; position: sticky; top: 0; background: #fff; }
+.sheet-head h3 { margin: 0; font-size: 16px; }
+.sheet-body { padding: 6px 16px 18px; }
+
+.plan-option { display: flex; gap: 12px; justify-content: space-between; border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+.plan-features { margin: 6px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 13px; }
+.plan-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; min-width: 108px; }
+
+.pay-amount { font-size: 26px; font-weight: 800; margin: 6px 0 10px; }
+.pay-methods { display: flex; gap: 6px; margin-bottom: 12px; }
+.mock-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); margin: 0 0 6px; }
+.pay-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); padding: 8px 0; font-size: 13px; }
+
+.care-form .field { margin-bottom: 10px; }
+.care-check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin: 8px 0; }
+.care-check input { width: auto; margin-top: 3px; }
+
+.consult-head { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.consult-head h4 { margin: 0; }
+.consent-box, .reply-box, .med-box {
+  display: flex; flex-direction: column; gap: 6px;
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 10px 0; font-size: 13.5px; background: #fbfdfe;
+}
+.consent-box { flex-direction: row; align-items: center; gap: 8px; color: var(--teal-dark); }
+.consent-box.muted-box { color: var(--muted); }
+.consent-box .btn { margin-left: auto; }
+.reply-box { background: var(--teal-soft); border-color: #c7e9e4; }
+.med-box { background: var(--indigo-soft); border-color: #ddd9fb; }
+.med-row { display: flex; flex-direction: column; border-top: 1px solid rgba(79, 70, 229, 0.15); padding-top: 6px; }
+
+.thread { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.bubble { border-radius: 12px; padding: 8px 10px; font-size: 13.5px; max-width: 92%; }
+.bubble p { margin: 2px 0 0; }
+.bubble-meta { font-size: 11px; color: var(--muted); }
+.bubble.me { align-self: flex-end; background: #eef6f5; }
+.bubble.doc { align-self: flex-start; background: #f2f0fe; }
+.bubble.sys { align-self: center; background: #f2f5f7; color: var(--muted); width: 100%; max-width: 100%; }
+.thread-form { display: flex; gap: 8px; align-items: center; }
+
+.link-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 7px 10px; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+
+/* ---------- caption "story" player (no binary asset needed) ---------- */
+.story { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 340px; border-radius: 16px; padding: 14px; color: #fff; background: linear-gradient(165deg, #0f766e, #0b3f3a 60%, #07141c); }
+.story[data-topic='cardiology'] { background: linear-gradient(165deg, #b91c1c, #7f1d1d 60%, #1b0d0d); }
+.story[data-topic='endocrinology'] { background: linear-gradient(165deg, #b45309, #78350f 60%, #1b1206); }
+.story[data-topic='dermatology'] { background: linear-gradient(165deg, #be185d, #831843 60%, #1b0f16); }
+.story[data-topic='psychiatry'] { background: linear-gradient(165deg, #4f46e5, #312e81 60%, #101033); }
+.story-progress { position: absolute; left: 10px; right: 10px; top: 10px; height: 3px; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+.story-progress span { display: block; height: 100%; width: 0; background: #fff; }
+.story-doctor { font-size: 12px; opacity: 0.85; margin-bottom: 8px; }
+.story-body h4 { margin: 0 0 4px; font-size: 18px; }
+.story-body .muted { color: rgba(255,255,255,0.75); }
+.story-point { font-size: 20px; font-weight: 700; line-height: 1.35; margin: 14px 0 4px; animation: storyIn 0.28s ease; }
+@keyframes storyIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.story-count { font-size: 11.5px; opacity: 0.7; }
+.care-video { width: 100%; border-radius: 14px; background: #000; max-height: 60vh; }
+
+/* Footer doctor-console pointer (patient app). */
+.foot-doctor { margin-top: 6px; }
+.foot-doctor a { color: var(--teal-dark); font-weight: 600; }
+
+/* Care-tab container for the directory (kept flexible for future tabs). */
+.care-doctors { display: flex; flex-direction: column; gap: 10px; }
+.chip.teal { background: var(--teal-soft); color: var(--teal-dark); }

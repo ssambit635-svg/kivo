@@ -60,6 +60,13 @@ export class PayloadTooLargeError extends ApiError {
   }
 }
 
+/** Paid entitlement required — semantically distinct from a permission error. */
+export class PaymentRequiredError extends ApiError {
+  constructor(message = 'This content needs an active subscription', code = 'PAYMENT_REQUIRED') {
+    super(402, code, message);
+  }
+}
+
 export class UnsupportedMediaError extends ApiError {
   constructor(message = 'Unsupported media type') {
     super(415, 'UNSUPPORTED_MEDIA_TYPE', message);

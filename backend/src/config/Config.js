@@ -80,6 +80,30 @@ export class Config {
       max: Number(env.RATE_LIMIT_AUTH_MAX || (this.isTest ? 100000 : 30)),
     };
 
+    // --- care network: subscriptions + doctor console ---------------------
+    // DEMO MODE: a doctor who applies is activated immediately with a mock
+    // KYC reference so the hackathon demo needs no verification queue.
+    // Production must set DOCTOR_AUTO_APPROVE=false and wire a real process.
+    this.doctorAutoApprove = env.DOCTOR_AUTO_APPROVE
+      ? env.DOCTOR_AUTO_APPROVE !== 'false'
+      : !this.isProd;
+    // There is no real KYC/registry integration anywhere in this build; the
+    // value is echoed in API responses and badged "MOCK" in every UI surface.
+    this.doctorKycMode = 'mock';
+    // How long a patient's chart consent to a doctor lasts once a
+    // consultation is booked (patient can revoke at any time before then).
+    this.consentDefaultDays = Number(env.CONSENT_DEFAULT_DAYS || 30);
+    // Shorts are small by design ("why should a doctor record a lecture?"):
+    // 25 MB default holds a phone-shot 45-90s clip at 1080p comfortably.
+    // Rounded: multer's limit validator only accepts integers.
+    this.maxVideoUploadBytes = Math.max(1024, Math.round(Number(env.MAX_VIDEO_MB || 25) * 1024 * 1024));
+    // Expiring, HMAC-signed playback URLs — paid content must not be a
+    // guessable static path. 15 minutes covers a clinic session's watching.
+    this.videoTtlSec = Number(env.VIDEO_URL_TTL_SEC || 900);
+    this.mediaSigningSecret = env.MEDIA_SIGNING_SECRET || `${this.jwtSecret}:care-media`;
+    this.videoDir = env.VIDEO_DIR || `${this.uploadDir}/videos`;
+    this.paymentsMode = 'mock'; // never 'live' in this build
+
     // --- AI providers (cost-free by default) ------------------------------
     this.ocrProvider = env.OCR_PROVIDER || 'auto'; // auto -> plain-text, optional tesseract
     this.llmProvider = env.LLM_PROVIDER || 'grounded-local'; // deterministic, offline, free

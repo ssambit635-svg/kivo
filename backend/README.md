@@ -74,9 +74,20 @@ Policy matrix enforced by `PolicyService` (`tests/unit/policy.service.test.js` +
 | Shared `viewer` | ✅ | ❌ 403 | ❌ | granted member only |
 | Shared `editor` | ✅ | ✅ | ❌ | granted member only |
 | Stranger | ❌ 404 (existence hidden) | ❌ 404 | ❌ | — |
+| Doctor (`doctor` role) | ❌ 403 on the patient API | ❌ | ❌ | **only through a consultation consent grant**, scoped + expiring |
 | Admin | ❌ 404 | ❌ | ❌ | **admins cannot read health data** — they manage accounts + audit only |
 
 Every resource access loads the resource → resolves its owning member → derives access **from the member, never from caller-supplied ids**.
+
+**Roles** live in the `user_roles` table (`patient` / `doctor` / `admin`), are granted **server-side only**,
+and are re-read on every request — so suspending a doctor or revoking a role binds on the very next call,
+even if the attacker still holds a valid access token. `users.role` (the account flag: `user` / `admin`)
+is deliberately **not** widened: a doctor is a normal account plus a role + a professional profile.
+
+**Doctors and patient data.** A doctor sees a chart only while a live consent grant exists for that
+specific consultation (`doctor_access_grants`, scope + expiry, revocable by the patient at any moment).
+Revoking consent makes the clinical brief vanish and blocks replies (`403 CONSENT_REQUIRED`) on the next
+request. Every chart view is audited (`doctor.chart_viewed`).
 
 ## The AI pipeline (not "one LLM")
 
@@ -143,6 +154,25 @@ Response includes `earned/total`, the `next` milestone to pursue, and icon keys 
 | GET | `/api/members/:id/ask/suggestions` | deterministic question suggestions shaped by the data |
 | GET | `/api/admin/users`, POST `/api/admin/users/:uid/status`, GET `/api/admin/audit` | admin role |
 | GET | `/api/health`, `/api/meta/lab-dictionary`, `/api/meta/knowledge` | public |
+
+### Care network (subscription · consultations · doctor shorts)
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/public/plans`, `/api/public/doctors[...]`, `/api/public/doctors/specialties` | public plan + doctor directory |
+| POST | `/api/doctor/apply` | doctor self-onboarding (rate-limited; **mock** KYC in this build) |
+| GET | `/api/doctor/me`, PATCH `/api/doctor/profile`, POST `/api/doctor/kyc/mock`, GET `/api/doctor/identity-card` | usable **before** activation so a pending doctor can finish verification |
+| GET | `/api/doctor/overview` | queue + reach + best-performing shorts |
+| GET/POST/PATCH/DELETE | `/api/doctor/videos[...]`, GET `/api/doctor/videos/recommendable` | multipart `file` (mp4/webm/mov) **or** a caption short; claim-lint rejects cure/guarantee language |
+| GET | `/api/doctor/consultations[...]`, POST `…/accept`, `…/reply`, `…/close` | consent-gated; reply attaches up to 3 of the doctor's own shorts |
+| POST | `/api/doctor/consultations/:id/medicine-draft`, `…/medicine-plan/approve`, `…/medicine-plan/reject` | AI suggests, **the doctor decides**; approval needs the 4-point safety checklist |
+| GET | `/api/doctor/earnings` | per-period statement from the payout ledger (consult split + shorts pool) |
+| GET | `/api/care/home`, `/plans`, `/entitlements`, `/doctors`, `/videos` | patient care surface |
+| GET/POST/DELETE | `/api/care/subscription`, GET/POST `/api/care/payments`, POST `/api/care/payments/:id/confirm` | **mock** billing: intents are stored with `mode: 'mock'`, `provider: 'mock-gateway'`, no credential ever collected |
+| GET/POST | `/api/care/consultations[...]` (`…/messages`, `…/consent/revoke`, `…/close`) | plan quota or mock payment; consent scope chosen when booking |
+| POST | `/api/care/videos/:id/playback` / `/views` | signed, expiring, user-bound URL; wallet-free |
+| GET | `/api/media/videos/:id?v&uid&exp&sig` | the signature **is** the authorization (a `<video>` tag cannot send headers); HTTP Range supported |
+| GET/POST | `/api/admin/doctors`, `/api/admin/doctors/:id/status`, `/api/admin/payouts/settle` | admin role: verification queue + idempotent pool settlement |
 
 ## Personal Health Intelligence Engine (add-on)
 
@@ -246,6 +276,9 @@ tests/
                  security (headers/CORS/rate-limit/JSON/SQLi/413/404)
                  ask-twin (intents/grounding/refusal/authz/audit privacy)
                  auto-defense (no-store headers/Permissions-Policy/IP auto-block)
+                 care-subscriptions (mock billing, entitlements, plan quota, cancel)
+                 doctor-console (apply/KYC/roles/videos/consult flow/RBAC both ways)
+                 care-media (upload → signed URL → Range/expiry/tamper + paywall)
 ```
 
-`npm test` — **460 passing tests**, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`; the Personal Health Intelligence Engine is covered in `tests/unit/{personal-baseline,temporal-anomaly,pattern-graph,counterfactual-twin}.test.js` + `tests/integration/intelligence.test.js`.
+`npm test` — **518 passing tests**, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`; the Personal Health Intelligence Engine is covered in `tests/unit/{personal-baseline,temporal-anomaly,pattern-graph,counterfactual-twin}.test.js` + `tests/integration/intelligence.test.js`.
