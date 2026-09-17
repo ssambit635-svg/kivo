@@ -19,10 +19,12 @@ grounded explanations → doctor-visit preparation.
 | AI pipeline | ✅ **Real image OCR (Tesseract)** + plain-text, extraction, trends, explainable risk, grounded local LLM, doctor summary |
 | Phone-first UI | ✅ Camera report scanner (`getUserMedia` + gallery fallback) · voice journaling · installable PWA (manifest + service worker) · mobile bottom-nav |
 | Engagement widgets | ✅ Health Score Timeline · Report Confidence Badges · Health Milestones (icon keys, no emojis) |
+| Ask the Twin | ✅ Grounded conversational Q&A (`POST /api/members/:id/ask`) — deterministic intent → verified-data evidence → grounded narration; diagnosis requests always refused |
+| Security automation | ✅ Automated IP abuse-block + audit alerts · `/api` no-store · Permissions-Policy · secret scanner · header-posture check · `npm audit` gate · CI pipeline |
 | Health Intelligence | ✅ Personal baselines · multivariate anomaly detection · pattern graph · counterfactual twin + scenario explorer (read-only add-on, CPU-only) |
 | Clinical knowledge base | ✅ **1,226 markers** (1,219 with a LOINC code, 18 panels) built offline from pinned MIT-licensed sources — see [`backend/knowledge/README.md`](backend/knowledge/README.md) |
 | Extraction model | ✅ Calibrated confidence trained on a documented OCR-noise corpus (Brier 0.15 → 0.07, ECE 0.26 → 0.06) with a shipped model card |
-| Tests | ✅ **337 passing** (`cd backend && npm test`) |
+| Tests | ✅ **460 passing** (`cd backend && npm test`) + 89-check live endpoint smoke (`npm run smoke`) |
 | Frontend | ✅ Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
 
 ## Quick start (cost-free)
@@ -35,6 +37,8 @@ npm start          # API on :8080 — SQLite file DB, zero external services
 npm test           # full unit + integration suite, in-memory DB
 npm run ocr:setup  # ONE-TIME: vendors Tesseract language data for offline image OCR
 npm run seed:demo  # demo@medtwin.dev — 3 verified reports, 5/5 milestones
+npm run smoke      # boots the real server & exercises EVERY endpoint (89 checks)
+npm run security:all  # secret scan + security-posture check + dependency audit
 node scripts/create-admin.js admin@clinic.dev 'Admin' 'Str0ng!Passw0rd#x'
 ```
 
@@ -92,3 +96,4 @@ Medical-safety invariants (enforced by `knowledge:verify` and by tests):
 - The grounded-local LLM narrates **only** from validated structured data — it cannot invent numbers or evidence.
 - Reference ranges from the **report itself** always win over typical defaults.
 - Admins **cannot** read members' health data; family isolation is enforced by `PolicyService`, tested end-to-end.
+- **Ask the Twin never diagnoses** — diagnosis-seeking questions are refused and reframed onto recorded data; answers quote verified values only; question text is never written to the audit trail.

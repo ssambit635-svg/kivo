@@ -57,8 +57,21 @@ export class Config {
       this.corsAllowOriginRegexes.push(/^https?:\/\/(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/);
     }
 
-    // --- rate limiting ---------------------------------------------------
-    this.rateLimitGlobal = {
+        // --- automated abuse detection (SecurityMonitor) -----------------------
+        // Cross-endpoint 401/403 failure tracking per IP with automatic block.
+        // Enabled everywhere EXCEPT the unit/integration suite (which fires
+        // thousands of deliberate 401/403s from one IP); tests opt in per file.
+        this.securityMonitor = {
+          enabled: env.SECURITY_MONITOR_ENABLED
+            ? env.SECURITY_MONITOR_ENABLED !== 'false'
+            : !this.isTest,
+          windowMs: Number(env.SECURITY_MONITOR_WINDOW_MS || 5 * 60 * 1000),
+          maxFailures: Number(env.SECURITY_MONITOR_MAX_FAILURES || 60),
+          blockMs: Number(env.SECURITY_MONITOR_BLOCK_MS || 15 * 60 * 1000),
+        };
+
+        // --- rate limiting ---------------------------------------------------
+        this.rateLimitGlobal = {
       windowMs: Number(env.RATE_LIMIT_GLOBAL_WINDOW_MS || 5 * 60 * 1000),
       max: Number(env.RATE_LIMIT_GLOBAL_MAX || (this.isTest ? 100000 : 600)),
     };

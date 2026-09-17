@@ -1,6 +1,6 @@
 {
   "schema": "medtwin.extractionCalibration/1",
-  "trainedAt": "2026-09-17T18:19:55.624Z",
+  "trainedAt": "2026-09-17T18:51:34.219Z",
   "model": {
     "kind": "logistic+isotonic",
     "featureNames": [

@@ -139,8 +139,10 @@ Response includes `earned/total`, the `next` milestone to pursue, and icon keys 
 | POST | `/api/members/:id/intelligence/simulate` | counterfactual twin: hypothetical scenario |
 | POST | `/api/members/:id/intelligence/scenarios` | model scenario explorer (ranked presets) |
 | GET | `/api/members/:id/intelligence/explanation` | grounded narration of the evidence package |
+| POST | `/api/members/:id/ask` | **Ask the Twin** — grounded Q&A over the twin (deterministic intent → verified-data evidence → grounded answer; diagnosis requests always refused) |
+| GET | `/api/members/:id/ask/suggestions` | deterministic question suggestions shaped by the data |
 | GET | `/api/admin/users`, POST `/api/admin/users/:uid/status`, GET `/api/admin/audit` | admin role |
-| GET | `/api/health`, `/api/meta/lab-dictionary` | public |
+| GET | `/api/health`, `/api/meta/lab-dictionary`, `/api/meta/knowledge` | public |
 
 ## Personal Health Intelligence Engine (add-on)
 
@@ -185,6 +187,31 @@ stay cheap and never go stale. Same auth model as trends/risk: owners/editors/vi
 may read; strangers get 404; admins get no health access. No new tables — intelligence
 is recomputed from source-of-truth health data.
 
+## Ask the Twin — grounded conversational Q&A
+
+`POST /api/members/:id/ask { "question": "What changed in my health over the last year?" }`
+closes the demo narrative (§17 step 7). Architecture mirrors the rest of the
+pipeline — there is **no generative model**:
+
+1. A deterministic intent classifier routes the question (changes, specific
+   marker, risk, baseline, shifts, patterns, score, milestones, medications,
+   guidance, doctor prep, records, greeting…). Marker detection runs over the
+   full 992-marker dictionary alias index.
+2. Each intent assembles **evidence from the existing validated-data services**
+   (trends, transparent risk model, personal baselines, anomalies, health
+   score, milestones, doctor summary, guidance, medication awareness).
+3. The `grounded-local` provider renders the answer **only from that evidence**
+   — every number is copied verbatim; nothing is computed or invented.
+4. **Safety**: diagnosis-seeking questions ("do I have diabetes?") are detected
+   first and always answered with a refusal + data-grounded reframe; answers
+   never contain condition claims; unverified OCR drafts can never leak into
+   answers; the audit event (`ask.question`) stores intent + length only —
+   **never the question text** (privacy-by-design).
+
+Same authorization surface as trends: owner/editor/viewer may ask, strangers
+get 404, admins get no health access. `GET /ask/suggestions` returns
+deterministic follow-up questions shaped by what the data actually supports.
+
 ## Error contract
 
 ```json
@@ -193,7 +220,16 @@ is recomputed from source-of-truth health data.
 
 ## Security cheat-sheet
 
-helmet headers • CORS allowlist (dev: localhost + `*.e2b.app` previews; prod via `CORS_ORIGINS`) strict  • rate limits (auth bucket vs global) • 1 MB JSON cap • 5 MB upload cap + MIME allowlist ≤ random on-disk names • request ids + full audit trail • existence-hiding 404s • parameterized SQL everywhere.
+helmet headers • CORS allowlist (dev: localhost + `*.e2b.app` previews; prod via `CORS_ORIGINS`) strict  • rate limits (auth bucket vs global) • 1 MB JSON cap • 10 MB upload cap + MIME allowlist ≤ random on-disk names • request ids + full audit trail • existence-hiding 404s • parameterized SQL everywhere • `Cache-Control: no-store` on all of `/api` (health data is never cached) • `Permissions-Policy` lockdown (camera/mic self-only, geolocation/payment/usb denied).
+
+**Automated defense layer (free, zero-dependency):**
+
+- **SecurityMonitor** — cross-endpoint abuse detection: every 401/403 per IP is counted in a rolling window; an IP exceeding the threshold is **auto-blocked for 15 min** (429 + `Retry-After`) and an audit-alerted `security.ip_blocked` event is written. Validation 400s/404s never count, blocks auto-expire, and a monitor fault degrades open (never weakens auth).
+- **`npm run security:scan`** — deterministic in-repo secret scanner (cloud keys, private key material, JWT literals, secret assignments, bearer tokens) with an explicit allowlist for documented fixtures.
+- **`npm run security:headers`** — boots the real app and asserts the full defensive posture (CSP, HSTS, nosniff, frame/referrer policy, Permissions-Policy, no-store, CORS denial of unknown origins, JSON-only errors, monitor + audit wiring).
+- **`npm run security:deps`** — `npm audit` gate (currently **0 known vulnerabilities**).
+- **`npm run security:all`** — all three gates; the same chain runs in CI (`.github/workflows/ci.yml`) together with the 460-test suite, knowledge invariants, and the endpoint smoke test.
+- **`npm run smoke`** — boots the production entrypoint and exercises **every API endpoint** end-to-end (89 checks), including token rotation/reuse, lockout surfaces, isolation, and security probes.
 
 ## Testing — every tiny thing
 
@@ -208,6 +244,8 @@ tests/
                  health-intel (trends/risk/what-if/summary)
                  engagement (score timeline/milestones/badges/viewer+stranger authz)
                  security (headers/CORS/rate-limit/JSON/SQLi/413/404)
+                 ask-twin (intents/grounding/refusal/authz/audit privacy)
+                 auto-defense (no-store headers/Permissions-Policy/IP auto-block)
 ```
 
-`npm test` — **297 passing tests**, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`; the Personal Health Intelligence Engine is covered in `tests/unit/{personal-baseline,temporal-anomaly,pattern-graph,counterfactual-twin}.test.js` + `tests/integration/intelligence.test.js`.
+`npm test` — **460 passing tests**, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`; the Personal Health Intelligence Engine is covered in `tests/unit/{personal-baseline,temporal-anomaly,pattern-graph,counterfactual-twin}.test.js` + `tests/integration/intelligence.test.js`.

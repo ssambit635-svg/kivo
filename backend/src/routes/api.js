@@ -8,6 +8,7 @@ import { healthSchemas } from '../controllers/HealthIntelController.js';
 import { adminSchemas } from '../controllers/AdminController.js';
 import { intelligenceSchemas } from '../controllers/IntelligenceController.js';
 import { reminderSchemas } from '../controllers/ReminderController.js';
+import { askTwinSchemas } from '../controllers/AskTwinController.js';
 
 /** Builds and wires every API route against the container. */
 export function buildApiRouter(c) {
@@ -116,6 +117,11 @@ export function buildApiRouter(c) {
   secure('post', '/members/:memberId/intelligence/simulate', validate({ params: intelligenceSchemas.memberParams, body: intelligenceSchemas.simulate }), c.intelligenceController.simulate);
   secure('post', '/members/:memberId/intelligence/scenarios', validate({ params: intelligenceSchemas.memberParams, body: intelligenceSchemas.scenarios }), c.intelligenceController.exploreScenarios);
   secure('get', '/members/:memberId/intelligence/explanation', validate({ params: intelligenceSchemas.memberParams }), c.intelligenceController.explain);
+
+  // Ask the Twin — grounded Q&A over the member's Digital Health Twin.
+  // Read-only: same authorization surface as trends (owner/editor/viewer).
+  secure('post', '/members/:memberId/ask', validate({ params: askTwinSchemas.memberParams, body: askTwinSchemas.ask }), c.askTwinController.ask);
+  secure('get', '/members/:memberId/ask/suggestions', validate({ params: askTwinSchemas.memberParams }), c.askTwinController.suggestions);
 
   // admin
   secure('get', '/admin/users', validate({ query: adminSchemas.listUsersQuery }), c.adminController.listUsers);

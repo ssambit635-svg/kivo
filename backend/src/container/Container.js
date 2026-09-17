@@ -2,6 +2,7 @@ import { Config } from '../config/Config.js';
 import { Database } from '../db/Database.js';
 import { RateLimiter } from '../middleware/rateLimit.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { SecurityMonitorService } from '../services/SecurityMonitorService.js';
 
 import { UserRepository } from '../repositories/UserRepository.js';
 import { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
@@ -48,6 +49,8 @@ import { HealthIntelController } from '../controllers/HealthIntelController.js';
 import { ReminderController } from '../controllers/ReminderController.js';
 import { AdminController } from '../controllers/AdminController.js';
 import { IntelligenceController } from '../controllers/IntelligenceController.js';
+import { AskTwinController } from '../controllers/AskTwinController.js';
+import { AskTwinService } from '../services/AskTwinService.js';
 
 /**
  * Dependency-injection container — manual, explicit, test-friendly.
@@ -61,6 +64,10 @@ export class Container {
     this.db = new Database(config.dbPath);
     this.globalRateLimiter = new RateLimiter({ ...config.rateLimitGlobal, name: 'global' });
     this.authRateLimiter = new RateLimiter({ ...config.rateLimitAuth, name: 'auth' });
+    // Automated cross-endpoint abuse detection (auto IP block + audit alert).
+    // Constructed early so it is available even before services boot; the
+    // audit service is injected below once it exists.
+    this.securityMonitor = new SecurityMonitorService({ config, auditService: null });
 
     // --- repositories ---
     this.userRepository = new UserRepository(this.db);
@@ -76,6 +83,7 @@ export class Container {
     this.passwordService = new PasswordService(config);
     this.tokenService = new TokenService(config);
     this.auditService = new AuditService(this.auditLogRepository);
+    this.securityMonitor.audit = this.auditService; // blocks land in the audit trail
     this.policyService = new PolicyService(this.memberRepository);
     this.authService = new AuthService({
       config,
@@ -177,6 +185,24 @@ export class Container {
       llmGateway: this.llmGateway,
     });
 
+    // --- Ask the Twin (grounded Q&A over the Digital Health Twin) ---
+    this.askTwinService = new AskTwinService({
+      trendService: this.trendService,
+      riskModelService: this.riskModelService,
+      reportRepository: this.reportRepository,
+      labResultRepository: this.labResultRepository,
+      observationRepository: this.observationRepository,
+      intelligenceOrchestrator: this.intelligenceOrchestratorService,
+      healthScoreService: this.healthScoreService,
+      milestoneService: this.milestoneService,
+      doctorSummaryService: this.doctorSummaryService,
+      guidanceService: this.guidanceService,
+      medicationAwarenessService: this.medicationAwarenessService,
+      llmGateway: this.llmGateway,
+      policyService: this.policyService,
+      auditService: this.auditService,
+    });
+
     // --- domain services ---
     this.memberService = new MemberService({
       memberRepository: this.memberRepository,
@@ -231,6 +257,9 @@ export class Container {
       counterfactualService: this.counterfactualTwinService,
       explanationService: this.intelligenceExplanationService,
       policyService: this.policyService,
+    });
+    this.askTwinController = new AskTwinController({
+      askTwinService: this.askTwinService,
     });
 
     this.authenticateMw = authenticate({
