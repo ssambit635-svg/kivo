@@ -164,11 +164,34 @@ describe('TesseractJsOcrProvider availability (the real engine)', () => {
     const missing = path.join(os.tmpdir(), `mt-nolang-${Date.now()}`);
     const p = new TesseractJsOcrProvider({ langDir: missing });
     expect(p.resolveLocalLangData()).toBeNull();
-    expect(await p.isAvailable()).toBe(false);
-    const reason = await p.unavailabilityReason();
-    expect(reason).toBeTruthy();
-    // Must tell the operator how to fix it, not just that it failed.
-    expect(reason).toMatch(/ocr:setup/);
+    // Hermetic: simulate the offline venue (no CDN to fall back to) no
+    // matter whether THIS machine has internet — without the stub this
+    // test passes offline and fails online (CDN reachable ⇒ available).
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      throw new Error('offline (stubbed for test)');
+    };
+    try {
+      expect(await p.isAvailable()).toBe(false);
+      const reason = await p.unavailabilityReason();
+      expect(reason).toBeTruthy();
+      // Must tell the operator how to fix it, not just that it failed.
+      expect(reason).toMatch(/ocr:setup/);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
+  it('falls back to the CDN when reachable (online laptop, nothing vendored)', async () => {
+    const p = new TesseractJsOcrProvider({ langDir: '/nonexistent' });
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: true });
+    try {
+      expect(await p.isAvailable()).toBe(true);
+      expect(await p.unavailabilityReason()).toBeNull();
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 
   it('becomes AVAILABLE and points langPath at LOCAL data once vendored (offline-capable)', async () => {
@@ -203,35 +226,137 @@ describe('TesseractJsOcrProvider availability (the real engine)', () => {
   it('caches the CDN availability verdict so repeat scans do not re-probe the network', async () => {
     // Probing on every upload would make an offline venue fail slowly instead
     // of instantly. First call probes; the second must reuse the verdict.
+    // Hermetic: stub the network (offline) from the START so the verdict is
+    // deterministic with or without internet on this machine.
     const p = new TesseractJsOcrProvider({ langDir: '/nonexistent', probeTtlMs: 60_000 });
     expect(p._probe).toBeNull();
-    const first = await p.unavailabilityReason();
-    expect(first).toBeTruthy();
-    expect(p._probe).not.toBeNull();
-
-    const callsBefore = globalThis.fetch ? 1 : 0;
     let probed = 0;
     const realFetch = globalThis.fetch;
-    globalThis.fetch = async (...args) => { probed += 1; return realFetch(...args); };
+    globalThis.fetch = async () => {
+      probed += 1;
+      throw new Error('offline (stubbed for test)');
+    };
     try {
+      const first = await p.unavailabilityReason();
+      expect(first).toBeTruthy();
+      expect(p._probe).not.toBeNull();
+      expect(probed).toBe(1);
+
       const second = await p.unavailabilityReason();
       expect(second).toBe(first);
-      expect(probed).toBe(0); // cached — no second network round trip
+      expect(probed).toBe(1); // cached — no second network round trip
     } finally {
       globalThis.fetch = realFetch;
     }
-    expect(callsBefore).toBe(1);
   });
 
   it('surfaces every candidate reason via diagnose()', async () => {
-    const svc = new OcrService([new PlainTextOcrProvider(), new TesseractJsOcrProvider({ langDir: '/nonexistent' })]);
-    const reasons = await svc.diagnose('image/jpeg');
-    expect(reasons).toHaveLength(1);
-    expect(reasons[0]).toMatch(/^tesseract\.js:/);
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      throw new Error('offline (stubbed for test)');
+    };
+    try {
+      const svc = new OcrService([new PlainTextOcrProvider(), new TesseractJsOcrProvider({ langDir: '/nonexistent' })]);
+      const reasons = await svc.diagnose('image/jpeg');
+      expect(reasons).toHaveLength(1);
+      expect(reasons[0]).toMatch(/^tesseract\.js:/);
+      expect(reasons[0]).toMatch(/ocr:setup/);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 
   it('close() is safe when no worker was ever created', async () => {
     const svc = new OcrService([new PlainTextOcrProvider(), new TesseractJsOcrProvider({ langDir: '/nonexistent' })]);
     await expect(svc.close()).resolves.toBeUndefined();
+  });
+});
+
+describe('TesseractJsOcrProvider runtime failures (the real engine, failing)', () => {
+  it('wraps worker failures — which reject with plain STRINGS — in an actionable Error', async () => {
+    // tesseract.js rejects recognize() with `err.toString()` from the worker
+    // script, NOT an Error object. A naive `err.message` read on that shape
+    // is `undefined`, which used to surface as an empty preview note and a
+    // badge without ocrError on online machines (where the engine is
+    // "available" via the CDN and actually attempts the scan).
+    const p = new TesseractJsOcrProvider({ langDir: '/nonexistent' });
+    p.worker = async () => ({
+      recognize: async () => {
+        throw 'Error: Error attempting to read image.';
+      },
+    });
+    const err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.code).toBe('OCR_UNAVAILABLE');
+    expect(err.message).toMatch(/attempting to read image/);
+    expect(err.message).toMatch(/ocr:setup|paste the report text/i);
+  });
+
+  it('wraps engine STARTUP failures the same way (e.g. language download died)', async () => {
+    const p = new TesseractJsOcrProvider({ langDir: '/nonexistent' });
+    p.worker = async () => {
+      throw new Error('fetch failed');
+    };
+    const err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toMatch(/failed to start/);
+    expect(err.message).toMatch(/ocr:setup|paste the report text/i);
+  });
+
+  it('fails FAST when engine startup stalls (flaky CDN) instead of hanging the scan', async () => {
+    const p = new TesseractJsOcrProvider({ langDir: '/nonexistent', workerTimeoutMs: 50 });
+    p._createWorker = () => new Promise(() => {}); // never settles, like a stalled download
+    const start = Date.now();
+    const err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
+    expect(Date.now() - start).toBeLessThan(5000);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toMatch(/timed out/);
+    expect(err.message).toMatch(/ocr:setup|paste the report text/i);
+    // the dead worker slot is released so a later scan can retry
+    expect(p._workerPromise).toBeNull();
+  });
+
+  it('an image engine failing with a non-Error still yields ocr_failed WITH guidance (no crash, no empty note)', async () => {
+    // End-to-end guard for the online-machine crash: whatever the engine
+    // throws, ingest must land in ocr_failed with a defined note and a red
+    // badge carrying ocrError — never an undefined note or a lost report.
+    class StringRejectingOcrProvider {
+      name = 'string-rejector';
+      supports(mimeType) {
+        return /^image\//.test(mimeType || '');
+      }
+      async isAvailable() {
+        return true;
+      }
+      async unavailabilityReason() {
+        return null;
+      }
+      async extract() {
+        throw 'Error: Error attempting to read image.';
+      }
+    }
+    const ctx2 = makeTestContext(
+      {},
+      { ocrService: new OcrService([new PlainTextOcrProvider(), new StringRejectingOcrProvider()]) },
+    );
+    try {
+      const reg = await registerUser(request, ctx2.app, { email: 'strfail@medtwin.test' });
+      const m = await request(ctx2.app).get('/api/members').set(auth(reg.accessToken));
+      const mid = m.body.owned.find((x) => x.relationship === 'self').id;
+      const res = await request(ctx2.app)
+        .post(`/api/members/${mid}/reports`)
+        .set(auth(reg.accessToken))
+        .attach('file', PNG_BYTES, { filename: 'scan.png', contentType: 'image/png' });
+      expect(res.status).toBe(201); // never a 500
+      expect(res.body.report.status).toBe('ocr_failed');
+      expect(res.body.preview.needsManualEntry).toBe(true);
+      expect(res.body.preview.note).toBeTruthy();
+      expect(res.body.preview.note).toMatch(/attempting to read image/);
+      expect(res.body.report.badge.level).toBe('ocr_issue');
+      expect(res.body.report.badge.tone).toBe('red');
+      expect(res.body.report.badge.ocrError).toBeTruthy();
+    } finally {
+      ctx2.container.close();
+    }
   });
 });

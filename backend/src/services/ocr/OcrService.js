@@ -74,13 +74,19 @@ export class TesseractJsOcrProvider {
    * @param {string|null} [opts.langDir] directory holding `<lang>.traineddata[.gz]`;
    *   when the file is absent we fall back to the public CDN.
    * @param {number} [opts.oem=1] LSTM engine mode
+   * @param {number} [opts.probeTtlMs=60000] how long a CDN verdict is cached
+   * @param {number} [opts.probeTimeoutMs=4000] HEAD-probe network timeout
+   * @param {number} [opts.workerTimeoutMs=60000] worker-startup timeout: a
+   *   HEAD-reachable CDN can still stall the multi-MB language download, and
+   *   a hung worker must fail fast with guidance, never hang the request.
    */
-  constructor({ lang = 'eng', langDir = DEFAULT_LANG_DIR, oem = 1, probeTtlMs = 60_000, probeTimeoutMs = 4_000 } = {}) {
+  constructor({ lang = 'eng', langDir = DEFAULT_LANG_DIR, oem = 1, probeTtlMs = 60_000, probeTimeoutMs = 4_000, workerTimeoutMs = 60_000 } = {}) {
     this.lang = lang;
     this.langDir = langDir;
     this.oem = oem;
     this.probeTtlMs = probeTtlMs;
     this.probeTimeoutMs = probeTimeoutMs;
+    this.workerTimeoutMs = workerTimeoutMs;
     this._workerPromise = null;
     this._probe = null; // cached CDN reachability verdict
   }
@@ -155,12 +161,48 @@ export class TesseractJsOcrProvider {
     return (await this.unavailabilityReason()) === null;
   }
 
+  /**
+   * Spawns the underlying tesseract.js worker. Split out as a seam so tests
+   * can stub it without spawning real worker threads.
+   */
+  async _createWorker() {
+    const { createWorker } = await import('tesseract.js');
+    // NOTE: tesseract.js re-throws every job rejection as an UNCAUGHT
+    // exception unless an `errorHandler` is provided (see its
+    // createWorker `onMessage`: `throw Error(data)` on reject). The
+    // promise from `recognize()` still rejects normally, so a no-op
+    // handler keeps failures catchable instead of crashing the process.
+    return createWorker(this.lang, this.oem, {
+      ...this.langOptions(),
+      errorHandler: () => {},
+    });
+  }
+
   /** Lazily creates and caches the Tesseract worker. */
   worker() {
     if (!this._workerPromise) {
       this._workerPromise = (async () => {
-        const { createWorker } = await import('tesseract.js');
-        return createWorker(this.lang, this.oem, this.langOptions());
+        const pending = this._createWorker();
+        let timer;
+        const timeout = new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`OCR engine startup timed out after ${this.workerTimeoutMs}ms`)),
+            this.workerTimeoutMs,
+          );
+          timer.unref?.();
+        });
+        try {
+          return await Promise.race([pending, timeout]);
+        } catch (e) {
+          // Don't leak the orphaned worker if it eventually resolves.
+          pending.then(
+            (w) => w?.terminate?.().catch(() => {}),
+            () => {},
+          );
+          throw e;
+        } finally {
+          clearTimeout(timer);
+        }
       })().catch((err) => {
         this._workerPromise = null; // allow a retry after a transient failure
         throw err;
@@ -170,10 +212,35 @@ export class TesseractJsOcrProvider {
   }
 
   async extract({ buffer }) {
-    const worker = await this.worker();
-    const { data } = await worker.recognize(buffer);
-    const confidence = typeof data.confidence === 'number' ? data.confidence / 100 : null;
-    return { text: data.text || '', confidence, provider: this.name };
+    let worker;
+    try {
+      worker = await this.worker();
+    } catch (e) {
+      throw this.wrapFailure(e, 'the OCR engine failed to start');
+    }
+    try {
+      const { data } = await worker.recognize(buffer);
+      const confidence = typeof data.confidence === 'number' ? data.confidence / 100 : null;
+      return { text: data.text || '', confidence, provider: this.name };
+    } catch (e) {
+      throw this.wrapFailure(e, 'could not read text from this image');
+    }
+  }
+
+  /**
+   * Normalizes ANY tesseract failure shape into an actionable Error.
+   * The worker script rejects with plain STRINGS (`err.toString()`), not
+   * Error objects — reading `.message` off those yields `undefined`, which
+   * used to surface as an empty `preview.note` and a missing badge
+   * `ocrError`. Every failure now carries recovery guidance instead.
+   */
+  wrapFailure(err, what) {
+    const detail = typeof err === 'string' ? err : err?.message || String(err);
+    return new OcrUnavailableError(
+      `Image OCR ${what}: ${detail}. ` +
+        `To read photo/image reports install language data with \`npm run ocr:setup\`, ` +
+        `or paste the report text into the upload dialog.`,
+    );
   }
 
   /** Releases the cached worker (call on process shutdown). */
@@ -181,10 +248,25 @@ export class TesseractJsOcrProvider {
     if (!this._workerPromise) return;
     const p = this._workerPromise;
     this._workerPromise = null;
+    // If startup is still in flight (e.g. a stalled language download),
+    // don't block shutdown on it — cap the wait, and terminate the orphan
+    // late if it ever resolves. (Double-terminate is safe: tesseract's
+    // terminate() is idempotent.)
+    p.then(
+      (w) => w?.terminate?.().catch(() => {}),
+      () => {},
+    );
     try {
-      await (await p).terminate();
+      const worker = await Promise.race([
+        p,
+        new Promise((_, reject) => {
+          const t = setTimeout(() => reject(new Error('terminate wait timed out')), 5000);
+          t.unref?.();
+        }),
+      ]);
+      await worker.terminate();
     } catch {
-      /* already gone */
+      /* already gone — late orphan handled above */
     }
   }
 }
