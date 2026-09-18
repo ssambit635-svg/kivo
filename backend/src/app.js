@@ -63,14 +63,32 @@ export function createApp(container) {
   // icons). Served only when the frontend directory is present in the repo.
   const frontendDir = resolveFrontendDir();
 
-  app.get('/', (_req, res) => {
-    res.json({
+  // Marketing landing (sofiahealth-style page) lives at the root for
+  // browsers; non-HTML clients (curl, tests, monitoring) keep the JSON
+  // metadata — see the content negotiation below.
+  let landingDir = null;
+  if (frontendDir) {
+    const dir = path.join(frontendDir, 'landing');
+    if (fs.existsSync(path.join(dir, 'index.html'))) landingDir = dir;
+  }
+
+  app.get('/', (req, res) => {
+    const meta = {
       name: 'MedTwin AI Backend',
       version: container.config.appVersion,
       docs: 'See backend/README.md',
       health: '/api/health',
       ...(frontendDir ? { dashboard: '/app/', doctorConsole: '/doctor/' } : {}),
-    });
+      ...(landingDir ? { landing: '/' } : {}),
+    };
+    // Browsers send `Accept: text/html,…` — give them the landing page.
+    // Anything else (supertest's `*/*`, curl, health probes) keeps the JSON.
+    const wantsHtml = /text\/html/i.test(req.headers.accept || '');
+    if (landingDir && wantsHtml) {
+      res.sendFile(path.join(landingDir, 'index.html'));
+    } else {
+      res.json(meta);
+    }
   });
 
   if (frontendDir) {
@@ -88,6 +106,12 @@ export function createApp(container) {
 
   // /api is never cacheable — health data must not persist in browser/proxy caches.
   app.use('/api', apiNoStore(), buildApiRouter(container));
+
+  // Landing assets at the root (/styles.css, /js/…, /vendor/…, /fonts/…,
+  // /models/…). index:false — the root route above owns '/'.
+  if (landingDir) {
+    app.use('/', express.static(landingDir, { index: false, maxAge: '5m' }));
+  }
 
   app.use(notFoundHandler());
   app.use(errorHandler());

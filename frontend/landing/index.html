@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>kivo — your digital health twin</title>
+  <meta name="description" content="kivo reads your lab results into a digital health twin — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css?v=2">
+</head>
+<body>
+
+  <!-- ============ preloader ============ -->
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader-coverTop"></div>
+    <div class="loader-coverBot"></div>
+    <div class="loader-contentHolder">
+      <div class="loader-numberIndicator"><p>001</p></div>
+      <div class="loader-textHolder">
+        <p class="loader-word">scan</p>
+        <p class="loader-word loader-word--2">verify</p>
+        <p class="loader-word loader-word--3">twin</p>
+      </div>
+      <div class="loader-year"><p>©2026</p></div>
+    </div>
+  </div>
+
+  <!-- ============ top navigation (blend difference) ============ -->
+  <header class="topNav" id="topNav">
+    <a class="topNav-logo" href="/">kivo</a>
+    <a class="topNav-cta" href="/app/">open the app</a>
+    <a class="topNav-link" href="/doctor/">for doctors</a>
+  </header>
+
+  <!-- ============ floating vertical cta (blend difference) ============ -->
+  <a class="floatingCta" id="floatingCta" href="/app/">open the app</a>
+
+  <!-- ============ bottom bar (blend difference) ============ -->
+  <div class="bottomBar" id="bottomBar" aria-hidden="true">
+    <div class="bottomBar-left">
+      <span class="bottomBar-quote" id="bottomBarQuote">verify</span>
+    </div>
+    <div class="bottomBar-right">
+      <span class="bottomBar-scroll">scroll down</span>
+      <span class="bottomBar-line"><span class="bottomBar-fill" id="scrollFill"></span></span>
+      <span class="bottomBar-pct" id="scrollPct">0%</span>
+    </div>
+  </div>
+
+  <main class="container">
+
+    <!-- ============ hero ============ -->
+    <section class="hero" id="hero">
+      <h1 class="hero-title">
+        <span class="hero-titleRow">
+          <span class="hero-titleCarousel" id="heroCarousel">know</span>
+        </span>
+        <span class="hero-titleRow"><span class="hero-titleBetter">better</span></span>
+      </h1>
+      <p class="hero-text" id="heroText">kivo reads your lab results into a digital health twin — every marker mapped, every trend in context. never a diagnosis, always the full picture.</p>
+      <a class="hero-cta" href="/app/">open the app</a>
+      <div class="hero-img" id="heroImg">
+        <div class="phone phone--hero">
+          <div class="phone-screen">
+            <div class="ph-status"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
+            <div class="ph-header"><span class="ph-brand">kivo</span><span class="ph-date">twin · day 214</span></div>
+            <div class="ph-greeting">
+              <p class="ph-greetingTitle">your twin, this morning</p>
+              <p class="ph-greetingSub">3 markers watched · 1 worth a glance</p>
+            </div>
+            <div class="ph-cards">
+              <div class="ph-card">
+                <div class="ph-cardTop"><span class="ph-cardName">hba1c</span><span class="ph-cardValue">5.9 %</span></div>
+                <div class="ph-cardBottom"><span class="ph-cardDelta ph-cardDelta--up">▲ 0.3 this quarter</span></div>
+                <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,26 20,24 40,25 60,20 80,16 100,12 120,8" fill="none"/></svg>
+              </div>
+              <div class="ph-card">
+                <div class="ph-cardTop"><span class="ph-cardName">tsh</span><span class="ph-cardValue">2.1 µIU/mL</span></div>
+                <div class="ph-cardBottom"><span class="ph-cardDelta">— stable for 11 months</span></div>
+                <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,16 20,15 40,17 60,16 80,15 100,16 120,15" fill="none"/></svg>
+              </div>
+              <div class="ph-card">
+                <div class="ph-cardTop"><span class="ph-cardName">hs crp</span><span class="ph-cardValue">0.4 mg/L</span></div>
+                <div class="ph-cardBottom"><span class="ph-cardDelta ph-cardDelta--down">▼ low · good</span></div>
+                <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,10 20,14 40,12 60,18 80,22 100,24 120,25" fill="none"/></svg>
+              </div>
+            </div>
+            <div class="ph-note">never a diagnosis — awareness, always</div>
+            <div class="ph-tabs"><span class="ph-tab ph-tab--on"></span><span class="ph-tab"></span><span class="ph-tab"></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ black interlude (water/stick video) ============ -->
+    <section class="waterStick" id="waterStick">
+      <svg class="waterStick-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="20" cy="20" r="14"/><circle cx="20" cy="20" r="4"/><line x1="20" y1="2" x2="20" y2="8"/><line x1="20" y1="32" x2="20" y2="38"/></svg>
+      <div class="waterStick-holder">
+        <div class="waterStick-splitedText" data-text="kivo measures the impact of every result to improve the way you understand your body">
+          <h2 class="waterStick-title">kivo measures the impact of every result to improve the way you understand your body</h2>
+          <h2 class="waterStick-title waterStick-filler" aria-hidden="true">kivo measures the impact of every result to improve the way you understand your body</h2>
+        </div>
+        <div class="waterStick-shape">
+          <canvas id="waterCanvas"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ pinned twin section (stick) ============ -->
+    <div class="stickWrap" id="stickWrap">
+      <section class="twin" id="twinSection">
+        <div class="twin-circleBackground" id="twinCircle"></div>
+        <div class="twin-holder">
+          <div class="twin-textHolder">
+            <div class="twin-titleHolder">
+              <div class="twin-title twin-title--black"><h2 id="twinBlackTitle">it all starts with a<br>digital twin</h2></div>
+              <div class="twin-title twin-title--white"><h2 id="twinWhiteTitle" aria-hidden="true">it all starts with a<br>digital twin</h2></div>
+            </div>
+            <div class="twin-para twin-para--one"><p>your labs are scattered across reports, printers, and memory. kivo gathers every result into one verified twin — each value checked against the standard dictionary before it ever counts.</p></div>
+            <div class="twin-para twin-para--two"><p>then it does what no single report can: it shows the movement. your baselines, your drift, your context — measured, never guessed.</p></div>
+          </div>
+          <div class="twin-features">
+            <div class="twin-feature twin-feature--long">
+              <div class="twin-featureElements">
+                <div class="twin-iconHolder">
+                  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="24" cy="12" rx="14" ry="6"/><path d="M10 12v24c0 3.3 6.3 6 14 6s14-2.7 14-6V12"/><path d="M10 24c0 3.3 6.3 6 14 6s14-2.7 14-6"/></svg>
+                </div>
+                <div class="twin-featureDivider"><span class="twin-featureDot"></span></div>
+                <h2>one source of truth</h2>
+                <p><span data-kivo="markers">1,226</span> markers mapped to loinc codes. <span data-kivo="panels">18</span> clinical panels. nothing lost between visits.</p>
+              </div>
+            </div>
+            <div class="twin-feature twin-feature--connect">
+              <div class="twin-featureElements">
+                <div class="twin-iconHolder">
+                  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 28a22 22 0 0 1 32 0"/><path d="M14 35a14 14 0 0 1 20 0"/><circle cx="24" cy="42" r="2.5"/></svg>
+                </div>
+                <div class="twin-featureDivider"><span class="twin-featureDot"></span></div>
+                <h2>always connected</h2>
+                <p>every report you add sharpens the twin. trends update in real time — and your baselines move with them.</p>
+              </div>
+            </div>
+            <div class="twin-feature twin-feature--personal">
+              <div class="twin-featureElements">
+                <div class="twin-iconHolder">
+                  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="24" cy="16" r="8"/><path d="M8 42c0-8.8 7.2-16 16-16s16 7.2 16 16"/></svg>
+                </div>
+                <div class="twin-featureDivider"><span class="twin-featureDot"></span></div>
+                <h2>built around you</h2>
+                <p>baselines learned from your own history — not a generic range, yours. the twin ages with you.</p>
+              </div>
+            </div>
+            <div class="twin-feature twin-feature--plain">
+              <div class="twin-featureElements">
+                <div class="twin-iconHolder">
+                  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="24" cy="24" r="16"/><path d="M24 8v32"/><path d="M24 8a16 16 0 0 1 0 32" fill="currentColor" stroke="none"/></svg>
+                </div>
+                <div class="twin-featureDivider"><span class="twin-featureDot"></span></div>
+                <h2>yours to keep</h2>
+                <p>open formats, exportable any time. your data is yours — kivo flags the drift and leaves the decision to you and your doctor.</p>
+              </div>
+            </div>
+          </div>
+          <div class="twin-videoHolder">
+            <div class="twin-video">
+              <div class="twin-strip" id="twinStrip">
+                <div class="twin-stripRow"><span>hba1c</span><span>5.9 %</span><span class="twin-stripLoinc">4548-4</span></div>
+                <div class="twin-stripRow"><span>tsh</span><span>2.1 µIU/mL</span><span class="twin-stripLoinc">3016-3</span></div>
+                <div class="twin-stripRow"><span>hs crp</span><span>0.4 mg/L</span><span class="twin-stripLoinc">30522-7</span></div>
+                <div class="twin-stripRow"><span>vitamin d</span><span>32 ng/mL</span><span class="twin-stripLoinc">1989-3</span></div>
+                <div class="twin-stripRow"><span>hemoglobin</span><span>14.2 g/dL</span><span class="twin-stripLoinc">718-7</span></div>
+                <div class="twin-stripRow"><span>ferritin</span><span>88 ng/mL</span><span class="twin-stripLoinc">2276-4</span></div>
+                <div class="twin-stripFoot">loinc verified · brier 0.07</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ twin story (passiflora) ============ -->
+    <section class="twinStory" id="twinStory">
+      <div class="twinStory-wrapper">
+        <div class="twinStory-illustrationHolder">
+          <div class="twinStory-illustrationText">
+            <p>inside every report, a signal worth understanding</p>
+            <div class="twinStory-titleHolder"><h2>the digital twin</h2></div>
+          </div>
+          <div class="twinStory-illustration">
+            <svg viewBox="0 0 780 790" fill="none">
+              <circle cx="390" cy="395" r="360" stroke="#dedede" stroke-width="1"/>
+              <circle cx="390" cy="395" r="262" stroke="#121212" stroke-width="1" stroke-dasharray="2 6"/>
+              <circle cx="390" cy="395" r="164" stroke="#121212" stroke-width="1"/>
+              <path d="M30 395h250l40-90 55 190 50-130 40 40h60l35-70 45 140 40-100h115" stroke="#121212" stroke-width="2"/>
+              <circle cx="390" cy="395" r="6" fill="#121212"/>
+              <circle cx="652" cy="395" r="5" fill="#121212"/>
+              <circle cx="485" cy="231" r="5" fill="#121212"/>
+              <circle cx="295" cy="559" r="5" fill="#121212"/>
+              <circle cx="390" cy="133" r="5" fill="#121212"/>
+              <circle cx="128" cy="395" r="5" fill="#121212"/>
+              <text x="52" y="120" fill="#121212" font-size="14" letter-spacing="-0.005em">camera</text>
+              <text x="556" y="150" fill="#121212" font-size="14" letter-spacing="-0.005em">ocr</text>
+              <text x="640" y="440" fill="#121212" font-size="14" letter-spacing="-0.005em">verify</text>
+              <text x="560" y="680" fill="#121212" font-size="14" letter-spacing="-0.005em">twin</text>
+              <text x="120" y="700" fill="#121212" font-size="14" letter-spacing="-0.005em">trend</text>
+              <text x="40" y="460" fill="#121212" font-size="14" letter-spacing="-0.005em">risk aware</text>
+            </svg>
+          </div>
+        </div>
+        <div class="twinStory-information">
+          <div class="twinStory-divider" id="twinStoryDivider"></div>
+          <div class="twinStory-informationTitle"><p>ocr, then verify</p></div>
+          <div class="twinStory-informationText">
+            <p>the camera reads the report. ocr extracts the values. every value is then checked against the lab dictionary — <span data-kivo="aliases">2,928</span> matchable aliases — before it ever touches your twin.</p>
+            <div><a class="ctaLink" href="/app/">see the pipeline</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ marker cards (capsules) ============ -->
+    <section class="markers" id="markers">
+      <div class="markers-wrapper">
+        <div class="markers-text">
+          <h2>markers //</h2>
+          <div class="markers-cta">
+            <p>the ones your twin watches most closely — every value loinc-verified, every trend in context.</p>
+            <a class="ctaLink" href="/app/">explore the app</a>
+          </div>
+        </div>
+        <div class="markers-cardHolder">
+          <div class="markerCard" data-marker="hba1c">
+            <div class="markerCard-background"></div>
+            <div class="markerCard-top">
+              <h2 class="mc-name">hba1c</h2>
+              <div class="markerCard-latinName"><p>loinc// 4548-4</p><p>watch</p></div>
+            </div>
+            <div class="markerCard-imageHolder">
+              <svg viewBox="0 0 140 48" preserveAspectRatio="none" fill="none"><polyline points="0,40 20,38 40,39 60,32 80,26 100,20 120,16 140,10" stroke="currentColor" stroke-width="2"/><circle cx="140" cy="10" r="3" fill="currentColor"/></svg>
+            </div>
+            <div class="markerCard-cta">
+              <p>target state:<span> 4.0 – 5.6 %</span></p>
+              <p>impact:<span> ≈51 % improve with early catch</span></p>
+              <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            </div>
+          </div>
+          <div class="markerCard" data-marker="tsh">
+            <div class="markerCard-background"></div>
+            <div class="markerCard-top">
+              <h2 class="mc-name">tsh</h2>
+              <div class="markerCard-latinName"><p>loinc// 3016-3</p><p>stable</p></div>
+            </div>
+            <div class="markerCard-imageHolder">
+              <svg viewBox="0 0 140 48" preserveAspectRatio="none" fill="none"><polyline points="0,24 20,23 40,25 60,24 80,23 100,24 120,23 140,24" stroke="currentColor" stroke-width="2"/><circle cx="140" cy="24" r="3" fill="currentColor"/></svg>
+            </div>
+            <div class="markerCard-cta">
+              <p>target state:<span> 0.4 – 4.0 µIU/mL</span></p>
+              <p>impact:<span> drifts caught 2.1x sooner</span></p>
+              <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            </div>
+          </div>
+          <div class="markerCard" data-marker="crp">
+            <div class="markerCard-background"></div>
+            <div class="markerCard-top">
+              <h2 class="mc-name">hs crp</h2>
+              <div class="markerCard-latinName"><p>loinc// 30522-7</p><p>low</p></div>
+            </div>
+            <div class="markerCard-imageHolder">
+              <svg viewBox="0 0 140 48" preserveAspectRatio="none" fill="none"><polyline points="0,12 20,16 40,14 60,22 80,28 100,32 120,34 140,35" stroke="currentColor" stroke-width="2"/><circle cx="140" cy="35" r="3" fill="currentColor"/></svg>
+            </div>
+            <div class="markerCard-cta">
+              <p>target state:<span> &lt; 1.0 mg/L</span></p>
+              <p>impact:<span> &gt;95 % verified against the lab</span></p>
+              <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ application (two phones) ============ -->
+    <section class="appSection" id="appSection">
+      <div class="appSection-wrapper">
+        <div class="appSection-title"><h2>we work to make every number in your report make sense</h2></div>
+        <div class="appSection-screensHolder" id="appScreensHolder">
+          <div class="appSection-screens">
+            <div class="appScreen appScreen--one">
+              <div class="appScreen-cta">
+                <p>your twin, every morning — the three markers worth a glance, and the one worth a call.</p>
+                <a class="ctaLink" href="/app/">open the app</a>
+              </div>
+              <div class="phone">
+                <div class="phone-screen">
+                  <div class="ph-status"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
+                  <div class="ph-header"><span class="ph-brand">kivo</span><span class="ph-date">twin · day 214</span></div>
+                  <div class="ph-greeting">
+                    <p class="ph-greetingTitle">your twin, this morning</p>
+                    <p class="ph-greetingSub">3 markers watched · 1 worth a glance</p>
+                  </div>
+                  <div class="ph-cards">
+                    <div class="ph-card">
+                      <div class="ph-cardTop"><span class="ph-cardName">hba1c</span><span class="ph-cardValue">5.9 %</span></div>
+                      <div class="ph-cardBottom"><span class="ph-cardDelta ph-cardDelta--up">▲ 0.3 this quarter</span></div>
+                      <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,26 20,24 40,25 60,20 80,16 100,12 120,8" fill="none"/></svg>
+                    </div>
+                    <div class="ph-card">
+                      <div class="ph-cardTop"><span class="ph-cardName">tsh</span><span class="ph-cardValue">2.1 µIU/mL</span></div>
+                      <div class="ph-cardBottom"><span class="ph-cardDelta">— stable for 11 months</span></div>
+                      <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,16 20,15 40,17 60,16 80,15 100,16 120,15" fill="none"/></svg>
+                    </div>
+                    <div class="ph-card">
+                      <div class="ph-cardTop"><span class="ph-cardName">hs crp</span><span class="ph-cardValue">0.4 mg/L</span></div>
+                      <div class="ph-cardBottom"><span class="ph-cardDelta ph-cardDelta--down">▼ low · good</span></div>
+                      <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,10 20,14 40,12 60,18 80,22 100,24 120,25" fill="none"/></svg>
+                    </div>
+                  </div>
+                  <div class="ph-note">never a diagnosis — awareness, always</div>
+                  <div class="ph-tabs"><span class="ph-tab ph-tab--on"></span><span class="ph-tab"></span><span class="ph-tab"></span></div>
+                </div>
+              </div>
+            </div>
+            <div class="appScreen appScreen--video">
+              <div class="phone phone--dark">
+                <div class="phone-screen phone-screen--dark">
+                  <div class="ph-status ph-status--dark"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
+                  <div class="ph-scrubs">
+                    <div class="ph-scrub ph-scrub--1">
+                      <div class="ph-header"><span class="ph-brand">tsh</span><span class="ph-date">loinc 3016-3</span></div>
+                      <div class="ph-big"><p class="ph-bigValue">2.1 <span>µIU/mL</span></p><p class="ph-bigSub">range 0.4 – 4.0 · inside yours</p></div>
+                      <svg class="ph-chart" viewBox="0 0 260 120" preserveAspectRatio="none" fill="none"><line x1="0" y1="40" x2="260" y2="40" stroke="currentColor" stroke-opacity=".2"/><line x1="0" y1="80" x2="260" y2="80" stroke="currentColor" stroke-opacity=".2"/><polyline points="0,64 30,62 60,66 90,63 120,65 150,62 180,64 210,61 240,63 260,62" stroke="currentColor" stroke-width="2"/></svg>
+                      <div class="ph-rows">
+                        <div class="ph-row"><span>stable for</span><span>11 months</span></div>
+                        <div class="ph-row"><span>drift caught</span><span>2.1x sooner</span></div>
+                        <div class="ph-row"><span>model brier</span><span>0.07</span></div>
+                      </div>
+                      <div class="ph-note">never a diagnosis — awareness, always</div>
+                    </div>
+                    <div class="ph-scrub ph-scrub--2">
+                      <div class="ph-header"><span class="ph-brand">hba1c</span><span class="ph-date">loinc 4548-4</span></div>
+                      <div class="ph-big"><p class="ph-bigValue">5.9 <span>%</span></p><p class="ph-bigSub">▲ 0.3 this quarter · watch</p></div>
+                      <svg class="ph-chart" viewBox="0 0 260 120" preserveAspectRatio="none" fill="none"><line x1="0" y1="40" x2="260" y2="40" stroke="currentColor" stroke-opacity=".2"/><line x1="0" y1="80" x2="260" y2="80" stroke="currentColor" stroke-opacity=".2"/><polyline points="0,96 30,92 60,94 90,84 120,76 150,68 180,60 210,52 240,44 260,40" stroke="currentColor" stroke-width="2"/></svg>
+                      <div class="ph-rows">
+                        <div class="ph-row"><span>target state</span><span>4.0 – 5.6 %</span></div>
+                        <div class="ph-row"><span>early catch</span><span>≈51 % improve</span></div>
+                        <div class="ph-row"><span>history</span><span>9 reports</span></div>
+                      </div>
+                      <div class="ph-note">never a diagnosis — awareness, always</div>
+                    </div>
+                    <div class="ph-scrub ph-scrub--3">
+                      <div class="ph-header"><span class="ph-brand">ask your doctor</span><span class="ph-date">prepared by your twin</span></div>
+                      <div class="ph-askCards">
+                        <div class="ph-askCard"><p>my a1c drifted +0.3 in one quarter — is this worth re-testing sooner?</p></div>
+                        <div class="ph-askCard"><p>my tsh has been flat for a year — can we extend the interval?</p></div>
+                      </div>
+                      <div class="ph-note">awareness, not a verdict — the decision stays yours</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="appSection-textHolder">
+            <div class="appSection-text appSection-text--two" id="appTextTwo">
+              <p>screens that answer, not decorate: what changed, why it matters, what to ask about.</p>
+              <p>every screen is built from loinc-verified values — no marketing, no guesswork.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ title break ============ -->
+    <section class="learn" id="learnSection">
+      <div class="learn-wrapper">
+        <h2>we learn across every verified result</h2>
+        <p>the more reports, the sharper the twin — measured by brier score, not vibes.</p>
+      </div>
+    </section>
+
+    <!-- ============ stats grid ============ -->
+    <section class="stats" id="statsSection">
+      <div class="stats-wrapper">
+        <div class="stats-block stats-grid01">
+          <div class="stats-title"><h2><span data-kivo="markers">1,226</span></h2><p>markers, loinc-verified</p></div>
+          <div class="stats-imageHolder">
+            <div class="chipGrid">
+              <span></span><span class="chip--on"></span><span></span><span></span><span class="chip--on"></span><span></span>
+              <span class="chip--on"></span><span></span><span></span><span class="chip--on"></span><span></span><span></span>
+              <span></span><span class="chip--on"></span><span></span><span></span><span class="chip--on"></span><span></span>
+              <span class="chip--on"></span><span></span><span></span><span class="chip--on"></span><span></span><span class="chip--on"></span>
+            </div>
+          </div>
+        </div>
+        <div class="stats-block stats-grid02">
+          <h2>99.4%</h2>
+          <p>of markers carry a standard loinc code — nothing guessed, nothing invented</p>
+        </div>
+        <div class="stats-block stats-grid03">
+          <div class="stats-imageHolder stats-imageHolder--pod">
+            <div class="miniPhones"><span class="miniPhone"></span><span class="miniPhone"></span></div>
+          </div>
+          <div class="stats-text">
+            <h2>0.07</h2>
+            <p>brier score on hold-out predictions</p>
+          </div>
+        </div>
+        <div class="stats-block stats-grid04">
+          <h2>532+</h2>
+          <p>backend tests · zero flaky</p>
+        </div>
+        <div class="stats-block stats-grid05">
+          <div class="stats-text">
+            <h2>0</h2>
+            <p>external services — every byte stays on your machine</p>
+          </div>
+          <div class="stats-imageHolder stats-imageHolder--pod">
+            <div class="miniPhones"><span class="miniPhone miniPhone--dark"></span></div>
+          </div>
+        </div>
+        <div class="stats-block stats-grid06">
+          <div class="stats-background">
+            <p class="stats-marquee"><span>cameras • ocr engines • loinc codes • brier scores • trend lines • risk flags • verification loops • &nbsp;</span><span>cameras • ocr engines • loinc codes • brier scores • trend lines • risk flags • verification loops • &nbsp;</span></p>
+          </div>
+          <div class="stats-text">
+            <h2><span data-kivo="panels">18</span></h2>
+            <p>clinical panels, from a1c to lipids</p>
+          </div>
+        </div>
+        <div class="stats-block stats-grid07">
+          <div class="stats-text">
+            <h2><span data-kivo="aliases">2,928</span></h2>
+            <p>matchable aliases in the lab dictionary</p>
+          </div>
+          <svg class="stats-mark" viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="96" stroke="currentColor"/><path d="M20 100h40l20-45 30 90 25-70 15 25h50" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ community / testimonials ============ -->
+    <section class="community" id="community">
+      <div class="community-wrapper">
+        <div class="community-headline">
+          <h2>never a twin alone</h2>
+          <p>join the kivo community — share what your twin taught you, and what yours is still learning</p>
+        </div>
+        <div class="community-list" id="communityList">
+          <div class="community-quotes"></div>
+          <div class="community-listHolder">
+            <button class="community-prev" id="quotePrev" aria-label="previous quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+            <button class="community-next" id="quoteNext" aria-label="next quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            <div class="community-list" id="quoteList">
+              <div class="quote">
+                <h2>my twin caught the a1c drift eight weeks before my next check-up. i walked in asking the right question.</h2>
+                <p>@earlybird</p>
+              </div>
+              <div class="quote">
+                <h2>first time i understood what a loinc code was actually doing for me.</h2>
+                <p>@dataandtea</p>
+              </div>
+              <div class="quote">
+                <h2>it's not a diagnosis. it's a conversation you can bring with you.</h2>
+                <p>@calmcharts</p>
+              </div>
+            </div>
+          </div>
+          <a class="ctaLink" href="/app/">open the app</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ image break ============ -->
+    <section class="imageBreak" id="imageBreak">
+      <div class="imageBreak-bg" id="imageBreakBg">
+        <svg class="imageBreak-wave" viewBox="0 0 1440 900" preserveAspectRatio="none" fill="none"><path d="M0 560h180l60-140 90 280 80-210 70 120h110l50-100 60 200 70-150h140l40-80 80 160 90-120h150l45 90 70-180 80 130h170" stroke="#f7f7f7" stroke-opacity=".25" stroke-width="2"/></svg>
+        <div class="imageBreak-phone">
+          <div class="phone phone--dark">
+            <div class="phone-screen phone-screen--dark">
+              <div class="ph-status ph-status--dark"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
+              <div class="ph-header"><span class="ph-brand">kivo</span><span class="ph-date">signals</span></div>
+              <div class="ph-scrubs">
+                <div class="ph-scrub ph-scrub--1">
+                  <div class="ph-greeting">
+                    <p class="ph-greetingTitle ph-greetingTitle--dark">every report, a signal</p>
+                    <p class="ph-greetingSub ph-greetingSub--dark"><span data-kivo="narratives">127</span> narratives generated · <span data-kivo="curated">17</span> curated</p>
+                  </div>
+                  <div class="ph-rows ph-rows--big">
+                    <div class="ph-row"><span>hba1c drift</span><span>▲ 0.3</span></div>
+                    <div class="ph-row"><span>tsh stability</span><span>11 months</span></div>
+                    <div class="ph-row"><span>crp</span><span>low · good</span></div>
+                    <div class="ph-row"><span>brier</span><span>0.07</span></div>
+                  </div>
+                  <div class="ph-note">never a diagnosis — awareness, always</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="imageBreak-text"><p>your twin generates signals with every report</p></div>
+    </section>
+
+  </main>
+
+  <!-- ============ footer ============ -->
+  <footer class="footer" id="footer">
+    <div class="footer-holder">
+      <div class="footer-titles">
+        <div class="footer-title">
+          <p>clarity of data</p>
+          <span>1,226 markers · 18 panels</span>
+          <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M2 14h20"/></svg>
+        </div>
+        <svg class="footer-sep" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M14 2v24"/></svg>
+        <div class="footer-title footer-title--2">
+          <p>power of context</p>
+          <span>trends, baselines, drift</span>
+          <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M4 16l6-8 6 10 4-6"/></svg>
+        </div>
+        <svg class="footer-sep" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M8 14l4 4 8-8"/></svg>
+        <div class="footer-title footer-title--3">
+          <p>care of verification</p>
+          <span>loinc · brier 0.07</span>
+          <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M8 14l4 4 8-8"/></svg>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-divider footer-divider--one"></div>
+        <div class="footer-col footer-col--main">
+          <p class="footer-title-sm">kivo</p>
+          <a href="/app/">the app</a>
+          <a href="/doctor/">for doctors</a>
+          <a href="/">api &amp; docs</a>
+        </div>
+        <div class="footer-col footer-col--product">
+          <p class="footer-title-sm">product</p>
+          <a href="#twinSection">the twin</a>
+          <a href="#markers">markers</a>
+          <a href="#statsSection">the numbers</a>
+        </div>
+        <div class="footer-col footer-col--learn">
+          <p class="footer-title-sm">learn</p>
+          <a href="#twinStory">how it works</a>
+          <a href="#twinStory">verify first</a>
+          <a href="#community">the community</a>
+        </div>
+        <div class="footer-col footer-col--follow">
+          <p class="footer-title-sm">follow</p>
+          <a href="https://github.com/ssambit635-svg/kivo" target="_blank" rel="noopener">github</a>
+          <a href="https://github.com/ssambit635-svg/kivo/issues" target="_blank" rel="noopener">issues</a>
+        </div>
+        <div class="footer-col footer-col--join">
+          <p class="footer-title-sm">join</p>
+          <a href="/app/">open the app</a>
+          <a href="/doctor/">for doctors</a>
+        </div>
+        <div class="footer-divider footer-divider--two"></div>
+        <p class="footer-copyright">© 2026 kivo · never a diagnosis — awareness, always · built on open loinc™</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/vendor/gsap.min.js?v=2"></script>
+  <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
+  <script src="/vendor/lenis.min.js?v=2"></script>
+  <script src="/js/main.js?v=2"></script>
+</body>
+</html>
