@@ -4,6 +4,7 @@ coverage/
 .env
 .env.local
 *.log
+data/
 backend/data/
 backend/uploads/
 uploads/

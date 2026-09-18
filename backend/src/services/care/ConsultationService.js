@@ -218,7 +218,7 @@ export class ConsultationService {
 
   closeMine(actor, consultationId, ctx = {}) {
     const consultation = this.loadForPatient(actor, consultationId);
-    if (consultation.status === 'closed') return this.getMine(actor, consultationId);
+    if (consultation.status === 'closed') return this.decorateForPatient(consultation);
     const updated = this.consultations.update(consultation.id, { status: 'closed', closedAt: nowIso() });
     this.audit.record({
       userId: actor.id,
@@ -311,7 +311,7 @@ export class ConsultationService {
 
   accept(doctor, consultationId, ctx = {}) {
     const consultation = this.loadForDoctor(doctor, consultationId);
-    if (['closed', 'cancelled', 'answered'].includes(consultation.status)) {
+    if (['closed', 'cancelled', 'answered', 'payment_pending'].includes(consultation.status)) {
       throw new ConflictError('This consultation can no longer be accepted', 'CONSULTATION_NOT_OPEN');
     }
     if (consultation.status === 'in_review') return consultation.toJSON();
@@ -513,13 +513,13 @@ export class ConsultationService {
   }
 
   projectMessage(message, audience) {
-    const meta = message.metadata || {};
+    const meta = (typeof message?.metadata === 'string' ? safeParseJson(message.metadata) : message?.metadata) || {};
     return {
       id: message.id,
-      authorRole: message.authorRole,
+      authorRole: message.authorRole || message.author_role,
       kind: message.kind,
       body: message.body,
-      createdAt: message.createdAt,
+      createdAt: message.createdAt || message.created_at,
       videos: message.kind === 'video_link' ? meta.videos || [] : undefined,
       ...(audience === 'doctor' && message.kind === 'status' ? { meta: { includedInPlan: meta.includedInPlan ?? null } } : {}),
     };
@@ -544,5 +544,14 @@ export class ConsultationService {
   assertValidBody(body) {
     if (!body || String(body).trim().length < 2) throw new ValidationError('Message is empty');
     return String(body).trim();
+  }
+}
+
+function safeParseJson(value) {
+  try {
+    const parsed = JSON.parse(value || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
 }

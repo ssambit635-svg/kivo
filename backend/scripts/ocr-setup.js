@@ -29,20 +29,20 @@ let failed = 0;
 for (const lang of langs.split('+').filter(Boolean)) {
   const target = path.join(DEFAULT_LANG_DIR, `${lang}.traineddata.gz`);
   if (fs.existsSync(target)) {
-    console.log(`✓ ${lang}: already vendored (${(fs.statSync(target).size / 1024).toFixed(0)} KB) — skipping`);
+    console.log(`[OK] ${lang}: already vendored (${(fs.statSync(target).size / 1024).toFixed(0)} KB) — skipping`);
     continue;
   }
   const url = `${CDN}/${lang}.traineddata.gz`;
-  process.stdout.write(`↓ ${lang} (${quality}) ← ${url}\n`);
+  process.stdout.write(`Downloading ${lang} (${quality}) from ${url}\n`);
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const buf = Buffer.from(await res.arrayBuffer());
     fs.writeFileSync(target, buf);
-    console.log(`✓ ${lang}: ${(buf.length / 1024 / 1024).toFixed(2)} MB → ${target}`);
+    console.log(`[OK] ${lang}: ${(buf.length / 1024 / 1024).toFixed(2)} MB -> ${target}`);
   } catch (e) {
     failed += 1;
-    console.error(`✗ ${lang}: ${e.message} — check your connection and re-run.`);
+    console.error(`[ERROR] ${lang}: ${e.message} — check your connection and re-run.`);
   }
 }
 

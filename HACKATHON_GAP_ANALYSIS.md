@@ -12,10 +12,10 @@ Every number and claim below was verified against this repo on 16 Sep 2026. Evid
 
 The highest-leverage items below have been **implemented** in this branch (see PR):
 
-- ✅ **§3.1 flagship OCR** — `tesseract.js` installed; image OCR works; language data vendored for offline via `npm run ocr:setup`; the three tests that asserted `ocr_failed` were rewritten; new `tests/integration/image-ocr.test.js` pins the success path (12 tests). Suite now **232 passing**.
-- ✅ **§3.2 camera** — `getUserMedia` live scanner + frame overlay + `capture="environment"` gallery fallback.
-- ✅ **§3.4 voice journaling** — Web Speech API → `POST /observations` with `source:'voice'`.
-- ✅ **§3.3 PWA + mobile UI** — manifest, service worker (offline shell, `/api` never cached), bottom nav, safe-area insets.
+- **[Done] §3.1 flagship OCR** — `tesseract.js` installed; image OCR works; language data vendored for offline via `npm run ocr:setup`; the three tests that asserted `ocr_failed` were rewritten; new `tests/integration/image-ocr.test.js` pins the success path (12 tests). Suite now **232 passing**.
+- **[Done] §3.2 camera** — `getUserMedia` live scanner + frame overlay + `capture="environment"` gallery fallback.
+- **[Done] §3.4 voice journaling** — Web Speech API → `POST /observations` with `source:'voice'`.
+- **[Done] §3.3 PWA + mobile UI** — manifest, service worker (offline shell, `/api` never cached), bottom nav, safe-area insets.
 
 **Not yet done (needs real device/internet to verify):** real OCR extraction on-device (needs `npm run ocr:setup` on a connected machine), live camera & speech on the iQOO, and the Office Kit workflow (§3.5) + pitch rehearsal. Those are device/network-dependent — see §4 day-plan.
 
@@ -58,7 +58,7 @@ Also structural: **55% of build time is "Red Light" — phone only, no laptop.**
 
 ## 3. The five gaps, in priority order
 
-### 3.1 🔴 CRITICAL — the flagship feature does not work for real reports
+### 3.1 [CRITICAL] — the flagship feature does not work for real reports
 
 The README's headline is **"AI Blood Report Scanner: upload → OCR → value extraction"**. Image upload is accepted by the allowlist (`backend/src/services/ReportService.js:10` allows `image/png`, `image/jpeg`, `image/bmp`, `image/webp`, `image/tiff`) — but no OCR engine is installed, so every image throws.
 
@@ -86,7 +86,7 @@ So **"220 tests passing" is partly green because it asserts the flagship feature
 
 ---
 
-### 3.2 🔴 CRITICAL — zero phone-native capability (15% + feeds the 30%)
+### 3.2 [CRITICAL] — zero phone-native capability (15% + feeds the 30%)
 
 Precise per-API grep counts across `frontend/` and `backend/src/` (16 Sep 2026):
 
@@ -108,7 +108,7 @@ This is the crux: **MedTwin's entire premise is "point your phone at a paper lab
 
 ---
 
-### 3.3 🟠 HIGH — not installable / not demoable on a phone (feeds the 30%)
+### 3.3 [HIGH] — not installable / not demoable on a phone (feeds the 30%)
 
 No `manifest.webmanifest`, no service worker → the app cannot be added to the iQOO home screen, so the demo runs in a browser tab, not as an app. Criterion 1 is explicitly *"demoed on iQOO"* and the Reskilll guide stresses *"Native feel matters."*
 
@@ -118,7 +118,7 @@ Layout evidence: `frontend/styles.css` has exactly **one** media query, at line 
 
 ---
 
-### 3.4 🟡 MEDIUM — voice journaling is *already designed* but never wired (free 15% points)
+### 3.4 [MEDIUM] — voice journaling is *already designed* but never wired (free 15% points)
 
 This one is nearly free, which is why it is high priority despite being "medium" in effort. The backend **already accepts voice-sourced observations**:
 
@@ -136,7 +136,7 @@ The enum value `'voice'` is defined and unused. Nobody has ever posted with it. 
 
 ---
 
-### 3.5 🟡 MEDIUM — no Office Kit story, no pitch (10% + 10%)
+### 3.5 [MEDIUM] — no Office Kit story, no pitch (10% + 10%)
 
 - `find` for pitch/deck/slides/pdf across the repo → **nothing** (only `seed-demo.js`, a false match on "demo").
 - No Office Kit usage documented or integrated.
@@ -199,7 +199,7 @@ Do not spend your 10 days here; spend them on §3. These are genuine assets to *
 Your `MedTwin_AI_Context.md` §14 already warns about this and the code has drifted:
 
 1. **"AI Blood Report Scanner"** — currently false for images. Fix it or rename it. Do not demo a headline you cannot deliver.
-2. **"Tests ✅ 220 passing"** in the README reads as full coverage. It is real coverage of the *text* path, and it actively asserts the *image* path fails. Fix §3.1 and the number means what it looks like it means.
+2. **"Tests (220 passing)"** in the README reads as full coverage. It is real coverage of the *text* path, and it actively asserts the *image* path fails. Fix §3.1 and the number means what it looks like it means.
 
 Neither is a lie in intent — both are the kind of thing a judge finds in ninety seconds, and finding it costs you the 30%.
 

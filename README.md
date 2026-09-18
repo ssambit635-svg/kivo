@@ -7,28 +7,28 @@ Turns scattered health reports into a living, understandable health timeline:
 Digital Health Twin → longitudinal trend intelligence → explainable risk awareness →
 grounded explanations → doctor-visit preparation.
 
-📋 Product context & rules: [`MedTwin_AI_Context.md`](MedTwin_AI_Context.md)
-🎯 City-battle strategy & gap analysis: [`HACKATHON_GAP_ANALYSIS.md`](HACKATHON_GAP_ANALYSIS.md)
+Product context and rules: [`MedTwin_AI_Context.md`](MedTwin_AI_Context.md)
+City-battle strategy and gap analysis: [`HACKATHON_GAP_ANALYSIS.md`](HACKATHON_GAP_ANALYSIS.md)
 
 ## Status
 
 | Layer | State |
 |---|---|
-| Backend API | ✅ Built & tested — see [`backend/README.md`](backend/README.md) |
-| AuthN/AuthZ | ✅ scrypt + JWT access (rotating refresh tokens w/ reuse detection), RBAC + member-isolation policies |
-| AI pipeline | ✅ **Real image OCR (Tesseract)** + plain-text, extraction, trends, explainable risk, grounded local LLM, doctor summary |
-| Phone-first UI | ✅ Camera report scanner (`getUserMedia` + gallery fallback) · voice journaling · installable PWA (manifest + service worker) · mobile bottom-nav |
-| Engagement widgets | ✅ Health Score Timeline · Report Confidence Badges · Health Milestones (icon keys, no emojis) |
-| Ask the Twin | ✅ Grounded conversational Q&A (`POST /api/members/:id/ask`) — deterministic intent → verified-data evidence → grounded narration; diagnosis requests always refused |
-| Security automation | ✅ Automated IP abuse-block + audit alerts · `/api` no-store · Permissions-Policy · secret scanner · header-posture check · `npm audit` gate · CI pipeline |
-| Health Intelligence | ✅ Personal baselines · multivariate anomaly detection · pattern graph · counterfactual twin + scenario explorer (read-only add-on, CPU-only) |
-| Clinical knowledge base | ✅ **1,226 markers** (1,219 with a LOINC code, 18 panels) built offline from pinned MIT-licensed sources — see [`backend/knowledge/README.md`](backend/knowledge/README.md) |
-| Extraction model | ✅ Calibrated confidence trained on a documented OCR-noise corpus (Brier 0.15 → 0.07, ECE 0.26 → 0.06) with a shipped model card |
-| Care network | ✅ Mock subscription (Care+) → doctor consultations + doctor-recorded shorts · consent-scoped chart sharing · payout ledger (70/30 consults, 25/35/40 subscription pools) |
-| Doctor console | ✅ **Separate frontend at `/doctor/`** — self-onboarding (mock KYC), shorts studio, one-screen clinical brief, AI medicine draft the doctor edits/approves, shareable identity card, earnings statement |
-| RBAC | ✅ `user_roles` table (`patient` / `doctor` / `admin`), server-side grants, re-read per request · doctors cannot touch the patient API · patients cannot open the console |
-| Tests | ✅ **518 passing** (`cd backend && npm test`) + 120-check live endpoint smoke (`npm run smoke`) |
-| Frontend | ✅ Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
+| Backend API | Complete - Built and tested, see [`backend/README.md`](backend/README.md) |
+| AuthN/AuthZ | Complete - scrypt + JWT access (rotating refresh tokens w/ reuse detection), RBAC + member-isolation policies |
+| AI pipeline | Complete - **Real image OCR (Tesseract)** + plain-text, extraction, trends, explainable risk, grounded local LLM, doctor summary |
+| Phone-first UI | Complete - Camera report scanner (`getUserMedia` + gallery fallback) · voice journaling · installable PWA (manifest + service worker) · mobile bottom-nav |
+| Engagement widgets | Complete - Health Score Timeline · Report Confidence Badges · Health Milestones (icon keys, no emojis) |
+| Ask the Twin | Complete - Grounded conversational Q&A (`POST /api/members/:id/ask`) — deterministic intent → verified-data evidence → grounded narration; diagnosis requests always refused |
+| Security automation | Complete - Automated IP abuse-block + audit alerts · `/api` no-store · Permissions-Policy · secret scanner · header-posture check · `npm audit` gate · CI pipeline |
+| Health Intelligence | Complete - Personal baselines · multivariate anomaly detection · pattern graph · counterfactual twin + scenario explorer (read-only add-on, CPU-only) |
+| Clinical knowledge base | Complete - **1,226 markers** (1,219 with a LOINC code, 18 panels) built offline from pinned MIT-licensed sources — see [`backend/knowledge/README.md`](backend/knowledge/README.md) |
+| Extraction model | Complete - Calibrated confidence trained on a documented OCR-noise corpus (Brier 0.15 → 0.07, ECE 0.26 → 0.06) with a shipped model card |
+| Care network | Complete - Mock subscription (Care+) → doctor consultations + doctor-recorded shorts · consent-scoped chart sharing · payout ledger (70/30 consults, 25/35/40 subscription pools) |
+| Doctor console | Complete - **Separate frontend at `/doctor/`** — self-onboarding (mock KYC), shorts studio, one-screen clinical brief, AI medicine draft the doctor edits/approves, shareable identity card, earnings statement |
+| RBAC | Complete - `user_roles` table (`patient` / `doctor` / `admin`), server-side grants, re-read per request · doctors cannot touch the patient API · patients cannot open the console |
+| Tests | Complete - **532+ passing** (`cd backend && npm test`) + 120-check live endpoint smoke (`npm run smoke`) |
+| Frontend | Complete - Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
 
 ## Quick start (cost-free)
 

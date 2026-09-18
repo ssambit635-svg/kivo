@@ -70,12 +70,12 @@ Policy matrix enforced by `PolicyService` (`tests/unit/policy.service.test.js` +
 
 | Actor | Member read | Member write | Manage shares | Health data |
 |---|---|---|---|---|
-| Owner (account) | ✅ | ✅ | ✅ | own members |
-| Shared `viewer` | ✅ | ❌ 403 | ❌ | granted member only |
-| Shared `editor` | ✅ | ✅ | ❌ | granted member only |
-| Stranger | ❌ 404 (existence hidden) | ❌ 404 | ❌ | — |
-| Doctor (`doctor` role) | ❌ 403 on the patient API | ❌ | ❌ | **only through a consultation consent grant**, scoped + expiring |
-| Admin | ❌ 404 | ❌ | ❌ | **admins cannot read health data** — they manage accounts + audit only |
+| Owner (account) | Allowed | Allowed | Allowed | own members |
+| Shared `viewer` | Allowed | Denied (403) | Denied | granted member only |
+| Shared `editor` | Allowed | Allowed | Denied | granted member only |
+| Stranger | Denied (404, hidden) | Denied (404) | Denied | — |
+| Doctor (`doctor` role) | Denied (403 on patient API) | Denied | Denied | **only through a consultation consent grant**, scoped + expiring |
+| Admin | Denied (404) | Denied | Denied | **admins cannot read health data** — they manage accounts + audit only |
 
 Every resource access loads the resource → resolves its owning member → derives access **from the member, never from caller-supplied ids**.
 

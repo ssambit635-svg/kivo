@@ -876,7 +876,7 @@ async function main() {
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${'='.repeat(60)}`);
   console.log(`SMOKE RESULT: ${results.length - failed.length}/${results.length} passed${failed.length ? ` — ${failed.length} FAILED:` : ' — ALL ENDPOINTS OK'}`);
-  for (const f of failed) console.log(`  ✗ ${f.name} — ${f.detail}`);
+  for (const f of failed) console.log(`  FAIL: ${f.name} — ${f.detail}`);
   console.log('='.repeat(60));
   return failed.length === 0 ? 0 : 1;
 }
