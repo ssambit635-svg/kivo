@@ -1,6 +1,6 @@
 /**
- * Report Confidence Badge (product widget: "🟢 Verified / 🟡 Needs review /
- * 🔴 OCR issue" — expressed for clients as structured data + an icon KEY,
+ * Report Confidence Badge (product widget: "Verified / Needs review /
+ * OCR issue" — expressed for clients as structured data + an icon KEY,
  * never an emoji, so any frontend can render its own real icon set).
  *
  * The important property: the badge is 100% DERIVED from state the report

@@ -14,7 +14,7 @@ function boot() {
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`\n✖ Failed to start: port ${port} is already in use (${host}:${port}).`);
+      console.error(`\nError: Failed to start: port ${port} is already in use (${host}:${port}).`);
       console.error(`\n  Something is already listening on that port — usually a previous`);
       console.error(`  instance of this server that is still running in another terminal.`);
       console.error(`\n  Fix it in one of two ways:`);
@@ -24,10 +24,10 @@ function boot() {
       console.error(`       PORT=8081 npm start     # Windows: set PORT=8081 && npm start`);
       console.error('');
     } else if (err.code === 'EACCES') {
-      console.error(`\n✖ Failed to start: permission denied binding ${host}:${port}.`);
+      console.error(`\nError: Failed to start: permission denied binding ${host}:${port}.`);
       console.error(`  Ports below 1024 need elevated privileges — use e.g. PORT=8080 npm start.\n`);
     } else {
-      console.error('\n✖ Server failed to start:', err);
+      console.error('\nError: Server failed to start:', err);
     }
     process.exit(1);
   });

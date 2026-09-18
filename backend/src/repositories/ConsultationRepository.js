@@ -154,7 +154,17 @@ export class ConsultationRepository extends BaseRepository {
       JSON.stringify(metadata),
       this.now(),
     );
-    return this.db.get('SELECT * FROM consultation_messages WHERE id = ?', id);
+    const row = this.db.get('SELECT * FROM consultation_messages WHERE id = ?', id);
+    return {
+      id: row.id,
+      consultationId: row.consultation_id,
+      authorUserId: row.author_user_id,
+      authorRole: row.author_role,
+      kind: row.kind,
+      body: row.body,
+      metadata: safeParse(row.metadata),
+      createdAt: row.created_at,
+    };
   }
 
   listMessages(consultationId) {
