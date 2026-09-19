@@ -27,7 +27,7 @@ City-battle strategy and gap analysis: [`HACKATHON_GAP_ANALYSIS.md`](HACKATHON_G
 | Care network | Complete - Mock subscription (Care+) → doctor consultations + doctor-recorded shorts · consent-scoped chart sharing · payout ledger (70/30 consults, 25/35/40 subscription pools) |
 | Doctor console | Complete - **Separate frontend at `/doctor/`** — self-onboarding (mock KYC), shorts studio, one-screen clinical brief, AI medicine draft the doctor edits/approves, shareable identity card, earnings statement |
 | RBAC | Complete - `user_roles` table (`patient` / `doctor` / `admin`), server-side grants, re-read per request · doctors cannot touch the patient API · patients cannot open the console |
-| Tests | Complete - **561 passing** in 43 files (`cd backend && npm test`) + 120-check live endpoint smoke (`npm run smoke`) |
+| Tests | Complete - **564 passing** in 43 files (`cd backend && npm test`) + 120-check live endpoint smoke (`npm run smoke`) |
 | Frontend | Complete - Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
 
 ## Quick start (cost-free)

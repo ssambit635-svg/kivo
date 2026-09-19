@@ -42,14 +42,22 @@ export function createApp(container) {
   );
   app.use(permissionsPolicy());
   app.use(
-    cors({
-      origin(origin, cb) {
-        if (container.config.isOriginAllowed(origin)) return cb(null, true);
-        return cb(new ForbiddenError(`Origin '${origin}' is not allowed by CORS policy`, 'CORS_DENIED'));
-      },
-      methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
-      maxAge: 600,
+    // Use cors's per-request options delegate so the origin check can compare
+    // the browser Origin with the actual host/protocol of this request. A
+    // static origin callback cannot see the request and would reject a
+    // same-origin production deployment with an empty CORS_ORIGINS list.
+    cors((req, callback) => {
+      const requestOrigin = `${req.protocol}://${req.get('host')}`;
+      callback(null, {
+        origin(origin, cb) {
+          if (container.config.isOriginAllowed(origin, requestOrigin)) return cb(null, true);
+          return cb(new ForbiddenError(`Origin '${origin}' is not allowed by CORS policy`, 'CORS_DENIED'));
+        },
+        preflightContinue: false,
+        methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+        maxAge: 600,
+      });
     }),
   );
   // Automated abuse detection: blocks IPs with many cross-endpoint 401/403

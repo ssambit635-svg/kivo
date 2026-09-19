@@ -386,8 +386,8 @@ img,svg{display:block}
 .hero-img{
   position:absolute;
   bottom:0;
-  right:140px;
-  width:min(1200px,100vw);
+  right:100px;
+  width:min(1320px,100vw);
   height:calc(100vh - 40px);
   height:calc(100dvh - 40px);
   z-index:1;
@@ -397,15 +397,15 @@ img,svg{display:block}
   justify-content:flex-end;
 }
 /* SoFi-style hero hand: transparent cut-out, anchored to the bottom-right,
-   cropped by the hero's overflow:hidden so it "enters" the frame.
-   scaleX(-1) mirrors it so the phone sits fully right of the big title
-   (no letter overlap) while the arm enters from the bottom — the SoFi
-   composition. GSAP never tweens `scale` on this element, so the flip
-   always survives the intro + pin parallax. */
+   cropped by the hero's overflow:hidden so it "enters" the frame. Keep the
+   source artwork in its original orientation: mirroring the hand made the
+   phone look backwards, especially on laptop layouts. The larger responsive
+   width keeps the product visual readable instead of leaving a small sliver
+   beside the headline. */
 .hero-hand{
-  width:min(760px,62vw);
+  width:min(920px,74vw);
   height:auto;
-  transform:translate(-40px,110px) scaleX(-1);
+  transform:translate(-40px,80px) rotate(0deg) scaleX(1);
   user-select:none;
   -webkit-user-drag:none;
   will-change:transform,opacity;
@@ -1695,7 +1695,7 @@ img,svg{display:block}
   .hero{min-height:560px}
   .hero-title{font-size:min(200px,30vh);font-size:min(200px,30dvh);line-height:1;top:100px}
   .hero-text{top:auto;bottom:120px}
-  .hero-hand{width:min(560px,46vw)}
+  .hero-hand{width:min(760px,62vw);transform:translate(-30px,70px) rotate(0deg) scaleX(1)}
 }
 
 /* short desktop windows: keep the pinned twin inside the frame */
@@ -1764,7 +1764,7 @@ img,svg{display:block}
   .community-headline p{width:100%}
   .community{padding-block:96px 80px}
   .hero-img{right:0;left:0;width:auto;justify-content:center;align-items:flex-start}
-  .hero-hand{width:min(620px,82vw);transform:translateY(30px) scaleX(-1)}
+  .hero-hand{width:min(760px,100vw);transform:translateY(30px) rotate(0deg) scaleX(1)}
   .hero-text{top:auto;bottom:239px;left:50%;transform:translateX(-50%);margin-left:0;width:340px;max-width:calc(100vw - 40px);text-align:center}
 }
 
@@ -1813,7 +1813,7 @@ img,svg{display:block}
   .hero{padding:0}
   .hero-title{left:20px}
   .hero-img{justify-content:center}
-  .hero-hand{width:min(560px,78vw);transform:translateY(20px) scaleX(-1)}
+  .hero-hand{width:min(680px,100vw);transform:translateY(20px) rotate(0deg) scaleX(1)}
   .hero-text{width:300px;bottom:215px}
   .hero-cta{bottom:140px}
   .waterStick-shape{width:min(240px,64vw)}
