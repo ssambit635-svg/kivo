@@ -276,24 +276,6 @@ img,svg{display:block}
   line-height:15px;
   letter-spacing:-.005em;
 }
-.topNav-cta{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  background:#f7f7f7;
-  color:#000;
-  border-radius:31px;
-  padding:0 26px;
-  height:62px;
-  display:inline-flex;
-  align-items:center;
-  font-size:14px;
-  line-height:14px;
-  letter-spacing:-.005em;
-  white-space:nowrap;
-  transition:transform .3s ease;
-}
-.topNav-cta:hover{transform:translateX(-50%) scale(1.04)}
 .topNav-link{color:#fff;font-size:15px;line-height:15px;letter-spacing:-.005em}
 
 /* ============ floating cta ============ */
@@ -568,13 +550,6 @@ img,svg{display:block}
   margin-left:-.05em;
 }
 .twin-title--black{padding-left:50px;overflow:hidden}
-.twin-title--white{
-  position:absolute;
-  left:100vw;
-  top:0;
-  padding-left:50px;
-}
-.twin-title--white h2{color:#f7f7f7}
 .twin-para{
   font-size:15px;
   line-height:18px;
@@ -1407,7 +1382,6 @@ img,svg{display:block}
   .twin-textHolder{grid-template-rows:auto;grid-template-columns:repeat(6,minmax(0,1fr));gap:40px;padding-bottom:80px}
   .twin-titleHolder{grid-row:auto;grid-column:1/-1}
   .twin-title h2{font-size:clamp(72px,12vw,120px);line-height:.92;white-space:normal}
-  .twin-title--white{display:none}
   .twin-para{width:auto}
   .twin-para--one{grid-row:auto;grid-column:1/span 6;align-self:auto}
   .twin-para--two{grid-row:auto;grid-column:1/span 6;align-self:auto}
@@ -1618,7 +1592,6 @@ img,svg{display:block}
   .footer-titles{margin-bottom:100px}
   .topNav{padding:16px 20px}
   .bottomBar{padding:16px 20px}
-  .topNav-cta{height:54px;padding:0 20px}
   .hero{padding:0}
   .hero-title{left:20px}
   .hero-img{justify-content:center}
@@ -1642,7 +1615,6 @@ img,svg{display:block}
   .footer-titles{margin-bottom:60px}
   .topNav{padding:16px 12px}
   .bottomBar{padding:16px 12px}
-  .topNav-cta{display:none}
   .waterStick-shape{width:min(200px,64vw)}
   .loader-numberIndicator,.loader-year{display:none}
   .imageBreak-text{padding-inline:12px}
@@ -1668,8 +1640,5 @@ img,svg{display:block}
   .community-listHolder{height:auto;min-height:280px}
   .imageBreak{height:auto;min-height:100vh;min-height:100dvh;padding-block:70px}
   .imageBreak-bg{top:0;height:100%}
-  .learn{padding-block:90px}
-}
-eight:100%}
   .learn{padding-block:90px}
 }
