@@ -13,7 +13,7 @@
     .appScreen-cta,.appSection-text--two{opacity:1}
     .community-list{opacity:1;transform:none}
     .quote:first-child{opacity:1;transform:none}
-    .footer-title span,.footer-title-sm,.footer-col a,.footer-copyright{opacity:1;transform:none}
+    .footer-title-sm,.footer-col a,.footer-copyright{opacity:1;transform:none}
     .footer-divider,.twinStory-divider,.twin-featureDivider{transform:none}
     .waterStick-filler{clip-path:inset(0)}
   </style></noscript>
@@ -192,27 +192,88 @@
         <div class="twinStory-illustrationHolder">
           <div class="twinStory-illustrationText">
             <p>inside every report, a signal worth understanding</p>
-            <div class="twinStory-titleHolder"><h2>the digital twin</h2></div>
+            <div class="twinStory-titleHolder" id="twinStoryTitleHolder" aria-hidden="true">
+              <div class="twinStory-tickerTrack" id="twinStoryTickerTrack">
+                <span class="twinStory-tickerWord">the digital twin</span>
+                <span class="twinStory-tickerSep">—</span>
+                <span class="twinStory-tickerWord">continuous context</span>
+                <span class="twinStory-tickerSep">—</span>
+                <span class="twinStory-tickerWord">clinical precision</span>
+                <span class="twinStory-tickerSep">—</span>
+                <span class="twinStory-tickerWord">verified baselines</span>
+                <span class="twinStory-tickerSep">—</span>
+                <span class="twinStory-tickerWord">the digital twin</span>
+                <span class="twinStory-tickerSep">—</span>
+                <span class="twinStory-tickerWord">continuous context</span>
+                <span class="twinStory-tickerSep">—</span>
+                <span class="twinStory-tickerWord">clinical precision</span>
+                <span class="twinStory-tickerSep">—</span>
+                <span class="twinStory-tickerWord">verified baselines</span>
+                <span class="twinStory-tickerSep">—</span>
+              </div>
+            </div>
           </div>
-          <div class="twinStory-illustration">
-            <svg viewBox="0 0 780 790" fill="none">
-              <circle cx="390" cy="395" r="360" stroke="#dedede" stroke-width="1"/>
-              <circle cx="390" cy="395" r="262" stroke="#121212" stroke-width="1" stroke-dasharray="2 6"/>
-              <circle cx="390" cy="395" r="164" stroke="#121212" stroke-width="1"/>
-              <path d="M30 395h250l40-90 55 190 50-130 40 40h60l35-70 45 140 40-100h115" stroke="#121212" stroke-width="2"/>
-              <circle cx="390" cy="395" r="6" fill="#121212"/>
-              <circle cx="652" cy="395" r="5" fill="#121212"/>
-              <circle cx="485" cy="231" r="5" fill="#121212"/>
-              <circle cx="295" cy="559" r="5" fill="#121212"/>
-              <circle cx="390" cy="133" r="5" fill="#121212"/>
-              <circle cx="128" cy="395" r="5" fill="#121212"/>
-              <text x="52" y="120" fill="#121212" font-size="14" letter-spacing="-0.005em">camera</text>
-              <text x="556" y="150" fill="#121212" font-size="14" letter-spacing="-0.005em">ocr</text>
-              <text x="640" y="440" fill="#121212" font-size="14" letter-spacing="-0.005em">verify</text>
-              <text x="560" y="680" fill="#121212" font-size="14" letter-spacing="-0.005em">twin</text>
-              <text x="120" y="700" fill="#121212" font-size="14" letter-spacing="-0.005em">trend</text>
-              <text x="40" y="460" fill="#121212" font-size="14" letter-spacing="-0.005em">risk aware</text>
-            </svg>
+          <div class="twinStory-illustration twinStory-visualizer" id="twinVisualizer">
+            <!-- Mode Switcher Tabs (Choose between 3 interactive options) -->
+            <div class="twin-switcher" role="tablist" aria-label="Digital Twin Visualization Mode">
+              <button type="button" class="twin-switchBtn twin-switchBtn--active" data-mode="mesh" role="tab" aria-selected="true" id="tabMesh">
+                <span class="twin-switchNum">01</span>
+                <span class="twin-switchLabel">3D Biometric Mesh</span>
+              </button>
+              <button type="button" class="twin-switchBtn" data-mode="radar" role="tab" aria-selected="false" id="tabRadar">
+                <span class="twin-switchNum">02</span>
+                <span class="twin-switchLabel">Hex Radar</span>
+              </button>
+              <button type="button" class="twin-switchBtn" data-mode="neural" role="tab" aria-selected="false" id="tabNeural">
+                <span class="twin-switchNum">03</span>
+                <span class="twin-switchLabel">Neural Graph</span>
+              </button>
+            </div>
+
+            <!-- Interactive Canvas & Overlays -->
+            <div class="twin-canvasWrap" id="twinCanvasWrap">
+              <canvas id="twinVisualizerCanvas" class="twin-canvas"></canvas>
+
+              <!-- Live HUD Card (Updates on hover/tap) -->
+              <div class="twin-hudCard" id="twinHudCard" aria-live="polite">
+                <div class="twin-hudHeader">
+                  <span class="twin-hudLoinc" id="twinHudLoinc">LOINC 4548-4</span>
+                  <span class="twin-hudBadge" id="twinHudBadge">99.4% Verified</span>
+                </div>
+                <div class="twin-hudBody">
+                  <div class="twin-hudTitle" id="twinHudTitle">HbA1c · Glycated Hemoglobin</div>
+                  <div class="twin-hudValueRow">
+                    <span class="twin-hudValue" id="twinHudValue">5.9 %</span>
+                    <span class="twin-hudDelta" id="twinHudDelta">Optimal Baseline · ▲ 0.3% this quarter</span>
+                  </div>
+                  <div class="twin-hudRange" id="twinHudRange">Personal Baseline: 5.4 – 6.0 % · Metabolic Panel</div>
+                </div>
+              </div>
+
+              <!-- Top Left Engine Badge -->
+              <div class="twin-statusBadge">
+                <span class="twin-statusDot"></span>
+                <span class="twin-statusText" id="twinStatusText">BIO-TWIN ENGINE // OPTION 01</span>
+              </div>
+
+              <!-- Bottom Interactive Action Toolbar -->
+              <div class="twin-actions">
+                <button type="button" class="twin-actionBtn" id="twinBtnPulse" title="Trigger Laser Scan Wave" aria-label="Trigger Laser Scan Wave">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2"/></svg>
+                  <span>pulse scan</span>
+                </button>
+                <button type="button" class="twin-actionBtn" id="twinBtnOrbit" title="Toggle Auto-Orbit" aria-label="Toggle Auto-Orbit">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 8A6 6 0 1 1 8 2M14 2v6h-6"/></svg>
+                  <span>auto-orbit: on</span>
+                </button>
+                <button type="button" class="twin-actionBtn" id="twinBtnRecalibrate" title="Recalibrate Baselines" aria-label="Recalibrate Baselines">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5l6 6 6-6"/></svg>
+                  <span>recalibrate</span>
+                </button>
+              </div>
+
+              <div class="twin-hint">drag to orbit 3d · hover nodes to inspect · tap to pulse</div>
+            </div>
           </div>
         </div>
         <div class="twinStory-information">
@@ -442,20 +503,12 @@
       <div class="footer-titles">
         <div class="footer-title">
           <p>clarity of data</p>
-          <span>1,226 markers · 18 panels</span>
-          <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M2 14h20"/></svg>
         </div>
-        <svg class="footer-sep" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M14 2v24"/></svg>
         <div class="footer-title footer-title--2">
           <p>power of context</p>
-          <span>trends, baselines, drift</span>
-          <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M4 16l6-8 6 10 4-6"/></svg>
         </div>
-        <svg class="footer-sep" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M8 14l4 4 8-8"/></svg>
         <div class="footer-title footer-title--3">
           <p>care of verification</p>
-          <span>loinc · brier 0.07</span>
-          <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="14" r="12"/><path d="M8 14l4 4 8-8"/></svg>
         </div>
       </div>
       <div class="footer-bottom">
@@ -497,6 +550,7 @@
   <script src="/vendor/gsap.min.js?v=2"></script>
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
+  <script src="/js/twin-visualizer.js?v=1"></script>
   <script src="/js/main.js?v=4"></script>
 </body>
 </html>

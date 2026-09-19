@@ -109,7 +109,7 @@
     gsap.set('.community-list', { opacity: 1, transform: 'none' });
     gsap.set('#quoteList .quote:first-child', { opacity: 1, transform: 'none' });
     gsap.set('.markerCard, .stats-block, .ctaLink', { opacity: 1, transform: 'none' });
-    gsap.set('.footer-title span, .footer-col a, .footer-title-sm, .footer-copyright, .appScreen-cta, .appSection-text--two', { opacity: 1, transform: 'none' });
+    gsap.set('.footer-col a, .footer-title-sm, .footer-copyright, .appScreen-cta, .appSection-text--two', { opacity: 1, transform: 'none' });
   } else if (loader) {
     const lt = gsap.timeline({ delay: 0.15 });
     const lwords = gsap.utils.toArray('.loader-word');
@@ -317,12 +317,19 @@
       opacity: 1, y: 0, duration: 0.8, ease: 'power3',
       scrollTrigger: { trigger: '#twinStory', start: 'top 60%' },
     });
-    gsap.fromTo('.twinStory-titleHolder h2', { yPercent: 110 }, {
-      yPercent: 0, duration: 1.3, ease: 'power4',
-      scrollTrigger: { trigger: '#twinStory', start: 'top 55%', end: 'top 10%', scrub: 1 },
+    // Horizontal background text moving right to left
+    gsap.fromTo('#twinStoryTitleHolder', { x: '12vw' }, {
+      x: '-12vw',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#twinStory',
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 0.8,
+      },
     });
-    gsap.fromTo('.twinStory-illustration', { opacity: 0, scale: 1.12 }, {
-      opacity: 1, scale: 1, duration: 1.2, ease: 'power3',
+    gsap.fromTo('.twinStory-visualizer', { opacity: 0, scale: 0.94 }, {
+      opacity: 1, scale: 1, duration: 1.2, ease: 'power3.out',
       scrollTrigger: { trigger: '#twinStory', start: 'top 60%' },
     });
     gsap.to('.twinStory-divider', {
@@ -445,10 +452,6 @@
           scrub: 0.65,
         },
       });
-    });
-    gsap.fromTo('.footer-title span', { opacity: 0, y: 10 }, {
-      opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', stagger: 0.08,
-      scrollTrigger: { trigger: '.footer-titles', start: 'top 78%', toggleActions: 'play none none reverse' },
     });
     gsap.to('.footer-divider--one', {
       scaleX: 1, duration: 1.1, ease: 'power3.inOut',
