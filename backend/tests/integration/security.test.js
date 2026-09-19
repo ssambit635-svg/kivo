@@ -149,6 +149,29 @@ describe('CORS policy', () => {
     const res = await request(ctx.app).get('/api/health');
     expect(res.status).toBe(200);
   });
+
+  it('allows the dashboard same-origin in strict production mode', async () => {
+    const prod = makeTestContext({ NODE_ENV: 'production', DB_PATH: ':memory:', CORS_ORIGINS: '' });
+    try {
+      const res = await request(prod.app)
+        .get('/api/health')
+        .set('Host', 'kivo.local')
+        .set('Origin', 'http://kivo.local');
+      expect(res.status).toBe(200);
+      expect(res.headers['access-control-allow-origin']).toBe('http://kivo.local');
+    } finally {
+      prod.container.close();
+    }
+  });
+
+  it('normalizes a configured origin copied with a trailing slash', () => {
+    const prod = makeTestContext({ NODE_ENV: 'production', DB_PATH: ':memory:', CORS_ORIGINS: 'https://app.example.com/' });
+    try {
+      expect(prod.config.isOriginAllowed('https://app.example.com')).toBe(true);
+    } finally {
+      prod.container.close();
+    }
+  });
 });
 
 describe('JWT body limit + helmet on API root', () => {

@@ -307,6 +307,17 @@ describe('landing page', () => {
     expect(js).toContain('data-ph-note');
   });
 
+  it('keeps the hero hand large, upright and unmirrored on every viewport', () => {
+    const handRules = [...css.matchAll(/\.hero-hand\{[\s\S]*?\}/g)].map((m) => m[0]).join('\n');
+    expect(handRules).toMatch(/width:min\(920px,74vw\)/);
+    expect(handRules).toMatch(/scaleX\(1\)/);
+    expect(handRules).not.toMatch(/scaleX\(-1\)/);
+    // A mirrored source is backwards, not a responsive layout solution.
+    expect(css).not.toMatch(/\.hero-hand\{[^}]*scaleX\(-1\)/);
+    expect(html).toContain('class="hero-hand"');
+    expect(html).toContain('/img/hand.webp');
+  });
+
   it('no inline event handlers and vendor scripts are self-hosted (CSP: script-src \'self\')', () => {
     expect(html).not.toMatch(/\son[a-z]+\s*=/i);
     for (const m of html.matchAll(/<script[^>]*src="([^"]+)"/g)) {

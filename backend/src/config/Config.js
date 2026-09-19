@@ -35,12 +35,17 @@ export class Config {
     this.maxUploadBytes = Number(env.MAX_UPLOAD_MB || 10) * 1024 * 1024;
 
     // --- CORS ------------------------------------------------------------
+    // Normalize configured origins once so a harmless trailing slash does not
+    // turn a valid browser origin into a CORS failure. Browsers send origins
+    // without a trailing slash, while deployment environment variables often
+    // include one when copied from a URL bar.
     this.corsAllowedOrigins = (env.CORS_ORIGINS || '')
       .split(',')
-      .map((s) => s.trim())
+      .map((s) => String(s).trim().replace(/\/+$/, ''))
       .filter(Boolean);
     // E2B / arena live-preview hostnames + local dev frontends are allowed by default
-    // outside production. In production you must set CORS_ORIGINS explicitly.
+    // outside production. Same-origin requests are accepted in every environment;
+    // production cross-origin frontends must still be listed in CORS_ORIGINS.
     this.corsAllowOriginRegexes = [];
     if (!this.isProd) {
       this.corsAllowOriginRegexes.push(/^https:\/\/[\w-]+\.e2b\.app$/);
@@ -111,9 +116,19 @@ export class Config {
     this.appVersion = env.APP_VERSION || '0.1.0';
   }
 
-  isOriginAllowed(origin) {
+  isOriginAllowed(origin, requestOrigin = null) {
     if (!origin) return true; // non-browser clients (curl, native apps)
-    if (this.corsAllowedOrigins.includes(origin)) return true;
-    return this.corsAllowOriginRegexes.some((re) => re.test(origin));
+
+    const normalizedOrigin = String(origin).trim().replace(/\/+$/, '');
+    // A same-origin browser request is always safe, including in production.
+    // This matters when the dashboard and API are served by this same server:
+    // production intentionally disables the development hostname regexes, but
+    // must not disable the app's own login form with it.
+    if (requestOrigin) {
+      const normalizedRequestOrigin = String(requestOrigin).trim().replace(/\/+$/, '');
+      if (normalizedOrigin === normalizedRequestOrigin) return true;
+    }
+    if (this.corsAllowedOrigins.includes(normalizedOrigin)) return true;
+    return this.corsAllowOriginRegexes.some((re) => re.test(normalizedOrigin));
   }
 }
