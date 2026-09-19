@@ -396,6 +396,8 @@ img,svg{display:block}
   display:flex;
   flex-direction:column;
   align-items:center;
+  position:relative;
+  z-index:2;
 }
 .waterStick-icon{
   width:40px;
@@ -403,11 +405,14 @@ img,svg{display:block}
   flex:none;
   color:#333;
   margin-bottom:28px;
+  position:relative;
+  z-index:2;
 }
 .waterStick-splitedText{
   position:relative;
   width:min(960px,90vw);
   text-align:center;
+  z-index:2;
 }
 .waterStick-title{
   font-size:clamp(40px,4.5vw,64px);
@@ -426,29 +431,30 @@ img,svg{display:block}
   clip-path:inset(0 0 100% 0);
 }
 .waterStick-shape{
-  margin-top:40px;
   width:min(280px,64vw);
   height:clamp(240px,34vh,380px);
   height:clamp(240px,34dvh,380px);
   flex:none;
   border-radius:2000px;
-  background:#121212;
-  position:relative;
+  background:#f7f7f7;
+  position:absolute;
+  left:50%;
+  top:50%;
+  z-index:1;
+  pointer-events:none;
+  will-change:transform,border-radius;
   overflow:hidden;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  /* translation handled by GSAP (xPercent/yPercent) so the initial scale is
+     consistent and scaling stays centered. */
+  transform:translate(-50%,-50%) scale(0.04);
+  transform-origin:center center;
+  margin:0;
 }
-.waterStick-shape canvas{
-  width:100%;
-  height:100%;
-  opacity:0;
-  transition:opacity 1.2s ease;
-}
-.waterStick-shape canvas.on{opacity:1}
+.no-js .waterStick-shape{transform:translate(-50%,-50%) scale(1)}
+.waterStick-shape canvas{display:none}
 
 /* ============ twin pinned section (stick) ============ */
-.stickWrap{position:relative}
+.stickWrap{position:relative;background:#f7f7f7;z-index:2}
 .twin{
   height:100vh;
   height:100dvh;
@@ -1553,8 +1559,8 @@ img,svg{display:block}
   .hero-cta{position:static;transform:none;margin-top:24px}
   .hero-img{position:relative;right:auto;bottom:auto;width:100%;height:auto;justify-content:center;margin-top:16px}
   .phone--hero{width:240px;height:519px;transform:none}
-  .waterStick{height:auto;min-height:100vh;min-height:100dvh;padding-block:80px}
-  .waterStick-shape{height:220px}
+  .waterStick{height:100vh;height:100dvh;min-height:0;padding-block:0}
+  .waterStick-shape{height:clamp(180px,44dvh,260px)}
   .community{padding-block:90px}
   .learn{padding-block:90px}
 }

@@ -165,70 +165,109 @@
     });
   }
 
-  /* ---------- water stick: title fill + canvas ---------- */
-  if (!reduced) {
-    gsap.to('.waterStick-filler', {
+  /* ---------- water stick: title fill + capsule white wipe ---------- */
+  const waterSection = document.getElementById('waterStick');
+  const waterShape = document.querySelector('.waterStick-shape');
+  const waterCanvas = document.getElementById('waterCanvas');
+  // Hide the canvas wave animation entirely — the capsule itself is the hero
+  // of this transition now, expanding into the full-screen white wipe.
+  if (waterCanvas) waterCanvas.style.display = 'none';
+
+  if (!reduced && waterSection && waterShape) {
+    // The resting capsule is sized by CSS (width ~280px, height ~380px on desktop,
+    // smaller on mobile). We start it at a tiny dot scale, grow it to its natural
+    // resting capsule size for the text-fill portion of the scroll, then expand
+    // vertically → horizontally to cover the viewport and hand off cleanly to the
+    // next section which is already on the same #f7f7f7 background.
+    const scaleToFullY = () => {
+      const h = waterShape.offsetHeight;
+      // need to reach (at minimum) the viewport diagonal so corners never show
+      return Math.max((window.innerHeight * 1.8) / h, 8);
+    };
+    const scaleToFullX = () => {
+      const w = waterShape.offsetWidth;
+      return Math.max((window.innerWidth * 2.2) / w, 12);
+    };
+
+    // Start state: tiny centered dot. We let GSAP own the translate + scale so
+    // the element is perfectly centered and scaleX/scaleY animate from a known
+    // baseline — letting us grow vertically first, then horizontally (SoFi-
+    // style pill wipe).
+    gsap.set(waterShape, {
+      xPercent: -50,
+      yPercent: -50,
+      scaleX: 0.04,
+      scaleY: 0.04,
+      transformOrigin: 'center center',
+    });
+
+    // Single pinned timeline covering the whole dark→light transition.
+    const wsTl = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: {
+        trigger: '#waterStick',
+        start: 'top top',
+        end: '+=180%',
+        scrub: 1,
+        pin: true,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+      },
+    });
+
+    // Phase 1 (0 → 20%): dot grows to its natural resting capsule size
+    // (scaleX and scaleY together → rounded capsule, matching the original
+    // resting shape the user saw before waves were removed).
+    wsTl.to(waterShape, {
+      scaleX: 1,
+      scaleY: 1,
+      ease: 'power2.out',
+      duration: 0.2,
+    }, 0);
+
+    // Phase 2 (15% → 55%): white letter reveal fills the heading (existing
+    // text-reveal animation, preserved exactly) while the capsule rests.
+    wsTl.to('.waterStick-filler', {
       clipPath: 'inset(0 0 0% 0)',
-      scrollTrigger: { trigger: '#waterStick', start: 'top 80%', end: 'bottom 55%', scrub: 1 },
-    });
-    gsap.fromTo('.waterStick-icon', { opacity: 0, scale: 0.4 }, {
-      opacity: 1, scale: 1, duration: 0.8,
-      scrollTrigger: { trigger: '#waterStick', start: 'top 70%' },
-    });
+      duration: 0.35,
+      ease: 'power2.inOut',
+    }, 0.15);
+    wsTl.fromTo('.waterStick-icon',
+      { opacity: 0, scale: 0.4 },
+      { opacity: 1, scale: 1, duration: 0.2, ease: 'power2.out' },
+      0.12
+    );
+
+    // Phase 3 (55% → 78%): grow TALL first — capsule stretches vertically past
+    // the top and bottom of the viewport while staying narrow.
+    wsTl.to(waterShape, {
+      scaleY: () => scaleToFullY(),
+      ease: 'power2.inOut',
+      duration: 0.23,
+    }, 0.55);
+
+    // Phase 4 (73% → 95%): grow WIDE — capsule blows out horizontally, covering
+    // the viewport completely. Simultaneously fade the text + icon out so the
+    // wipe feels clean rather than cutting hard.
+    wsTl.to(waterShape, {
+      scaleX: () => scaleToFullX(),
+      ease: 'power3.inOut',
+      duration: 0.22,
+    }, 0.73);
+    wsTl.to(['.waterStick-icon', '.waterStick-splitedText'], {
+      opacity: 0,
+      duration: 0.18,
+      ease: 'power2.inOut',
+    }, 0.75);
+
+    // Phase 5 (92% → 100%): flatten border-radius to 0 so there are no pill
+    // edges left once full-screen — seamless hand-off to the next section.
+    wsTl.to(waterShape, {
+      borderRadius: 0,
+      duration: 0.08,
+      ease: 'power2.inOut',
+    }, 0.92);
   }
-  (function initWater() {
-    const c = document.getElementById('waterCanvas');
-    if (!c || !c.getContext || reduced) return;
-    const ctx = c.getContext('2d');
-    let w = 0;
-    let h = 0;
-    const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = c.clientWidth;
-      h = c.clientHeight;
-      c.width = w * dpr;
-      c.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    let t = 0;
-    let running = false;
-    const draw = () => {
-      if (!running) return;
-      t += 0.012;
-      ctx.clearRect(0, 0, w, h);
-      const mid = h / 2;
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        const amp = (24 + i * 16) * Math.min(1, w / 260);
-        const speed = 1 + i * 0.35;
-        ctx.strokeStyle = 'rgba(247,247,247,' + (0.45 - i * 0.11) + ')';
-        ctx.lineWidth = 1.5;
-        for (let x = 0; x <= w; x += 4) {
-          const y = mid + Math.sin(x * 0.02 + t * speed + i * 1.7) * amp * (0.6 + 0.4 * Math.sin(t * 0.35 + i));
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      }
-      const dx = w / 2 + Math.sin(t * 0.9) * w * 0.3;
-      ctx.beginPath();
-      ctx.arc(dx, mid + Math.sin(dx * 0.02 + t) * 20, 3, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(247,247,247,.9)';
-      ctx.fill();
-      requestAnimationFrame(draw);
-    };
-    new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !running) {
-        running = true;
-        c.classList.add('on');
-        requestAnimationFrame(draw);
-      } else if (!e.isIntersecting) {
-        running = false;
-      }
-    }, { threshold: 0.1 }).observe(c);
-  })();
 
   /* ---------- pinned twin section ---------- */
   if (isDesktop()) {
