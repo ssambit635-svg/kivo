@@ -1,7 +1,9 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
+import request from 'supertest';
+import { makeTestContext } from '../helpers.js';
 
 /**
  * Frontend contract guards.
@@ -22,6 +24,57 @@ import { describe, it, expect } from 'vitest';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const frontend = path.resolve(here, '../../..', 'frontend');
 const read = (p) => readFileSync(path.join(frontend, p), 'utf8');
+
+/**
+ * Root-relative URLs (`/styles.css`, `/app/`, `/m/`, `/download/apk`) can point
+ * at three different things: an asset inside the page's own folder, an asset at
+ * the frontend root, or a ROUTE the backend generates on the fly. Only the last
+ * group has no file behind it, so "does this path exist on disk" is the wrong
+ * question — and a hand-kept allowlist of routes goes stale the moment somebody
+ * adds an endpoint (that is exactly how `/m/` broke this suite).
+ *
+ * So: resolve on disk first (cheap, and it keeps the failure message precise for
+ * a typo'd asset path), and for anything that is NOT a file, ask the real app
+ * whether it answers. A route added to src/app.js then needs no change here,
+ * while a link that genuinely 404s still fails.
+ */
+const LANDING_FOLDERS = [path.join(frontend, 'landing'), frontend];
+const statusCache = new Map();
+let servedApp = null;
+
+/** on-disk location of a root-relative path, or null when no file backs it. */
+function staticFileFor(rootRelativePath, folders) {
+  const rel = rootRelativePath.replace(/^\/+/, '');
+  if (!rel) return null;
+  for (const folder of folders) {
+    const candidate = path.join(folder, rel);
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+  }
+  return null;
+}
+
+/** status the REAL app returns for a url (memoised — pages repeat their links). */
+async function servedStatus(url) {
+  if (!statusCache.has(url)) {
+    servedApp ||= makeTestContext().app;
+    statusCache.set(url, (await request(servedApp).get(url)).status);
+  }
+  return statusCache.get(url);
+}
+
+/** a root-relative link must resolve: a shipped file, or a route the app serves. */
+async function expectResolvable(url, folders) {
+  if (staticFileFor(url, folders)) return;
+  const status = await servedStatus(url);
+  expect(status, `${url} is neither a shipped file nor a route the app serves (responded ${status})`).not.toBe(404);
+}
+
+/** every root-relative href/src in an html document, query strings stripped. */
+function rootRelativeRefs(html) {
+  const refs = new Set();
+  for (const m of html.matchAll(/(?:href|src)="(\/[^"]*)"/g)) refs.add(m[1].split('?')[0]);
+  return [...refs];
+}
 
 const APPS = [
   {
@@ -60,11 +113,17 @@ describe('frontend contract', () => {
       const html = read(app.html);
       const sources = app.modules.map((m) => [m, read(m)]);
 
-      it('ships every asset the html references', () => {
-        const refs = [...html.matchAll(/(?:href|src)="\.\/([^"]+)"/g)].map((m) => m[1]);
-        expect(refs.length).toBeGreaterThan(0);
-        for (const ref of refs) {
-          expect(existsSync(path.join(frontend, app.html.includes('/') ? app.html.replace(/\/[^/]+$/, '') + '/' + ref : ref)), `${ref} is missing`).toBe(true);
+      it('ships every asset the html references', async () => {
+        const folder = path.dirname(path.join(frontend, app.html));
+        const local = [...html.matchAll(/(?:href|src)="\.\.?\/([^"]+)"/g)].map((m) => m[1]);
+        expect(local.length).toBeGreaterThan(0);
+        for (const ref of local) {
+          expect(existsSync(path.join(folder, ref)), `${app.html} → ${ref} is missing`).toBe(true);
+        }
+        // Root-relative refs (/download/apk, /app/…) are served by the backend
+        // rather than shipped next to the page, so ask the app about them.
+        for (const ref of rootRelativeRefs(html)) {
+          await expectResolvable(ref, [folder, frontend]);
         }
       });
 
@@ -181,13 +240,11 @@ describe('landing page', () => {
     return out;
   }
 
-  it('ships every root-relative asset the html references', () => {
-    const refs = [...html.matchAll(/(?:href|src)="(\/[^"]+)"/g)]
-      .map((m) => m[1].split('?')[0])
-      .filter((p) => !['/', '/app/', '/doctor/'].includes(p));
+  it('ships every root-relative asset the html references', async () => {
+    const refs = rootRelativeRefs(html);
     expect(refs.length).toBeGreaterThan(3);
     for (const ref of refs) {
-      expect(existsSync(path.join(frontend, 'landing', ref)), `${ref} is missing`).toBe(true);
+      await expectResolvable(ref, LANDING_FOLDERS);
     }
     // the stylesheet's self-hosted fonts must be shipped too
     for (const m of css.matchAll(/url\((\/fonts\/[^)]+)\)/g)) {
@@ -324,5 +381,77 @@ describe('landing page', () => {
       expect(m[1].startsWith('/'), `${m[1]} is not self-hosted`).toBe(true);
     }
     expect(html).not.toMatch(/<script(?![^>]*src=)[^>]*>[\s\S]*?<\/script>/);
+  });
+});
+
+/**
+ * The dedicated mobile frontend (`/m/`, frontend/m). Same class of guard as the
+ * two dashboards above, and for the same reason: it is hand-written vanilla JS
+ * with no build step, so a missing id or an inline handler only shows up on a
+ * phone — in front of the judges.
+ *
+ * It gets its own block rather than joining APPS because it inlines its own SVG
+ * instead of using the shared Icons registry.
+ */
+describe('mobile app (/m/)', () => {
+  const html = read('m/index.html');
+  const js = read('m/mobile.js');
+  const css = read('m/mobile.css');
+  const folder = path.join(frontend, 'm');
+
+  it('has no inline event handlers (CSP: script-src-attr \'none\' drops them)', () => {
+    // Regression guard: the first cut wired "All Reports →" and the three "Back"
+    // links with inline onclick attributes. helmet serves script-src-attr
+    // 'none', so the browser silently threw every one of them away and the
+    // buttons did nothing. Handlers live in mobile.js, keyed off data-goto-tab.
+    expect(html).not.toMatch(/\son[a-z]+\s*=/i);
+    const jumps = [...html.matchAll(/data-goto-tab="([a-z]+)"/g)].map((m) => m[1]);
+    expect(jumps.length).toBeGreaterThanOrEqual(4);
+    for (const tab of new Set(jumps)) {
+      expect(html, `no nav tab for data-goto-tab="${tab}"`).toContain(`data-tab="${tab}"`);
+    }
+    expect(js, 'mobile.js never wires [data-goto-tab]').toContain('[data-goto-tab]');
+    expect(js).toContain('switchTab');
+  });
+
+  it('every element id mobile.js looks up exists in the html', () => {
+    const missing = [...referencedIds(js)].filter((id) => !html.includes(`id="${id}"`));
+    expect(missing).toEqual([]);
+  });
+
+  it('every class mobile.js selects exists in the html or the stylesheet', () => {
+    const classes = new Set([
+      ...[...js.matchAll(/querySelectorAll\('\.([A-Za-z0-9_-]+)'\)/g)].map((m) => m[1]),
+      ...[...js.matchAll(/querySelector\('\.([A-Za-z0-9_-]+)'\)/g)].map((m) => m[1]),
+    ]);
+    expect(classes.size).toBeGreaterThan(1);
+    const missing = [...classes].filter((cls) => !html.includes(cls) && !css.includes(`.${cls}`));
+    expect(missing).toEqual([]);
+  });
+
+  it('ships every asset the html references', async () => {
+    const relative = [...html.matchAll(/(?:href|src)="\.\.?\/([^"]+)"/g)].map((m) => m[1]);
+    expect(relative.length).toBeGreaterThan(0);
+    for (const ref of relative) {
+      expect(existsSync(path.join(folder, ref)), `m/${ref} is missing`).toBe(true);
+    }
+    // root-relative ones (/app/icons/…, /download/apk) are served, not shipped
+    const root = rootRelativeRefs(html);
+    expect(root.length).toBeGreaterThan(0);
+    for (const ref of root) {
+      await expectResolvable(ref, [folder, frontend]);
+    }
+  });
+
+  it('every apk button points at the download endpoint, never the raw file', () => {
+    // /download/apk is the route that sets the android package mime type and
+    // Content-Disposition: attachment; the bare file under /app/ downloads
+    // without them, which is what makes some Android browsers refuse it.
+    expect((html.match(/href="\/download\/apk"/g) || []).length).toBeGreaterThanOrEqual(3);
+    expect(html, 'a stale raw-file link came back').not.toContain('/app/kivo.apk');
+    expect(html).toContain('download="kivo.apk"');
+    // and every button is toast-wired, so a tap is never silent
+    expect((html.match(/apk-download-trigger/g) || []).length).toBeGreaterThanOrEqual(3);
+    expect(js, 'no download feedback toast').toContain('.apk-download-trigger');
   });
 });

@@ -158,6 +158,30 @@ async function main() {
     const r = await req('GET', '/app/care.css');
     expectStatus(r.status, 200, 'care.css');
   });
+  // The mobile surface: a phone judge taps /m/ and the APK button. A silent
+  // 404 here is a dead button on stage, so both are probed end-to-end.
+  await check('GET /m/ (dedicated mobile app served)', async () => {
+    const r = await req('GET', '/m/');
+    expectStatus(r.status, 200, 'mobile app');
+    if (!r.text.includes('app-viewport')) throw new Error('phone shell markup missing');
+    if (!r.headers.get('content-security-policy')) throw new Error('no CSP on /m/');
+  });
+  await check('GET /m/mobile.js (mobile logic served)', async () => {
+    const r = await req('GET', '/m/mobile.js');
+    expectStatus(r.status, 200, 'mobile.js');
+    if (!r.text.includes('data-goto-tab')) throw new Error('mobile.js does not wire its jump links');
+  });
+  await check('GET /download/apk (installer served as an attachment)', async () => {
+    const r = await req('GET', '/download/apk');
+    expectStatus(r.status, 200, 'apk');
+    if (!(r.headers.get('content-type') || '').includes('vnd.android.package-archive')) throw new Error('wrong content-type');
+    if (!(r.headers.get('content-disposition') || '').includes('attachment')) throw new Error('not an attachment');
+    if (r.text.length < 1000) throw new Error('apk body looks empty');
+  });
+  await check('GET /kivo.apk (installer alias)', async () => {
+    const r = await req('GET', '/kivo.apk');
+    expectStatus(r.status, 200, 'apk alias');
+  });
 
   // ---------------- auth lifecycle ----------------
   const email = `smoke+${Date.now()}@medtwin.dev`;

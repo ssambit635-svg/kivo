@@ -61,6 +61,9 @@ code {
 }
 .brand-text h1 { font-size: 17px; margin: 0; letter-spacing: -0.2px; }
 .brand-text p { margin: 0; font-size: 12px; color: var(--muted); }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.download-apk-btn { text-decoration: none; border-radius: 20px; font-weight: 600; }
+.download-apk-btn svg { display: inline-block; vertical-align: middle; margin-right: 4px; }
 .userbox { display: flex; align-items: center; gap: 10px; }
 .user-icon { color: var(--muted); display: inline-flex; }
 .user-email { font-size: 13px; color: var(--ink-2); max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
