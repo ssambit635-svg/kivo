@@ -16,7 +16,7 @@
     "smoke": "node scripts/smoke.js",
     "security:scan": "node scripts/security-scan.js",
     "security:headers": "node --disable-warning=ExperimentalWarning scripts/security-headers.js",
-    "security:deps": "npm audit --omit=dev --audit-level=high",
+    "security:deps": "node scripts/security-audit.js",
     "security:all": "npm run security:scan && npm run security:headers && npm run security:deps",
     "seed:admin": "node scripts/create-admin.js",
     "seed:demo": "node scripts/seed-demo.js",

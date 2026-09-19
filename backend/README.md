@@ -257,9 +257,9 @@ helmet headers • CORS allowlist (dev: localhost + `*.e2b.app` previews; prod v
 - **SecurityMonitor** — cross-endpoint abuse detection: every 401/403 per IP is counted in a rolling window; an IP exceeding the threshold is **auto-blocked for 15 min** (429 + `Retry-After`) and an audit-alerted `security.ip_blocked` event is written. Validation 400s/404s never count, blocks auto-expire, and a monitor fault degrades open (never weakens auth).
 - **`npm run security:scan`** — deterministic in-repo secret scanner (cloud keys, private key material, JWT literals, secret assignments, bearer tokens) with an explicit allowlist for documented fixtures.
 - **`npm run security:headers`** — boots the real app and asserts the full defensive posture (CSP, HSTS, nosniff, frame/referrer policy, Permissions-Policy, no-store, CORS denial of unknown origins, JSON-only errors, monitor + audit wiring).
-- **`npm run security:deps`** — `npm audit` gate (currently **0 known vulnerabilities**).
-- **`npm run security:all`** — all three gates; the same chain runs in CI (`.github/workflows/ci.yml`) together with the 460-test suite, knowledge invariants, and the endpoint smoke test.
-- **`npm run smoke`** — boots the production entrypoint and exercises **every API endpoint** end-to-end (89 checks), including token rotation/reuse, lockout surfaces, isolation, and security probes.
+- **`npm run security:deps`** — dependency advisory gate (currently **0 known vulnerabilities**). It walks the production closure in the committed lockfile and queries npm's *supported* bulk advisory endpoint, because `npm audit` still posts to `/-/npm/v1/security/audits/quick` — a retired endpoint that answers `400 Invalid package tree` for any lockfile, which is what turned `main` red on healthy code. Flags: `--all` includes devDependencies, `--strict` fails closed when the service is unreachable (the default reports the outage and passes, never as a finding).
+- **`npm run security:all`** — all three gates; the same chain runs in CI (`.github/workflows/ci.yml`) together with the 561-test suite, knowledge invariants, and the endpoint smoke test.
+- **`npm run smoke`** — boots the production entrypoint and exercises **every API endpoint** end-to-end (120 checks), including token rotation/reuse, lockout surfaces, isolation, and security probes.
 
 ## Testing — every tiny thing
 
@@ -281,4 +281,4 @@ tests/
                  care-media (upload → signed URL → Range/expiry/tamper + paywall)
 ```
 
-`npm test` — **518 passing tests**, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`; the Personal Health Intelligence Engine is covered in `tests/unit/{personal-baseline,temporal-anomaly,pattern-graph,counterfactual-twin}.test.js` + `tests/integration/intelligence.test.js`.
+`npm test` — **561 passing tests** in 43 files, each with an in-memory DB and low-cost scrypt parameters. Image OCR (photo of a lab report → extracted values → verify → trends) is covered in `tests/integration/image-ocr.test.js`; the Personal Health Intelligence Engine is covered in `tests/unit/{personal-baseline,temporal-anomaly,pattern-graph,counterfactual-twin}.test.js` + `tests/integration/intelligence.test.js`.
