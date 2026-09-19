@@ -109,7 +109,7 @@
     gsap.set('.community-list', { opacity: 1, transform: 'none' });
     gsap.set('#quoteList .quote:first-child', { opacity: 1, transform: 'none' });
     gsap.set('.markerCard, .stats-block, .ctaLink', { opacity: 1, transform: 'none' });
-    gsap.set('.footer-col a, .footer-title-sm, .footer-copyright, .appScreen-cta, .appSection-text--two', { opacity: 1, transform: 'none' });
+    gsap.set('.footer-title span, .footer-col a, .footer-title-sm, .footer-copyright, .appScreen-cta, .appSection-text--two', { opacity: 1, transform: 'none' });
   } else if (loader) {
     const lt = gsap.timeline({ delay: 0.15 });
     const lwords = gsap.utils.toArray('.loader-word');
@@ -225,13 +225,8 @@
       duration: 0.2,
     }, 0);
 
-    // Phase 2 (15% → 55%): white letter reveal fills the heading (existing
-    // text-reveal animation, preserved exactly) while the capsule rests.
-    wsTl.to('.waterStick-filler', {
-      clipPath: 'inset(0 0 0% 0)',
-      duration: 0.35,
-      ease: 'power2.inOut',
-    }, 0.15);
+    // Phase 2 (15% → 55%): the statement deliberately stays grey while the
+    // icon arrives and the capsule rests behind it.
     wsTl.fromTo('.waterStick-icon',
       { opacity: 0, scale: 0.4 },
       { opacity: 1, scale: 1, duration: 0.2, ease: 'power2.out' },
@@ -441,10 +436,19 @@
   /* ---------- footer ---------- */
   if (!reduced) {
     gsap.utils.toArray('.footer-title p').forEach((el, i) => {
-      gsap.fromTo(el, { yPercent: 115 }, {
-        yPercent: 0, duration: 1.2, ease: 'power4',
-        scrollTrigger: { trigger: '.footer-titles', start: 'top 85%', end: 'top 40%', scrub: 1 },
+      gsap.fromTo(el, { yPercent: 115, opacity: 0 }, {
+        yPercent: 0, opacity: 1, duration: 1.2, ease: 'power3.out',
+        scrollTrigger: {
+          trigger: el,
+          start: 'top 94%',
+          end: 'top 58%',
+          scrub: 0.65,
+        },
       });
+    });
+    gsap.fromTo('.footer-title span', { opacity: 0, y: 10 }, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', stagger: 0.08,
+      scrollTrigger: { trigger: '.footer-titles', start: 'top 78%', toggleActions: 'play none none reverse' },
     });
     gsap.to('.footer-divider--one', {
       scaleX: 1, duration: 1.1, ease: 'power3.inOut',
