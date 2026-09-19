@@ -158,9 +158,11 @@ describe('JWT body limit + helmet on API root', () => {
   });
   afterAll(() => ctx.container.close());
 
-  it('GET / returns API metadata', async () => {
+  it('GET / returns product metadata — never a service name or internal path', async () => {
     const res = await request(ctx.app).get('/');
-    expect(res.body.name).toBe('MedTwin AI Backend');
+    expect(res.body.name).toBe('kivo');
+    expect(JSON.stringify(res.body)).not.toMatch(/backend|readme|\.md\b/i);
+    expect(res.body.dashboard).toBe('/app/');
   });
 
   it('lab dictionary is public so clients can show ranges', async () => {

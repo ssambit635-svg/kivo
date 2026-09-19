@@ -301,7 +301,7 @@ export class CareController {
         consultations: consultations.items,
         videos: videos.items,
         doctors: topDoctors.items,
-        billing: { mode: 'mock', notice: 'Demo billing — no real gateway, no real money.' },
+        billing: { mode: 'mock', notice: 'Demo checkout — no real payment is taken.' },
       });
     } catch (e) {
       next(e);

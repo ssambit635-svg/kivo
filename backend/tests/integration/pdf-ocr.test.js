@@ -46,7 +46,8 @@ describe('PDF report ingestion (§6.1)', () => {
     expect(ingest.status).toBe(201);
     expect(ingest.body.report.status).toBe('ocr_failed');
     expect(ingest.body.preview.needsManualEntry).toBe(true);
-    expect(ingest.body.preview.note).toMatch(/paste it into the upload dialog/);
+    expect(ingest.body.preview.note).toMatch(/paste the report text/i);
+    expect(ingest.body.preview.note).not.toMatch(/ocr:setup|npm |tesseract/i);
     expect(ingest.body.report.badge.level).toBe('ocr_issue');
   });
 

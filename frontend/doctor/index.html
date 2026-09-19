@@ -6,7 +6,7 @@
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#134e4a" />
     <meta name="robots" content="noindex" />
-    <title>MedTwin Doctor Console</title>
+    <title>kivo doctor console</title>
     <link rel="icon" type="image/png" href="/app/icons/icon-192.png" />
     <!-- Shared design tokens + the icon set from the patient app: one visual
          language across two role-separated frontends. -->
@@ -18,7 +18,7 @@
       <div class="brand">
         <span id="doc-logo" class="brand-logo doc-logo" aria-hidden="true"></span>
         <div class="brand-text">
-          <h1>MedTwin <span class="doc-tag">Doctor</span></h1>
+          <h1>kivo <span class="doc-tag">doctor</span></h1>
           <p id="doc-subtitle">Console for verified doctors</p>
         </div>
       </div>
@@ -56,9 +56,9 @@
         </form>
 
         <form id="doc-apply-form" class="hidden" novalidate>
-          <p class="doc-mock-note" id="doc-apply-note">
-            Demo onboarding: verification is a <b>mock</b> step (no registry or document check happens). A real
-            deployment must replace it before treating patients.
+          <p class="doc-note" id="doc-apply-note">
+            Preview onboarding: your profile is activated right away and <b>no medical registry is contacted yet</b>,
+            so patients see a "demo" verification badge until a real check replaces it.
           </p>
           <div class="doc-grid-2">
             <label class="field"><span>Full name</span><input id="ap-name" type="text" placeholder="Dr Mohan Charan" required /></label>

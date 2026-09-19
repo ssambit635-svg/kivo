@@ -166,9 +166,10 @@ describe('uploads (multipart) with real files', () => {
   it('an image upload with NO image OCR engine configured → ocr_failed with actionable guidance, no crash', async () => {
     // The default test container ships no image OCR engine at all
     // (plain-text only, network-independent), so image uploads land in
-    // ocr_failed. The pipeline must fail loudly and tell the operator
-    // exactly how to enable image OCR — never crash, never silently
-    // drop the report. (Success path: tests/integration/image-ocr.test.js)
+    // ocr_failed. The pipeline must fail loudly, keep the file, and hand the
+    // PATIENT plain recovery guidance — never a package-manager instruction,
+    // which stays in the server log for the operator. (Success path:
+    // tests/integration/image-ocr.test.js)
     const res = await request(ctx.app)
       .post(`/api/members/${memberId}/reports`)
       .set(auth(sess.accessToken))
@@ -176,7 +177,8 @@ describe('uploads (multipart) with real files', () => {
     expect(res.status).toBe(201);
     expect(res.body.report.status).toBe('ocr_failed');
     expect(res.body.preview.needsManualEntry).toBe(true);
-    expect(res.body.preview.note).toMatch(/ocr:setup|paste the report text/i);
+    expect(res.body.preview.note).toMatch(/could not read this file|paste the report text/i);
+    expect(res.body.preview.note).not.toMatch(/ocr:setup|npm |tesseract/i);
   });
 
   it('rejects disallowed MIME types (415)', async () => {

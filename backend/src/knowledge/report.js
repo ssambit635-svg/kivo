@@ -53,6 +53,9 @@ export function knowledgeReport() {
       trainedAt: calibration.trainedAt,
       intendedUse: calibration.intendedUse,
       limitations: calibration.limitations,
+      // Held-out scores from the shipped model card (Brier/ECE/AUC + sample
+      // size) so any surface can quote the real number for this build.
+      metrics: calibration.metrics || { heldOut: null },
     },
     rangePolicy:
       'Comparison is always against the reference range printed on the user\'s own report. Only the ' +

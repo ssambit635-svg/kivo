@@ -1,4 +1,4 @@
-/* MedTwin AI — Care tab: subscription (mock), doctor consults, doctor shorts.
+/* kivo — Care tab: subscription (demo checkout), doctor consults, shorts.
  *
  * Deliberately separate from app.js (the health-twin dashboard) so the twin
  * screens stay untouched while the care network grows. It borrows the shell's
@@ -57,8 +57,15 @@
     return el('span', { class: 'chip ' + (STATUS_TONE[status] || 'grey'), text: String(status).replace(/_/g, ' ') });
   }
 
-  function mockBadge(label) {
-    return el('span', { class: 'chip mock', title: 'Demo build — simulated, no real money or KYC', text: label || 'MOCK' });
+  // Demo-build disclosure. The chip stays honest about what this build does
+  // NOT do (take money, check a medical registry) without leaking the
+  // implementation behind it.
+  function demoBadge(label) {
+    return el('span', {
+      class: 'chip demo',
+      title: 'This build is a preview: no payment is taken and no medical registry is contacted.',
+      text: label || 'DEMO',
+    });
   }
 
   function sectionHead(iconName, title, sub) {
@@ -132,8 +139,9 @@
     view.appendChild(el('footer', { class: 'foot' })).appendChild(
       el('p', {
         text:
-          'Care+ is a demo of an assisted-care product: payments and doctor verification are simulated (mock), ' +
-          'doctor replies are human-written, and AI-drafted medicine suggestions are only ever shown to a doctor for review.',
+          'Care+ is a preview of an assisted-care product: no payment is taken in this build, doctor profiles are ' +
+          'not registry-checked yet, every reply is written by the doctor you chose, and drafted medicine suggestions ' +
+          'are only ever shown to a doctor for review.',
       }),
     );
   }
@@ -144,7 +152,7 @@
     var head = el('div', { class: 'care-head' });
     head.appendChild(icon('sparkles', 20, 'care-head-ic'));
     var box = el('div');
-    box.appendChild(el('h2', { id: 'care-h', text: 'MedTwin Care+' }));
+    box.appendChild(el('h2', { id: 'care-h', text: 'kivo care+' }));
     box.appendChild(el('p', { class: 'muted', text: 'A doctor on your chart — no clinic queue for small doubts.' }));
     head.appendChild(box);
     card.appendChild(head);
@@ -185,7 +193,7 @@
     bill.addEventListener('click', openPaymentsSheet);
     actions.appendChild(bill);
     card.appendChild(actions);
-    card.appendChild(mockBadge('Mock billing — no real gateway, no real money'));
+    card.appendChild(demoBadge('Demo checkout — no card, UPI or bank details, no money moves'));
     return card;
   }
 
@@ -283,7 +291,13 @@
       card.appendChild(top);
       var badges = el('div', { class: 'chip-row' });
       badges.appendChild(el('span', { class: 'chip teal', text: d.headline }));
-      if (d.verified) badges.appendChild(el('span', { class: 'chip green', text: 'Verified (mock)' }));
+      if (d.verified) {
+        badges.appendChild(el('span', {
+          class: 'chip green',
+          text: 'Verified in this demo',
+          title: 'Preview build — medical registries are not contacted yet.',
+        }));
+      }
       badges.appendChild(el('span', { class: 'chip grey', text: d.consultFeeInr ? rs(d.consultFeeInr) + ' / consult' : 'Free consult' }));
       card.appendChild(badges);
       var actions = el('div', { class: 'care-actions' });
@@ -425,7 +439,7 @@
       right.appendChild(el('strong', { text: plan.priceInr === 0 ? 'Free' : rs(plan.priceInr) }));
       right.appendChild(el('span', { class: 'muted', text: plan.priceInr === 0 ? '' : 'per ' + plan.interval }));
       var btn = el('button', { class: 'btn ' + (plan.priceInr === 0 ? 'ghost' : 'primary') + ' sm', type: 'button' }, [
-        plan.priceInr === 0 ? 'Free tier' : 'Pay (mock)',
+        plan.priceInr === 0 ? 'Free tier' : 'Choose plan',
       ]);
       btn.disabled = plan.priceInr === 0 || (state.entitlements && state.entitlements.active && state.entitlements.plan.code === plan.code);
       btn.addEventListener('click', function () { s.close(); buyPlan(plan); });
@@ -433,12 +447,12 @@
       card.appendChild(right);
       s.body.appendChild(card);
     });
-    s.body.appendChild(mockBadge('Mock gateway · instant "success" for the demo'));
+    s.body.appendChild(demoBadge('Demo checkout — no payment is taken'));
   }
 
   function openPaymentSheet({ title, amountInr, note, onSuccess, intentId }) {
-    var s = sheet(title || 'Mock payment');
-    s.body.appendChild(el('p', { class: 'mock-line' }, [mockBadge('MOCK'), el('span', { text: ' No real gateway is contacted.' })]));
+    var s = sheet(title || 'Demo checkout');
+    s.body.appendChild(el('p', { class: 'demo-line' }, [demoBadge('DEMO'), el('span', { text: ' No payment is taken — this step is recorded so the flow stays complete.' })]));
     s.body.appendChild(el('div', { class: 'pay-amount', text: rs(amountInr) }));
     if (note) s.body.appendChild(el('p', { class: 'muted', text: note }));
 
@@ -456,13 +470,13 @@
     s.body.appendChild(methods);
 
     var err = el('p', { class: 'error hidden' });
-    var pay = el('button', { class: 'btn primary block', type: 'button' }, ['Pay ' + rs(amountInr) + ' (mock)']);
+    var pay = el('button', { class: 'btn primary block', type: 'button' }, ['Confirm ' + rs(amountInr) + ' — demo checkout']);
     pay.addEventListener('click', function () {
       pay.disabled = true;
       api('/care/payments/' + intentId + '/confirm', { method: 'POST', body: { method: chosen, simulate: 'success' } })
         .then(function (res) {
           s.close();
-          toast('Mock payment succeeded.');
+          toast('Demo checkout complete — no money moved.');
           onSuccess(res);
         })
         .catch(function (e) {
@@ -474,10 +488,10 @@
     s.body.appendChild(err);
     s.body.appendChild(pay);
 
-    var fail = el('button', { class: 'btn ghost block sm', type: 'button' }, ['Simulate a declined payment']);
+    var fail = el('button', { class: 'btn ghost block sm', type: 'button' }, ['See a declined payment']);
     fail.addEventListener('click', function () {
       api('/care/payments/' + intentId + '/confirm', { method: 'POST', body: { method: chosen, simulate: 'failure' } })
-        .then(function () { s.close(); toast('Payment declined (simulated). Nothing was charged.'); })
+        .then(function () { s.close(); toast('Payment declined — nothing was charged.'); })
         .catch(function (e) { err.textContent = e.message; err.classList.remove('hidden'); });
     });
     s.body.appendChild(fail);
@@ -505,7 +519,7 @@
   }
 
   function openPaymentsSheet() {
-    var s = sheet('Mock payments');
+    var s = sheet('Payment history');
     api('/care/payments')
       .then(function (res) {
         if (!res.payments.length) {
@@ -515,9 +529,12 @@
         res.payments.forEach(function (p) {
           var row = el('div', { class: 'pay-row' });
           row.appendChild(el('strong', { text: rs(p.amountInr) + ' · ' + p.purpose }));
-          row.appendChild(el('span', { class: 'muted', text: shortDate(p.createdAt) + ' · ' + p.provider }));
+          row.appendChild(el('span', {
+            class: 'muted',
+            text: shortDate(p.createdAt) + (p.method ? ' · ' + String(p.method).toUpperCase() : ''),
+          }));
           row.appendChild(el('span', { class: 'chip ' + (p.status === 'succeeded' ? 'green' : p.status === 'failed' ? 'red' : 'grey'), text: p.status }));
-          row.appendChild(mockBadge());
+          row.appendChild(demoBadge());
           s.body.appendChild(row);
         });
         s.body.appendChild(el('p', { class: 'muted care-note', text: res.payments[0].mockNotice || '' }));
@@ -539,6 +556,10 @@
   }
 
   function openBooking(doctor) {
+    if (!App.member()) {
+      toast('Sign in to talk to a doctor.');
+      return;
+    }
     var s = sheet('Ask ' + doctor.fullName);
     s.body.appendChild(
       el('p', { class: 'muted', text: doctor.headline + (doctor.city ? ' · ' + doctor.city : '') + ' · ' + (doctor.consultFeeInr ? rs(doctor.consultFeeInr) : 'free') }),
@@ -589,7 +610,7 @@
             openPaymentSheet({
               title: 'Consultation fee',
               amountInr: res.payment.amountInr,
-              note: 'Your Care+ quota for this month is used up, so this consult is paid (mock).',
+              note: 'Your Care+ quota for this month is used up, so this consultation carries a fee.',
               intentId: res.payment.id,
               onSuccess: function () { state.loaded = false; refresh(); },
             });
@@ -636,7 +657,7 @@
         s.body.appendChild(consent);
 
         if (c.needsPayment && c.paymentIntentId) {
-          var payBtn = el('button', { class: 'btn primary block', type: 'button' }, ['Pay ' + rs(c.feeInr) + ' (mock) to send']);
+          var payBtn = el('button', { class: 'btn primary block', type: 'button' }, ['Confirm ' + rs(c.feeInr) + ' and send']);
           payBtn.addEventListener('click', function () {
             s.close();
             openPaymentSheet({

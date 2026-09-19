@@ -38,7 +38,7 @@ export const PLANS = [
   {
     id: 'plan-care-monthly',
     code: 'care_monthly',
-    name: 'MedTwin Care+ (monthly)',
+    name: 'kivo care+ (monthly)',
     tagline: 'A doctor on your chart, every month',
     priceInr: 199,
     interval: 'month',
@@ -55,7 +55,7 @@ export const PLANS = [
   {
     id: 'plan-care-yearly',
     code: 'care_yearly',
-    name: 'MedTwin Care+ (yearly)',
+    name: 'kivo care+ (yearly)',
     tagline: 'Best value — two months free',
     priceInr: 1499,
     interval: 'year',

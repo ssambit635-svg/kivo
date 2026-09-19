@@ -2,8 +2,8 @@
 /**
  * Demo seed — builds the demo journey from the product spec end-to-end:
  *
- *   demo@medtwin.dev / Dem0!MedTwin#2026        (patient app, /app)
- *   dr.mohan@medtwin.dev / MedTwin!Doctor#2026  (doctor console, /doctor)
+ *   demo@kivo.dev / Kivo!Demo#2026              (patient app, /app)
+ *   dr.mohan@kivo.dev / Kivo!Doctor#2026        (doctor console, /doctor)
  *   ├── 3 synthetic lab reports (Jan → Mar → Jun, clearly improving)
  *   ├── all extracted values USER-VERIFIED (the trust gate)
  *   ├── lifestyle observations (weight / bp / activity)
@@ -19,13 +19,13 @@
  */
 import { Container } from '../src/container/Container.js';
 
-const EMAIL = 'demo@medtwin.dev';
-const PASSWORD = 'Dem0!MedTwin#2026';
+const EMAIL = 'demo@kivo.dev';
+const PASSWORD = 'Kivo!Demo#2026';
 const NAME = 'Demo User';
 
 // Doctor demo — the "doc Mohan Charan is a bone specialist" identity card.
-const DOCTOR_EMAIL = 'dr.mohan@medtwin.dev';
-const DOCTOR_PASSWORD = 'MedTwin!Doctor#2026';
+const DOCTOR_EMAIL = 'dr.mohan@kivo.dev';
+const DOCTOR_PASSWORD = 'Kivo!Doctor#2026';
 
 const REPORT_JAN = [
   'CITY DIAGNOSTICS CENTER - DEMO LAB',

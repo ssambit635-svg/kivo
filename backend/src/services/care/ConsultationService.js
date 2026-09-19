@@ -151,7 +151,7 @@ export class ConsultationService {
       consultationId: consultation.id,
       authorRole: 'system',
       kind: 'status',
-      body: `Mock payment confirmed (${intent.provider_ref}). The doctor has been notified.`,
+      body: 'Payment recorded for this consultation. The doctor has been notified.',
       metadata: { mock: true, providerRef: intent.provider_ref },
     });
     const updated = this.consultations.update(consultation.id, { status: 'requested' });

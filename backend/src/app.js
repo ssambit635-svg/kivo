@@ -74,9 +74,9 @@ export function createApp(container) {
 
   app.get('/', (req, res) => {
     const meta = {
-      name: 'MedTwin AI Backend',
+      // Deliberately product metadata only: no service name, no internal paths.
+      name: 'kivo',
       version: container.config.appVersion,
-      docs: 'See backend/README.md',
       health: '/api/health',
       ...(frontendDir ? { dashboard: '/app/', doctorConsole: '/doctor/' } : {}),
       ...(landingDir ? { landing: '/' } : {}),

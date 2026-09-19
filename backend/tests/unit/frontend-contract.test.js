@@ -245,6 +245,67 @@ describe('landing page', () => {
     expect(html).toContain('class="community-quoteList" id="quoteList"');
   });
 
+  it('the preloader mask fits its widest word — the words share one grid cell', () => {
+    // Regression guard for the reported bug: the second word ("verify") used to
+    // be absolutely positioned, so the overflow:hidden mask was sized by the
+    // FIRST word and sliced the longer ones in half.
+    const holder = css.slice(css.indexOf('.loader-textHolder{'), css.indexOf('.loader-textHolder p{'));
+    expect(holder).toMatch(/display:grid/);
+    expect(holder).toMatch(/place-items:center/);
+    expect(css, 'positioned word variants came back').not.toMatch(/\.loader-word--[23]/);
+    expect(holder).not.toMatch(/position:absolute/);
+    // the words stack in ONE cell, so the mask is as wide as the longest word
+    expect(css).toMatch(/\.loader-textHolder p\{[\s\S]*?grid-area:1 \/ 1/);
+    // and the mask breathes with the type size, so ascenders/descenders survive
+    expect(holder).toMatch(/padding-block:\s*\.?\d+(\.\d+)?em/);
+    expect(css).toMatch(/\.loader\{[\s\S]*?--loader-type:/);
+    // the index the timeline counts lives in the markup it counts into
+    expect(html).toContain('id="loaderCount"');
+    expect(js).toContain("getElementById('loaderCount')");
+  });
+
+  it('the intro is paced in seconds, not blinks, and its fail-safe waits for it', () => {
+    // Each word gets a written-to-be-read rest; the fail-safe is derived from
+    // the real timeline length so slowing the intro down cannot cut it short.
+    expect(js).toMatch(/const FIRST = 2\.1|const STEP = 2/);
+    expect(js).toMatch(/return tl\.duration\(\)/);
+    expect(js).toMatch(/loaderDuration \+ 2/);
+  });
+
+  it('every figure the "numbers" section prints is a placeholder filled from the api', () => {
+    const stats = html.slice(html.indexOf('id="statsSection"'), html.indexOf('id="community"'));
+    const text = stats.replace(/<[^>]+>/g, ' ');
+    // nothing typed in by hand: no percentages, no big counts, no decimals
+    expect(text).not.toMatch(/%/);
+    expect(text).not.toMatch(/\b\d{3,}\b/);
+    expect(text).not.toMatch(/\b\d+\.\d+\b/);
+    const slots = [...stats.matchAll(/data-kivo="([a-z]+)"/g)].map((m) => m[1]);
+    expect(slots.length).toBeGreaterThanOrEqual(5);
+    for (const key of ['markers', 'panels', 'aliases', 'loinc', 'calibration', 'core']) {
+      expect(slots, `missing a data-kivo="${key}" slot`).toContain(key);
+      expect(js, `main.js never patches ${key}`).toContain(`patch('${key}'`);
+    }
+  });
+
+  it('marker cards and the twin strip are dictionary placeholders, not typed-in values', () => {
+    for (const key of ['hba1c', 'tsh', 'ldl']) expect(html).toContain(`data-marker="${key}"`);
+    expect(html).toContain('data-strip="hemoglobin"');
+    expect(html, 'stale hand-written range came back').not.toMatch(/target state:/);
+    expect(js).toContain("'/api/meta/lab-dictionary'");
+    for (const attr of ['data-marker-name', 'data-marker-range', 'data-strip-name', 'data-strip-range']) {
+      expect(js, `main.js never fills ${attr}`).toContain(attr);
+    }
+    // the two mock phone screens print the SAME dictionary entries — no
+    // invented patient values may be typed into them
+    const values = [...html.matchAll(/<span class="ph-cardValue"[^>]*>([^<]*)<\/span>/g)].map((m) => m[1]);
+    const notes = [...html.matchAll(/<span class="ph-cardDelta"[^>]*>([^<]*)<\/span>/g)].map((m) => m[1]);
+    expect(values.length, 'both phone mocks keep three cards').toBe(6);
+    expect(notes.length).toBe(6);
+    for (const t of [...values, ...notes]) expect(t, `hand-typed phone value: ${t}`).toBe('—');
+    expect(js).toContain('data-ph-value');
+    expect(js).toContain('data-ph-note');
+  });
+
   it('no inline event handlers and vendor scripts are self-hosted (CSP: script-src \'self\')', () => {
     expect(html).not.toMatch(/\son[a-z]+\s*=/i);
     for (const m of html.matchAll(/<script[^>]*src="([^"]+)"/g)) {

@@ -211,11 +211,45 @@ function round3(x) {
   return Math.round(x * 1000) / 1000;
 }
 
+/**
+ * Held-out metrics for the shipped model card.
+ *
+ * The training run picks a shape and records it in `metrics.chosen`; the
+ * matching block under `metrics.test` is the one to quote. Exposed so clients
+ * (the landing page, the docs) can print the REAL score instead of a
+ * hand-typed number that silently rots.
+ */
+function heldOutMetrics(params) {
+  const test = params?.metrics?.test;
+  if (!test) return null;
+  const chosen =
+    params.metrics.chosen === 'logistic+isotonic'
+      ? test.logisticPlusIso
+      : params.metrics.chosen === 'isotonic'
+        ? test.isotonic
+        : test.baseline;
+  if (!chosen) return null;
+  const rounds = (x, places = 4) => (Number.isFinite(x) ? Number(x.toFixed(places)) : null);
+  return {
+    brier: rounds(chosen.brier),
+    ece: rounds(chosen.ece),
+    auc: rounds(chosen.auc),
+    accuracy: rounds(chosen.accuracy),
+    sampleSize: chosen.thresholds?.[0]?.n ?? null,
+  };
+}
+
 /** Model card for the UI/docs: what trained this, how well it scored. */
 export function calibrationInfo() {
   const params = loadTrainedParameters();
   if (!params) {
     return { active: false, reason: 'no trained parameters committed (run `npm run knowledge:train`)' };
   }
-  return { active: true, ...params.modelCard, trainedAt: params.trainedAt ?? null, corpus: params.corpus?.name ?? null };
+  return {
+    active: true,
+    ...params.modelCard,
+    trainedAt: params.trainedAt ?? null,
+    corpus: params.corpus?.name ?? null,
+    metrics: { heldOut: heldOutMetrics(params) },
+  };
 }

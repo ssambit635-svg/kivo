@@ -1,8 +1,8 @@
 {
-  "name": "MedTwin AI — Digital Health Twin",
-  "short_name": "MedTwin",
-  "description": "Point your phone at a lab report. MedTwin reads it, remembers it, and explains the change.",
-  "id": "medtwin-ai",
+  "name": "kivo — digital health twin",
+  "short_name": "kivo",
+  "description": "Point your phone at a lab report. kivo reads it, remembers it, and explains the change.",
+  "id": "kivo",
   "start_url": "/app/",
   "scope": "/app/",
   "display": "standalone",
