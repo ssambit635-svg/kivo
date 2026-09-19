@@ -4,12 +4,6 @@
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- mobile --vh helper ---------- */
-  const setVh = () =>
-    document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
-  setVh();
-  window.addEventListener('resize', setVh);
-
   /* ---------- live numbers from the backend ---------- */
   const fmt = (n) => Number(n).toLocaleString('en-US');
   const patch = (key, val) =>
@@ -27,7 +21,13 @@
     })
     .catch(() => {});
 
-  if (!window.gsap || !window.ScrollTrigger) return;
+  if (!window.gsap || !window.ScrollTrigger) {
+    // vendor failed (offline/blocked): never trap the page behind the loader.
+    document.documentElement.classList.add('no-motion');
+    const dead = document.getElementById('loader');
+    if (dead) dead.remove();
+    return;
+  }
   gsap.registerPlugin(ScrollTrigger);
 
   /* ---------- lenis smooth scroll ---------- */
@@ -78,7 +78,7 @@
     heroStarted = true;
     if (reduced) {
       loader && loader.remove();
-      gsap.set([heroTitle, heroText, heroCta, topNav, bottomBar], { opacity: 1, y: 0, yPercent: 0, xPercent: 0, transform: 'none' });
+      gsap.set([...heroTitle, heroText, heroCta, topNav, bottomBar], { opacity: 1, y: 0, yPercent: 0, xPercent: 0, transform: 'none' });
       gsap.set(heroPhone, { opacity: 1 });
       return;
     }
@@ -90,11 +90,11 @@
       .set(heroCta, { opacity: 0, scale: 0.9 })
       .set(topNav, { yPercent: -100 })
       .set(bottomBar, { yPercent: 100 })
-      .set(heroPhone, { opacity: 0, y: sm ? 120 : md ? 140 : 240, rotation: 7 })
+      .set(heroPhone, { opacity: 0, y: sm ? 120 : md ? 140 : 240 })
       .to(heroTitle, { yPercent: 0, duration: 1.1, ease: 'power4', stagger: 0.12 })
       .to(heroText, { opacity: 1, y: 0, duration: 0.9, ease: 'power3' }, '-=0.55')
       .to(heroCta, { opacity: 1, scale: 1, duration: 0.7, ease: 'power3' }, '-=0.45')
-      .to(heroPhone, { opacity: 1, y: sm ? 50 : md ? 60 : 100, rotation: 3, duration: 1.4, ease: 'power3' }, '-=0.8')
+      .to(heroPhone, { opacity: 1, y: sm ? 50 : md ? 60 : 100, rotation: 0, duration: 1.4, ease: 'power3' }, '-=0.8')
       .to(topNav, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.7')
       .to(bottomBar, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.8');
     makeCycler(document.getElementById('heroCarousel'), ['know', 'see', 'trust'], 2600, 0.5);
