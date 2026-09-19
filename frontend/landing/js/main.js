@@ -350,7 +350,7 @@
       scrub: true,
       ease: 'none',
     };
-    gsap.to('#heroHand', { yPercent: 26, scale: 1.05, scrollTrigger: heroPin });
+    gsap.to('#heroHand', { yPercent: 26, scrollTrigger: heroPin });
     gsap.to('.hero-title', { yPercent: -14, scrollTrigger: heroPin });
     gsap.to('.hero-text, .hero-cta', { yPercent: -8, scrollTrigger: heroPin });
   }

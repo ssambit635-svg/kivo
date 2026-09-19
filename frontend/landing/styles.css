@@ -397,11 +397,15 @@ img,svg{display:block}
   justify-content:flex-end;
 }
 /* SoFi-style hero hand: transparent cut-out, anchored to the bottom-right,
-   cropped by the hero's overflow:hidden so it "enters" the frame. */
+   cropped by the hero's overflow:hidden so it "enters" the frame.
+   scaleX(-1) mirrors it so the phone sits fully right of the big title
+   (no letter overlap) while the arm enters from the bottom — the SoFi
+   composition. GSAP never tweens `scale` on this element, so the flip
+   always survives the intro + pin parallax. */
 .hero-hand{
   width:min(760px,62vw);
   height:auto;
-  transform:translate(-40px,110px);
+  transform:translate(-40px,110px) scaleX(-1);
   user-select:none;
   -webkit-user-drag:none;
   will-change:transform,opacity;
@@ -1760,7 +1764,7 @@ img,svg{display:block}
   .community-headline p{width:100%}
   .community{padding-block:96px 80px}
   .hero-img{right:0;left:0;width:auto;justify-content:center;align-items:flex-start}
-  .hero-hand{width:min(620px,82vw);transform:translateY(30px)}
+  .hero-hand{width:min(620px,82vw);transform:translateY(30px) scaleX(-1)}
   .hero-text{top:auto;bottom:239px;left:50%;transform:translateX(-50%);margin-left:0;width:340px;max-width:calc(100vw - 40px);text-align:center}
 }
 
@@ -1809,7 +1813,7 @@ img,svg{display:block}
   .hero{padding:0}
   .hero-title{left:20px}
   .hero-img{justify-content:center}
-  .hero-hand{width:min(560px,78vw);transform:translateY(20px)}
+  .hero-hand{width:min(560px,78vw);transform:translateY(20px) scaleX(-1)}
   .hero-text{width:300px;bottom:215px}
   .hero-cta{bottom:140px}
   .waterStick-shape{width:min(240px,64vw)}
