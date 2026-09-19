@@ -396,11 +396,20 @@ img,svg{display:block}
   align-items:flex-end;
   justify-content:flex-end;
 }
-.phone--hero{
-  transform:translate(-50px,100px);
-  box-shadow:0 40px 80px rgba(0,0,0,.08);
+/* SoFi-style hero hand: transparent cut-out, anchored to the bottom-right,
+   cropped by the hero's overflow:hidden so it "enters" the frame.
+   scaleX(-1) mirrors it so the phone sits fully right of the big title
+   (no letter overlap) while the arm enters from the bottom — the SoFi
+   composition. GSAP never tweens `scale` on this element, so the flip
+   always survives the intro + pin parallax. */
+.hero-hand{
+  width:min(760px,62vw);
+  height:auto;
+  transform:translate(-40px,110px) scaleX(-1);
+  user-select:none;
+  -webkit-user-drag:none;
+  will-change:transform,opacity;
 }
-.phone--hero .ph-note{margin-bottom:0}
 
 /* ============ water stick (black interlude) ============ */
 .waterStick{
@@ -1686,7 +1695,7 @@ img,svg{display:block}
   .hero{min-height:560px}
   .hero-title{font-size:min(200px,30vh);font-size:min(200px,30dvh);line-height:1;top:100px}
   .hero-text{top:auto;bottom:120px}
-  .phone--hero{width:300px;height:640px}
+  .hero-hand{width:min(560px,46vw)}
 }
 
 /* short desktop windows: keep the pinned twin inside the frame */
@@ -1755,7 +1764,7 @@ img,svg{display:block}
   .community-headline p{width:100%}
   .community{padding-block:96px 80px}
   .hero-img{right:0;left:0;width:auto;justify-content:center;align-items:flex-start}
-  .phone--hero{transform:translateY(60px) scale(.68)}
+  .hero-hand{width:min(620px,82vw);transform:translateY(30px) scaleX(-1)}
   .hero-text{top:auto;bottom:239px;left:50%;transform:translateX(-50%);margin-left:0;width:340px;max-width:calc(100vw - 40px);text-align:center}
 }
 
@@ -1804,7 +1813,7 @@ img,svg{display:block}
   .hero{padding:0}
   .hero-title{left:20px}
   .hero-img{justify-content:center}
-  .phone--hero{transform:translateY(50px) scale(.55)}
+  .hero-hand{width:min(560px,78vw);transform:translateY(20px) scaleX(-1)}
   .hero-text{width:300px;bottom:215px}
   .hero-cta{bottom:140px}
   .waterStick-shape{width:min(240px,64vw)}
@@ -1837,7 +1846,7 @@ img,svg{display:block}
   .hero-text{position:static;width:min(480px,92vw);max-width:92vw;margin:24px 0 0}
   .hero-cta{position:static;transform:none;margin-top:24px}
   .hero-img{position:relative;right:auto;bottom:auto;width:100%;height:auto;justify-content:center;margin-top:16px}
-  .phone--hero{width:240px;height:519px;transform:none}
+  .hero-hand{width:min(400px,64vw);transform:none}
   .waterStick{height:100vh;height:100dvh;min-height:0;padding-block:0}
   .waterStick-shape{height:clamp(180px,44dvh,260px)}
   .community{padding-block:90px}

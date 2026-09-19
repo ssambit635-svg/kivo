@@ -295,12 +295,13 @@ describe('landing page', () => {
     for (const attr of ['data-marker-name', 'data-marker-range', 'data-strip-name', 'data-strip-range']) {
       expect(js, `main.js never fills ${attr}`).toContain(attr);
     }
-    // the two mock phone screens print the SAME dictionary entries — no
-    // invented patient values may be typed into them
+    // the single mock phone screen (app section — the hero now uses the SoFi-
+    // style hand cut-out instead of a phone) prints the SAME dictionary
+    // entries — no invented patient values may be typed into it
     const values = [...html.matchAll(/<span class="ph-cardValue"[^>]*>([^<]*)<\/span>/g)].map((m) => m[1]);
     const notes = [...html.matchAll(/<span class="ph-cardDelta"[^>]*>([^<]*)<\/span>/g)].map((m) => m[1]);
-    expect(values.length, 'both phone mocks keep three cards').toBe(6);
-    expect(notes.length).toBe(6);
+    expect(values.length, 'the phone mock keeps three cards').toBe(3);
+    expect(notes.length).toBe(3);
     for (const t of [...values, ...notes]) expect(t, `hand-typed phone value: ${t}`).toBe('—');
     expect(js).toContain('data-ph-value');
     expect(js).toContain('data-ph-note');

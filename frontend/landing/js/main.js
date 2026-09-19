@@ -173,7 +173,7 @@
   const heroTitle = gsap.utils.toArray('.hero-titleCarousel, .hero-titleBetter');
   const heroText = document.getElementById('heroText');
   const heroCta = document.querySelector('.hero-cta');
-  const heroPhone = document.querySelector('.phone--hero');
+  const heroHand = document.querySelector('.hero-hand');
   const topNav = document.getElementById('topNav');
   const bottomBar = document.getElementById('bottomBar');
 
@@ -187,7 +187,7 @@
     if (reduced) {
       loader && loader.remove();
       gsap.set([...heroTitle, heroText, heroCta, topNav, bottomBar], { opacity: 1, y: 0, yPercent: 0, xPercent: 0, transform: 'none' });
-      gsap.set(heroPhone, { opacity: 1 });
+      gsap.set(heroHand, { opacity: 1 });
       return;
     }
     const sm = window.innerWidth <= 500;
@@ -201,11 +201,11 @@
       // or the bars animate "in" yet stay hidden.
       .set(topNav, { y: 0, yPercent: -100 })
       .set(bottomBar, { y: 0, yPercent: 100 })
-      .set(heroPhone, { opacity: 0, y: sm ? 120 : md ? 140 : 240 })
+      .set(heroHand, { opacity: 0, y: sm ? 120 : md ? 140 : 240 })
       .to(heroTitle, { yPercent: 0, duration: 1.1, ease: 'power4', stagger: 0.12 })
       .to(heroText, { opacity: 1, y: 0, duration: 0.9, ease: 'power3' }, '-=0.55')
       .to(heroCta, { opacity: 1, scale: 1, duration: 0.7, ease: 'power3' }, '-=0.45')
-      .to(heroPhone, { opacity: 1, y: sm ? 50 : md ? 60 : 100, rotation: 0, duration: 1.4, ease: 'power3' }, '-=0.8')
+      .to(heroHand, { opacity: 1, y: sm ? 50 : md ? 60 : 100, rotation: 0, duration: 1.4, ease: 'power3' }, '-=0.8')
       .to(topNav, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.7')
       .to(bottomBar, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.8');
     makeCycler(document.getElementById('heroCarousel'), ['know', 'see', 'trust'], 2600, 0.5);
@@ -327,6 +327,32 @@
       onEnter: () => floatCta.classList.add('visible'),
       onLeaveBack: () => floatCta.classList.remove('visible'),
     });
+  }
+
+  /* ---------- sticky hero (sofihealth-style pinned intro) ----------
+     The hero stays stuck at the top while the page keeps scrolling — the
+     next section (waterStick) slides up over it and takes the screen,
+     exactly like sofihealth.com. A slow parallax on the hand + title
+     sells the depth while it is pinned. */
+  gsap.set('#waterStick', { position: 'relative', zIndex: 3 });
+  ScrollTrigger.create({
+    trigger: '#hero',
+    start: 'top top',
+    end: '+=100%',
+    pin: true,
+    anticipatePin: 1,
+  });
+  if (!reduced) {
+    const heroPin = {
+      trigger: '#hero',
+      start: 'top top',
+      end: '+=100%',
+      scrub: true,
+      ease: 'none',
+    };
+    gsap.to('#heroHand', { yPercent: 26, scrollTrigger: heroPin });
+    gsap.to('.hero-title', { yPercent: -14, scrollTrigger: heroPin });
+    gsap.to('.hero-text, .hero-cta', { yPercent: -8, scrollTrigger: heroPin });
   }
 
   /* ---------- water stick: title fill + capsule white wipe ---------- */
