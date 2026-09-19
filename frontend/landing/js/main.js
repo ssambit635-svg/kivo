@@ -172,7 +172,11 @@
   const loader = document.getElementById('loader');
   const heroTitle = gsap.utils.toArray('.hero-titleCarousel, .hero-titleBetter');
   const heroText = document.getElementById('heroText');
-  const heroCta = document.querySelector('.hero-cta');
+  // Both hero buttons live in .hero-ctaGroup: the primary CTA and the APK
+  // download button. Animating them as one set keeps the intro (and the
+  // hero parallax below) in sync — animating .hero-cta alone left the APK
+  // button sitting at full opacity while everything else faded in.
+  const heroCta = document.querySelectorAll('.hero-cta, .hero-apkBtn');
   const heroHand = document.querySelector('.hero-hand');
   const topNav = document.getElementById('topNav');
   const bottomBar = document.getElementById('bottomBar');
@@ -186,7 +190,7 @@
     heroStarted = true;
     if (reduced) {
       loader && loader.remove();
-      gsap.set([...heroTitle, heroText, heroCta, topNav, bottomBar], { opacity: 1, y: 0, yPercent: 0, xPercent: 0, transform: 'none' });
+      gsap.set([...heroTitle, heroText, ...heroCta, topNav, bottomBar], { opacity: 1, y: 0, yPercent: 0, xPercent: 0, transform: 'none' });
       gsap.set(heroHand, { opacity: 1 });
       return;
     }
@@ -352,7 +356,7 @@
     };
     gsap.to('#heroHand', { yPercent: 26, scrollTrigger: heroPin });
     gsap.to('.hero-title', { yPercent: -14, scrollTrigger: heroPin });
-    gsap.to('.hero-text, .hero-cta', { yPercent: -8, scrollTrigger: heroPin });
+    gsap.to('.hero-text, .hero-cta, .hero-apkBtn', { yPercent: -8, scrollTrigger: heroPin });
   }
 
   /* ---------- water stick: title fill + capsule white wipe ---------- */

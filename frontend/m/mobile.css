@@ -399,6 +399,13 @@ body {
   font-weight: 600;
   text-decoration: none;
 }
+/* in-page jump links ("All Reports →", "Back") — wired via [data-goto-tab] */
+.section-link {
+  cursor: pointer;
+}
+.section-link:active {
+  opacity: 0.6;
+}
 
 /* Markers List */
 .marker-card-item {

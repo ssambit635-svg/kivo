@@ -124,6 +124,17 @@
       });
     });
 
+    // In-page jump links ("All Reports →", "Back"). These are wired here — and
+    // never with an inline onclick attribute — because the server sends
+    // `Content-Security-Policy: script-src-attr 'none'`, which makes the
+    // browser drop inline handlers silently. data-goto-tab names the screen.
+    document.querySelectorAll('[data-goto-tab]').forEach(function(link) {
+      link.addEventListener('click', function() {
+        var tabId = link.getAttribute('data-goto-tab');
+        if (tabId) switchTab(tabId);
+      });
+    });
+
     // FAB Scan button
     var fabScan = $('fab-scan');
     if (fabScan) {

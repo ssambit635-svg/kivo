@@ -37,7 +37,7 @@
         </div>
       </div>
       <div class="header-actions">
-        <a href="/app/kivo.apk" download="kivo.apk" class="apk-pill-btn apk-download-trigger" title="Direct Download APK">
+        <a href="/download/apk" download="kivo.apk" class="apk-pill-btn apk-download-trigger" title="Direct Download APK">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
@@ -72,7 +72,7 @@
               </h3>
               <p>One-touch instant APK download · 100% offline & safe</p>
             </div>
-            <a href="/app/kivo.apk" download="kivo.apk" class="apk-action-btn apk-download-trigger">
+            <a href="/download/apk" download="kivo.apk" class="apk-action-btn apk-download-trigger">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -149,7 +149,7 @@
         <!-- Biomarkers Feed -->
         <div class="section-head">
           <h2>Key Biomarkers</h2>
-          <span style="cursor:pointer;" onclick="document.querySelector('[data-tab=\'reports\']').click()">All Reports →</span>
+          <span class="section-link" data-goto-tab="reports">All Reports →</span>
         </div>
         <div id="markers-container">
           <!-- Populated by JS -->
@@ -165,7 +165,7 @@
         </div>
         
         <div style="margin-bottom:16px;">
-          <a href="/app/kivo.apk" download="kivo.apk" class="apk-pill-btn apk-download-trigger" style="width:100%; justify-content:center; padding:12px; border-radius:14px;">
+          <a href="/download/apk" download="kivo.apk" class="apk-pill-btn apk-download-trigger" style="width:100%; justify-content:center; padding:12px; border-radius:14px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
@@ -184,7 +184,7 @@
       <section id="screen-scan" class="screen">
         <div class="section-head" style="margin-top:4px;">
           <h2>Point & Scan Lab Report</h2>
-          <span style="cursor:pointer;" onclick="document.querySelector('[data-tab=\'home\']').click()">Back</span>
+          <span class="section-link" data-goto-tab="home">Back</span>
         </div>
 
         <div style="background:#0f172a; border-radius:24px; padding:24px 16px; text-align:center; color:#fff; position:relative; overflow:hidden; min-height:320px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
@@ -212,7 +212,7 @@
       <section id="screen-voice" class="screen">
         <div class="section-head" style="margin-top:4px;">
           <h2>Voice Health Journal</h2>
-          <span style="cursor:pointer;" onclick="document.querySelector('[data-tab=\'home\']').click()">Back</span>
+          <span class="section-link" data-goto-tab="home">Back</span>
         </div>
 
         <div style="background:#fff; border:1px solid var(--kivo-line); border-radius:24px; padding:32px 20px; text-align:center; display:flex; flex-direction:column; align-items:center;">
@@ -234,7 +234,7 @@
       <section id="screen-ask" class="screen">
         <div class="section-head" style="margin-top:4px;">
           <h2>Ask kivo Assistant</h2>
-          <span style="cursor:pointer;" onclick="document.querySelector('[data-tab=\'home\']').click()">Back</span>
+          <span class="section-link" data-goto-tab="home">Back</span>
         </div>
 
         <div class="chat-container" id="chat-messages">
