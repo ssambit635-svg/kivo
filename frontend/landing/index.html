@@ -44,11 +44,15 @@
   <!-- ============ top navigation (blend difference) ============ -->
   <header class="topNav" id="topNav">
     <a class="topNav-logo" href="/">kivo</a>
-    <a class="topNav-link" href="/doctor/">for doctors</a>
+    <div class="topNav-actions">
+      <a class="topNav-link" href="/m/">mobile app</a>
+      <a class="topNav-apkBtn" href="/download/apk" download="kivo.apk">download app (apk)</a>
+      <a class="topNav-link" href="/doctor/">for doctors</a>
+    </div>
   </header>
 
   <!-- ============ floating vertical cta (blend difference) ============ -->
-  <a class="floatingCta" id="floatingCta" href="/app/">open the app</a>
+  <a class="floatingCta" id="floatingCta" href="/download/apk" download="kivo.apk">download apk</a>
 
   <!-- ============ bottom bar (blend difference) ============ -->
   <div class="bottomBar" id="bottomBar" aria-hidden="true">
@@ -73,7 +77,13 @@
         <span class="hero-titleRow"><span class="hero-titleBetter">better</span></span>
       </h1>
       <p class="hero-text" id="heroText">kivo reads your lab results into a digital health twin — every marker mapped, every trend in context. never a diagnosis, always the full picture.</p>
-      <a class="hero-cta" href="/app/">open the app</a>
+      <div class="hero-ctaGroup">
+        <a class="hero-cta" href="/m/">launch mobile app</a>
+        <a class="hero-apkBtn" href="/download/apk" download="kivo.apk">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>download apk</span>
+        </a>
+      </div>
       <div class="hero-img" id="heroImg">
         <!-- SoFi-style hero visual: one realistic hand, cut out with no
              background — replaces the old flat phone mockup. -->
@@ -524,13 +534,16 @@
         </div>
         <div class="footer-col footer-col--follow">
           <p class="footer-title-sm">inside the app</p>
+          <a href="/m/">mobile experience</a>
+          <a href="/download/apk" download="kivo.apk">download apk (direct)</a>
           <a href="#appSection">report scanner</a>
           <a href="#appSection">voice journal</a>
           <a href="/app/">doctor shorts</a>
         </div>
         <div class="footer-col footer-col--join">
           <p class="footer-title-sm">join</p>
-          <a href="/app/">open the app</a>
+          <a href="/m/">open mobile app</a>
+          <a href="/download/apk" download="kivo.apk">download apk</a>
           <a href="/doctor/">for doctors</a>
         </div>
         <div class="footer-divider footer-divider--two"></div>

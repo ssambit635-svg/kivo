@@ -75,10 +75,24 @@ export function createApp(container) {
   // browsers; non-HTML clients (curl, tests, monitoring) keep the JSON
   // metadata — see the content negotiation below.
   let landingDir = null;
+  let mobileDir = null;
   if (frontendDir) {
     const dir = path.join(frontendDir, 'landing');
     if (fs.existsSync(path.join(dir, 'index.html'))) landingDir = dir;
+    const mDir = path.join(frontendDir, 'm');
+    if (fs.existsSync(path.join(mDir, 'index.html'))) mobileDir = mDir;
   }
+
+  // Direct APK auto-download endpoints
+  app.get(['/download/apk', '/kivo.apk'], (req, res) => {
+    const apkFile = path.join(frontendDir, 'kivo.apk');
+    if (fs.existsSync(apkFile)) {
+      res.setHeader('Content-Disposition', 'attachment; filename="kivo.apk"');
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      return res.sendFile(apkFile);
+    }
+    res.status(404).json({ error: 'APK package not found' });
+  });
 
   app.get('/', (req, res) => {
     const meta = {
@@ -86,7 +100,7 @@ export function createApp(container) {
       name: 'kivo',
       version: container.config.appVersion,
       health: '/api/health',
-      ...(frontendDir ? { dashboard: '/app/', doctorConsole: '/doctor/' } : {}),
+      ...(frontendDir ? { dashboard: '/app/', doctorConsole: '/doctor/', mobileApp: '/m/', downloadApk: '/download/apk' } : {}),
       ...(landingDir ? { landing: '/' } : {}),
     };
     // Browsers send `Accept: text/html,…` — give them the landing page.
@@ -100,6 +114,11 @@ export function createApp(container) {
   });
 
   if (frontendDir) {
+    // Dedicated mobile frontend (/m/)
+    if (mobileDir) {
+      app.use('/m', express.static(mobileDir, { index: 'index.html', maxAge: '5m' }));
+    }
+
     // express.static redirects /app → /app/ itself (directory redirect).
     app.use('/app', express.static(frontendDir, { index: 'index.html', maxAge: '5m' }));
 

@@ -254,7 +254,28 @@ img,svg{display:block}
   line-height:15px;
   letter-spacing:-.005em;
 }
+.topNav-actions{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
 .topNav-link{color:#fff;font-size:15px;line-height:15px;letter-spacing:-.005em}
+.topNav-apkBtn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 14px;
+  border-radius:24px;
+  background:#fff;
+  color:#000;
+  font-size:13.5px;
+  line-height:14px;
+  letter-spacing:-.005em;
+  font-weight:600;
+  transition:background .2s, color .2s, transform .1s;
+}
+.topNav-apkBtn:hover{background:#e6e6e6}
+.topNav-apkBtn:active{transform:scale(0.96)}
 
 /* ============ floating cta ============ */
 .floatingCta{
@@ -366,12 +387,21 @@ img,svg{display:block}
   color:#121212;
   z-index:3;
 }
-.hero-cta{
+.hero-ctaGroup{
   position:absolute;
   bottom:95px;
   left:50%;
   transform:translateX(-50%);
   z-index:3;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.hero-cta{
+  position:static;
+  transform:none;
   background:#000;
   color:#fff;
   border-radius:56px;
@@ -380,9 +410,27 @@ img,svg{display:block}
   line-height:15px;
   letter-spacing:-.005em;
   white-space:nowrap;
-  transition:background .3s ease,color .3s ease;
+  transition:background .3s ease,color .3s ease,box-shadow .3s ease;
 }
 .hero-cta:hover{background:#fff;color:#000;box-shadow:inset 0 0 0 1px #000}
+.hero-apkBtn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:transparent;
+  color:#000;
+  border:1px solid #000;
+  border-radius:56px;
+  padding:11px 26px 13px;
+  font-size:15px;
+  line-height:15px;
+  letter-spacing:-.005em;
+  white-space:nowrap;
+  font-weight:500;
+  transition:background .3s ease,color .3s ease;
+}
+.hero-apkBtn:hover{background:#000;color:#fff}
+.hero-apkBtn svg{display:inline-block}
 .hero-img{
   position:absolute;
   bottom:0;
@@ -1815,7 +1863,7 @@ img,svg{display:block}
   .hero-img{justify-content:center}
   .hero-hand{width:min(680px,100vw);transform:translateY(20px) rotate(0deg) scaleX(1)}
   .hero-text{width:300px;bottom:215px}
-  .hero-cta{bottom:140px}
+  .hero-ctaGroup{bottom:120px}
   .waterStick-shape{width:min(240px,64vw)}
   .waterStick-title{font-size:clamp(34px,9vw,44px)}
   .loader{--loader-type:clamp(58px,15vw,96px)}
@@ -1834,7 +1882,7 @@ img,svg{display:block}
   .waterStick-shape{width:min(200px,64vw)}
   .loader-numberIndicator,.loader-year{display:none}
   .twinStory-illustrationText p,.twinStory-titleHolder{padding-inline:12px}
-  .hero-cta{bottom:120px}
+  .hero-ctaGroup{bottom:100px}
   .hero-text{max-width:calc(100vw - 24px)}
 }
 
@@ -1844,7 +1892,7 @@ img,svg{display:block}
   .hero-title{position:static;font-size:clamp(64px,12vw,110px);line-height:.95}
   .hero-titleCarousel{margin-left:0}
   .hero-text{position:static;width:min(480px,92vw);max-width:92vw;margin:24px 0 0}
-  .hero-cta{position:static;transform:none;margin-top:24px}
+  .hero-ctaGroup{position:static;transform:none;margin-top:24px}
   .hero-img{position:relative;right:auto;bottom:auto;width:100%;height:auto;justify-content:center;margin-top:16px}
   .hero-hand{width:min(400px,64vw);transform:none}
   .waterStick{height:100vh;height:100dvh;min-height:0;padding-block:0}
