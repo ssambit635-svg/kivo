@@ -256,7 +256,7 @@ export class PayoutService {
         ],
       },
       payoutNote:
-        'Mock ledger. Amounts are computed by the real split engine but no bank transfer is initiated in this build.',
+        'Demo ledger: every amount is computed from settled payments, and no bank transfer is initiated in this build.',
     };
   }
 }

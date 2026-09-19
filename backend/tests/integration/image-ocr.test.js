@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -279,17 +279,28 @@ describe('TesseractJsOcrProvider runtime failures (the real engine, failing)', (
     // is `undefined`, which used to surface as an empty preview note and a
     // badge without ocrError on online machines (where the engine is
     // "available" via the CDN and actually attempts the scan).
+    //
+    // The raw worker string is OPERATOR detail: it must be logged (so a
+    // failing install is diagnosable) and must NOT be handed to a patient —
+    // this note is rendered in the upload dialog.
     const p = new TesseractJsOcrProvider({ langDir: '/nonexistent' });
     p.worker = async () => ({
       recognize: async () => {
         throw 'Error: Error attempting to read image.';
       },
     });
-    const err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
-    expect(err).toBeInstanceOf(Error);
-    expect(err.code).toBe('OCR_UNAVAILABLE');
-    expect(err.message).toMatch(/attempting to read image/);
-    expect(err.message).toMatch(/ocr:setup|paste the report text/i);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
+      expect(err).toBeInstanceOf(Error);
+      expect(err.code).toBe('OCR_UNAVAILABLE');
+      expect(err.message).toMatch(/paste the report text/i);
+      // no package managers, module names or file paths in patient-facing copy
+      expect(err.message).not.toMatch(/tesseract|npm |ocr:setup|langDir|\/nonexistent/i);
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/attempting to read image/));
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('wraps engine STARTUP failures the same way (e.g. language download died)', async () => {
@@ -297,21 +308,35 @@ describe('TesseractJsOcrProvider runtime failures (the real engine, failing)', (
     p.worker = async () => {
       throw new Error('fetch failed');
     };
-    const err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
-    expect(err).toBeInstanceOf(Error);
-    expect(err.message).toMatch(/failed to start/);
-    expect(err.message).toMatch(/ocr:setup|paste the report text/i);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toMatch(/failed to start/);
+      expect(err.message).toMatch(/paste the report text/i);
+      expect(err.message).not.toMatch(/tesseract|npm |ocr:setup|langDir|\/nonexistent/i);
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/fetch failed/));
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('fails FAST when engine startup stalls (flaky CDN) instead of hanging the scan', async () => {
     const p = new TesseractJsOcrProvider({ langDir: '/nonexistent', workerTimeoutMs: 50 });
     p._createWorker = () => new Promise(() => {}); // never settles, like a stalled download
     const start = Date.now();
-    const err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let err;
+    try {
+      err = await p.extract({ buffer: Buffer.from([1, 2, 3]) }).catch((e) => e);
+    } finally {
+      warn.mockRestore();
+    }
     expect(Date.now() - start).toBeLessThan(5000);
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toMatch(/timed out/);
-    expect(err.message).toMatch(/ocr:setup|paste the report text/i);
+    expect(err.message).toMatch(/paste the report text/i);
+    expect(err.message).not.toMatch(/tesseract|npm |ocr:setup|langDir|\/nonexistent/i);
     // the dead worker slot is released so a later scan can retry
     expect(p._workerPromise).toBeNull();
   });
@@ -351,7 +376,9 @@ describe('TesseractJsOcrProvider runtime failures (the real engine, failing)', (
       expect(res.body.report.status).toBe('ocr_failed');
       expect(res.body.preview.needsManualEntry).toBe(true);
       expect(res.body.preview.note).toBeTruthy();
-      expect(res.body.preview.note).toMatch(/attempting to read image/);
+      // patient copy: actionable, free of engine/operator detail
+      expect(res.body.preview.note).toMatch(/could not read this file|paste the report text/i);
+      expect(res.body.preview.note).not.toMatch(/tesseract|npm |ocr:setup|attempting to read image/i);
       expect(res.body.report.badge.level).toBe('ocr_issue');
       expect(res.body.report.badge.tone).toBe('red');
       expect(res.body.report.badge.ocrError).toBeTruthy();

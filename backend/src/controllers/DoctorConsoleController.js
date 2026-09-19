@@ -203,7 +203,7 @@ export class DoctorConsoleController {
           ...publicProfile,
           specialtyLabel: publicProfile.headline,
           verifyUrl: `/api/public/doctors/${doctor.slug}`,
-          qrPayload: `medtwin://doctor/${doctor.slug}`,
+          qrPayload: `kivo://doctor/${doctor.slug}`,
           issuedAt: doctor.created_at,
           verificationMode: 'mock',
         },

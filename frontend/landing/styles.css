@@ -149,6 +149,10 @@ img,svg{display:block}
 
 /* ============ loader ============ */
 .loader{
+  /* ONE type scale for the whole intro: every em/px offset below is derived
+     from it, so the mask, the index and the year stay proportional on a
+     320px phone and on a 2560px monitor alike. */
+  --loader-type:clamp(64px,15vw,210px);
   position:fixed;
   left:0;top:0;
   width:100%;
@@ -180,9 +184,14 @@ img,svg{display:block}
   width:100%;
   background:#000;
 }
-.loader-contentHolder{position:relative;margin-bottom:1.9em;z-index:2;max-width:100%}
-.loader-numberIndicator{position:absolute;bottom:45px;right:100%;opacity:0}
-.loader-year{position:absolute;top:58px;left:calc(100% + 8px);opacity:0}
+.loader-contentHolder{
+  position:relative;
+  z-index:2;
+  max-width:100vw;
+  font-size:var(--loader-type);
+}
+.loader-numberIndicator{position:absolute;bottom:calc(var(--loader-type) * .34 + 16px);right:100%;opacity:0}
+.loader-year{position:absolute;top:calc(var(--loader-type) * .34 + 22px);left:calc(100% + 10px);opacity:0}
 .loader-numberIndicator p,.loader-year p{
   font-size:14px;line-height:14px;
   display:flex;align-items:center;
@@ -190,24 +199,39 @@ img,svg{display:block}
   margin:0;
   white-space:nowrap;
 }
+/*
+ * The word mask.
+ *
+ * All three words live in the SAME grid cell, so the holder is sized by the
+ * widest of them ("verify") and nothing can be clipped sideways. The vertical
+ * padding is a fraction of the type size, which keeps ascenders/descenders
+ * (the tail of "y", the bar of "t") inside the mask instead of slicing them
+ * off, while still hiding a word that slides in/out.
+ */
 .loader-textHolder{
   position:relative;
+  display:grid;
+  place-items:center;
   overflow:hidden;
-  padding-block:2em;
-  padding-right:1.1em;
+  padding-block:.34em;
+  padding-inline:.16em;
   max-width:100vw;
 }
 .loader-textHolder p{
-  font-size:clamp(72px,15vw,220px);
-  line-height:.91;
+  grid-area:1 / 1;
+  font-size:1em;
+  line-height:1.06;
   text-align:center;
   letter-spacing:-.045em;
   color:#000;
   margin:0;
   white-space:nowrap;
+  will-change:transform,opacity;
 }
-.loader-word{position:relative}
-.loader-word--2,.loader-word--3{position:absolute;left:50%;transform:translate(-50%,-50%);top:50%;opacity:0}
+/* First word is visible before any JS runs; the rest stay hidden until the
+   timeline reveals them (GSAP writes inline styles, which win here). */
+.loader-word{opacity:0}
+.loader-word:first-child{opacity:1}
 
 /* ============ top nav ============ */
 .topNav{
@@ -1785,7 +1809,7 @@ img,svg{display:block}
   .hero-cta{bottom:140px}
   .waterStick-shape{width:min(240px,64vw)}
   .waterStick-title{font-size:clamp(34px,9vw,44px)}
-  .loader-numberIndicator{bottom:31px}
+  .loader{--loader-type:clamp(58px,15vw,96px)}
 }
 
 @media only screen and (max-width:400px){

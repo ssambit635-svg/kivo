@@ -361,13 +361,14 @@ export class TesseractJsOcrProvider {
 
   async extract({ buffer }) {
     if (!buffer || (typeof buffer.length === 'number' && buffer.length === 0)) {
-      throw this.wrapFailure('empty image buffer', 'could not read text from this image');
+      throw this.wrapFailure('empty image buffer', 'the file looked empty');
     }
     let worker;
     try {
       worker = await this.worker();
     } catch (e) {
-      throw this.wrapFailure(e, 'the OCR engine failed to start');
+      const timedOut = typeof e?.message === 'string' && /timed out/i.test(e.message);
+      throw this.wrapFailure(e, timedOut ? 'the reader timed out while starting' : 'the reader failed to start');
     }
     try {
       const result = await worker.recognize(buffer);
@@ -377,7 +378,7 @@ export class TesseractJsOcrProvider {
       const confidence = Number.isFinite(rawConf) ? Math.min(1, Math.max(0, rawConf / 100)) : null;
       return { text, confidence, provider: this.name };
     } catch (e) {
-      throw this.wrapFailure(e, 'could not read text from this image');
+      throw this.wrapFailure(e, 'we could not find any readable text in it');
     }
   }
 
@@ -390,10 +391,12 @@ export class TesseractJsOcrProvider {
    */
   wrapFailure(err, what) {
     const detail = typeof err === 'string' ? err : err?.message || String(err);
+    // Operator detail (engine strings, timeouts) stays in the log; the message
+    // itself reaches a patient, so it says what happened in plain words.
+    console.warn(`[ocr] image read failed (${what}): ${detail} — run \`npm run ocr:setup\` to vendor language data`);
     return new OcrUnavailableError(
-      `Image OCR ${what}: ${detail}. ` +
-        `To read photo/image reports install language data with \`npm run ocr:setup\`, ` +
-        `or paste the report text into the upload dialog.`,
+      `We could not read this image: ${what}. ` +
+        `Try a sharper, straight-on photo with even light — or paste the report text instead.`,
     );
   }
 
@@ -474,11 +477,10 @@ export class OcrService {
         );
       }
       const detail = (await this.diagnose(mimeType)).join('; ');
+      console.warn(`[ocr] no provider for '${mimeType}'${detail ? ` [${detail}]` : ''}`);
       throw new OcrUnavailableError(
-        `No OCR provider available for '${mimeType}'. ` +
-          (detail ? `[${detail}] ` : '') +
-          `To read photo/image reports install language data with \`npm run ocr:setup\`, ` +
-          `or paste the report text into the upload dialog.`,
+        'We could not read this file. Try a sharper, straight-on photo with even light — ' +
+          'or paste the report text into the upload dialog (or add the values by hand). Your report is saved either way.',
       );
     }
     try {
@@ -489,8 +491,9 @@ export class OcrService {
       // pipeline's ocr_failed path handles it instead of a 500.
       if (err instanceof OcrUnavailableError) throw err;
       const detail = typeof err === 'string' ? err : err?.message || String(err);
+      console.warn(`[ocr] provider failed: ${detail}`);
       throw new OcrUnavailableError(
-        `Could not read text from this file (${detail}). Paste the report text into the upload dialog instead — your report is saved and nothing is lost.`,
+        'We could not read this file. Paste the report text into the upload dialog instead — your report is saved and nothing is lost.',
       );
     }
   }

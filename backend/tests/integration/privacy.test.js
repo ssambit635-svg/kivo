@@ -35,7 +35,7 @@ describe('user data rights (§14)', () => {
   it('export contains everything owned — and no secrets', async () => {
     const res = await request(ctx.app).get('/api/profile/export').set(auth(sess.accessToken));
     expect(res.status).toBe(200);
-    expect(res.body.format).toBe('medtwin-export/1');
+    expect(res.body.format).toBe('kivo-export/1');
     expect(res.body.user.email).toBe('priv@mt.test');
     expect(res.body.members.length).toBeGreaterThanOrEqual(1);
     expect(res.body.reports.length).toBeGreaterThanOrEqual(1);

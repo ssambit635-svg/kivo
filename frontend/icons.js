@@ -1,5 +1,5 @@
 /**
- * MedTwin AI — SVG icon set.
+ * kivo — SVG icon set.
  *
  * The API ships icon KEYS (e.g. badge.icon = 'shield-check'); this registry
  * maps them to real, hand-drawn 24×24 stroke icons. No emojis anywhere in

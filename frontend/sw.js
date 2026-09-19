@@ -1,16 +1,16 @@
-/* MedTwin AI service worker — offline app shell.
+/* kivo service worker — offline app shell.
  *
  * Caches ONLY the static UI (HTML/CSS/JS/icons) so the app cold-starts and
- * renders with no network. /api is deliberately NEVER cached: health data and
- * auth tokens must always hit the live server, and stale auth offline would be
- * a security footgun. On-device OCR (when enabled) still needs the camera,
- * which obviously works offline.
+ * renders with no network. API calls are deliberately NEVER cached: health
+ * data and auth tokens must always be live, and stale auth offline would be a
+ * security footgun. Reading a report still needs the camera or the text you
+ * paste, which works offline.
  *
  * The doctor console at /doctor is intentionally outside this scope: it is a
  * separate frontend for a separate role, and clinical screens should never be
  * served stale from a cache.
  */
-const VERSION = 'medtwin-v2';
+const VERSION = 'kivo-v1';
 const SHELL = [
   '/app/',
   '/app/index.html',

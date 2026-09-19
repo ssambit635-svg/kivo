@@ -193,7 +193,9 @@ describe('Doctor console endpoints coverage', () => {
     expect(res.body.revenueModel).toBeDefined();
     expect(res.body.revenueModel.consultDoctorShare).toBe(0.7);
     expect(Array.isArray(res.body.revenueModel.explainer)).toBe(true);
-    expect(res.body.payoutNote).toMatch(/mock ledger/i);
+    // The ledger is a demo ledger: the split maths are real, the transfer is not.
+    expect(res.body.payoutNote).toMatch(/demo ledger/i);
+    expect(res.body.payoutNote).toMatch(/no bank transfer/i);
   });
 
   it('PATCH /api/doctor/profile updates doctor professional profile fields', async () => {

@@ -248,7 +248,7 @@ export class DoctorService {
       specialties: this.specialties(),
       verification: {
         mode: 'mock',
-        label: 'Demo verification (mock KYC)',
+        label: 'Demo verification',
         note: 'Hackathon build — doctor verification and payments are simulated; no real registry or gateway is contacted.',
       },
     };
@@ -318,7 +318,7 @@ export class DoctorService {
         status: doctor.status,
         kycStatus: doctor.kyc_status,
         mode: 'mock',
-        label: doctor.isVerified ? 'Demo verified (mock KYC)' : 'Verification pending',
+        label: doctor.isVerified ? 'Demo verification' : 'Verification pending',
       },
     };
   }

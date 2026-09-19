@@ -6,7 +6,7 @@
   <title>kivo — your digital health twin</title>
   <meta name="description" content="kivo reads your lab results into a digital health twin — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/styles.css?v=5">
+  <link rel="stylesheet" href="/styles.css?v=6">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -25,11 +25,17 @@
     <div class="loader-coverTop"></div>
     <div class="loader-coverBot"></div>
     <div class="loader-contentHolder">
-      <div class="loader-numberIndicator"><p>001</p></div>
+      <div class="loader-numberIndicator"><p id="loaderCount">001</p></div>
+      <!--
+        Every word shares ONE grid cell so the holder is sized by the widest
+        word ("verify"). Absolute positioning used to size the box from the
+        first word only, and overflow:hidden then sliced the longer words in
+        half.
+      -->
       <div class="loader-textHolder">
-        <p class="loader-word">scan</p>
-        <p class="loader-word loader-word--2">verify</p>
-        <p class="loader-word loader-word--3">twin</p>
+        <p class="loader-word" data-loader-word>scan</p>
+        <p class="loader-word" data-loader-word>verify</p>
+        <p class="loader-word" data-loader-word>twin</p>
       </div>
       <div class="loader-year"><p>©2026</p></div>
     </div>
@@ -72,25 +78,25 @@
         <div class="phone phone--hero">
           <div class="phone-screen">
             <div class="ph-status"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
-            <div class="ph-header"><span class="ph-brand">kivo</span><span class="ph-date">twin · day 214</span></div>
+            <div class="ph-header"><span class="ph-brand">kivo</span><span class="ph-date">example view</span></div>
             <div class="ph-greeting">
               <p class="ph-greetingTitle">your twin, this morning</p>
-              <p class="ph-greetingSub">3 markers watched · 1 worth a glance</p>
+              <p class="ph-greetingSub">your markers, mapped and watched</p>
             </div>
             <div class="ph-cards">
               <div class="ph-card">
-                <div class="ph-cardTop"><span class="ph-cardName">hba1c</span><span class="ph-cardValue">5.9 %</span></div>
-                <div class="ph-cardBottom"><span class="ph-cardDelta ph-cardDelta--up">▲ 0.3 this quarter</span></div>
+                <div class="ph-cardTop"><span class="ph-cardName" data-ph-name="hba1c">hba1c</span><span class="ph-cardValue" data-ph-value="hba1c">—</span></div>
+                <div class="ph-cardBottom"><span class="ph-cardDelta" data-ph-note="hba1c">—</span></div>
                 <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,26 20,24 40,25 60,20 80,16 100,12 120,8" fill="none"/></svg>
               </div>
               <div class="ph-card">
-                <div class="ph-cardTop"><span class="ph-cardName">tsh</span><span class="ph-cardValue">2.1 µIU/mL</span></div>
-                <div class="ph-cardBottom"><span class="ph-cardDelta">— stable for 11 months</span></div>
+                <div class="ph-cardTop"><span class="ph-cardName" data-ph-name="tsh">tsh</span><span class="ph-cardValue" data-ph-value="tsh">—</span></div>
+                <div class="ph-cardBottom"><span class="ph-cardDelta" data-ph-note="tsh">—</span></div>
                 <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,16 20,15 40,17 60,16 80,15 100,16 120,15" fill="none"/></svg>
               </div>
               <div class="ph-card">
-                <div class="ph-cardTop"><span class="ph-cardName">hs crp</span><span class="ph-cardValue">0.4 mg/L</span></div>
-                <div class="ph-cardBottom"><span class="ph-cardDelta ph-cardDelta--down">▼ low · good</span></div>
+                <div class="ph-cardTop"><span class="ph-cardName" data-ph-name="ldl">ldl</span><span class="ph-cardValue" data-ph-value="ldl">—</span></div>
+                <div class="ph-cardBottom"><span class="ph-cardDelta" data-ph-note="ldl">—</span></div>
                 <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,10 20,14 40,12 60,18 80,22 100,24 120,25" fill="none"/></svg>
               </div>
             </div>
@@ -135,7 +141,7 @@
                 </div>
                 <div class="twin-featureDivider"><span class="twin-featureDot"></span></div>
                 <h2>one source of truth</h2>
-                <p><span data-kivo="markers">1,226</span> markers mapped to loinc codes. <span data-kivo="panels">18</span> clinical panels. nothing lost between visits.</p>
+                <p><span data-kivo="markers">—</span> markers mapped to loinc codes. <span data-kivo="panels">—</span> clinical panels. nothing lost between visits.</p>
               </div>
             </div>
             <div class="twin-feature twin-feature--connect">
@@ -171,14 +177,17 @@
           </div>
           <div class="twin-videoHolder">
             <div class="twin-video">
+              <!-- Rows are filled from the lab dictionary: real names, real
+                   LOINC codes, the real hand-checked range (or a plain
+                   "as printed on your report" for report-only markers). -->
               <div class="twin-strip" id="twinStrip">
-                <div class="twin-stripRow"><span>hba1c</span><span>5.9 %</span><span class="twin-stripLoinc">4548-4</span></div>
-                <div class="twin-stripRow"><span>tsh</span><span>2.1 µIU/mL</span><span class="twin-stripLoinc">3016-3</span></div>
-                <div class="twin-stripRow"><span>hs crp</span><span>0.4 mg/L</span><span class="twin-stripLoinc">30522-7</span></div>
-                <div class="twin-stripRow"><span>vitamin d</span><span>32 ng/mL</span><span class="twin-stripLoinc">1989-3</span></div>
-                <div class="twin-stripRow"><span>hemoglobin</span><span>14.2 g/dL</span><span class="twin-stripLoinc">718-7</span></div>
-                <div class="twin-stripRow"><span>ferritin</span><span>88 ng/mL</span><span class="twin-stripLoinc">2276-4</span></div>
-                <div class="twin-stripFoot">loinc verified · brier 0.07</div>
+                <div class="twin-stripRow" data-strip="hba1c"><span data-strip-name>—</span><span data-strip-range>—</span><span class="twin-stripLoinc" data-strip-loinc>—</span></div>
+                <div class="twin-stripRow" data-strip="tsh"><span data-strip-name>—</span><span data-strip-range>—</span><span class="twin-stripLoinc" data-strip-loinc>—</span></div>
+                <div class="twin-stripRow" data-strip="ldl"><span data-strip-name>—</span><span data-strip-range>—</span><span class="twin-stripLoinc" data-strip-loinc>—</span></div>
+                <div class="twin-stripRow" data-strip="hdl"><span data-strip-name>—</span><span data-strip-range>—</span><span class="twin-stripLoinc" data-strip-loinc>—</span></div>
+                <div class="twin-stripRow" data-strip="hemoglobin"><span data-strip-name>—</span><span data-strip-range>—</span><span class="twin-stripLoinc" data-strip-loinc>—</span></div>
+                <div class="twin-stripRow" data-strip="ferritin"><span data-strip-name>—</span><span data-strip-range>—</span><span class="twin-stripLoinc" data-strip-loinc>—</span></div>
+                <div class="twin-stripFoot"><span data-kivo="markers">—</span> markers · <span data-kivo="loinc">—</span> carry a loinc code</div>
               </div>
             </div>
           </div>
@@ -235,25 +244,28 @@
               <canvas id="twinVisualizerCanvas" class="twin-canvas"></canvas>
 
               <!-- Live HUD Card (Updates on hover/tap) -->
+              <!-- Filled from the public lab dictionary on load (see
+                   js/twin-visualizer.js) — the placeholders stay until the
+                   real entry arrives rather than showing invented numbers. -->
               <div class="twin-hudCard" id="twinHudCard" aria-live="polite">
                 <div class="twin-hudHeader">
-                  <span class="twin-hudLoinc" id="twinHudLoinc">LOINC 4548-4</span>
-                  <span class="twin-hudBadge" id="twinHudBadge">99.4% Verified</span>
+                  <span class="twin-hudLoinc" id="twinHudLoinc">loinc// —</span>
+                  <span class="twin-hudBadge" id="twinHudBadge">—</span>
                 </div>
                 <div class="twin-hudBody">
-                  <div class="twin-hudTitle" id="twinHudTitle">HbA1c · Glycated Hemoglobin</div>
+                  <div class="twin-hudTitle" id="twinHudTitle">—</div>
                   <div class="twin-hudValueRow">
-                    <span class="twin-hudValue" id="twinHudValue">5.9 %</span>
-                    <span class="twin-hudDelta" id="twinHudDelta">Optimal Baseline · ▲ 0.3% this quarter</span>
+                    <span class="twin-hudValue" id="twinHudValue">—</span>
+                    <span class="twin-hudDelta" id="twinHudDelta">—</span>
                   </div>
-                  <div class="twin-hudRange" id="twinHudRange">Personal Baseline: 5.4 – 6.0 % · Metabolic Panel</div>
+                  <div class="twin-hudRange" id="twinHudRange">—</div>
                 </div>
               </div>
 
-              <!-- Top Left Engine Badge -->
+              <!-- Top left: what the canvas is showing right now -->
               <div class="twin-statusBadge">
                 <span class="twin-statusDot"></span>
-                <span class="twin-statusText" id="twinStatusText">BIO-TWIN ENGINE // OPTION 01</span>
+                <span class="twin-statusText" id="twinStatusText">VERIFIED TWIN MODEL // OPTION 01</span>
               </div>
 
               <!-- Bottom Interactive Action Toolbar -->
@@ -278,10 +290,10 @@
         </div>
         <div class="twinStory-information">
           <div class="twinStory-divider" id="twinStoryDivider"></div>
-          <div class="twinStory-informationTitle"><p>ocr, then verify</p></div>
+          <div class="twinStory-informationTitle"><p>read, then verify</p></div>
           <div class="twinStory-informationText">
-            <p>the camera reads the report. ocr extracts the values. every value is then checked against the lab dictionary — <span data-kivo="aliases">2,928</span> matchable aliases — before it ever touches your twin.</p>
-            <div><a class="ctaLink" href="/app/">see the pipeline</a></div>
+            <p>the camera reads the report. every line is matched to the standard lab dictionary — <span data-kivo="aliases">—</span> recognised names and aliases — and only then does it touch your twin.</p>
+            <div><a class="ctaLink" href="/app/">open the app</a></div>
           </div>
         </div>
       </div>
@@ -298,48 +310,53 @@
           </div>
         </div>
         <div class="markers-cardHolder">
+          <!--
+            Every value in these cards is filled from the public lab dictionary
+            (names, LOINC codes, panels, hand-checked ranges). Nothing here is
+            typed in by hand, so the page can never drift from the product.
+          -->
           <div class="markerCard" data-marker="hba1c">
             <div class="markerCard-background"></div>
             <div class="markerCard-top">
-              <h2 class="mc-name">hba1c</h2>
-              <div class="markerCard-latinName"><p>loinc// 4548-4</p><p>watch</p></div>
+              <h2 class="mc-name" data-marker-name>hba1c</h2>
+              <div class="markerCard-latinName"><p data-marker-loinc>loinc// —</p><p data-marker-panel>—</p></div>
             </div>
             <div class="markerCard-imageHolder">
               <svg viewBox="0 0 140 48" preserveAspectRatio="none" fill="none"><polyline points="0,40 20,38 40,39 60,32 80,26 100,20 120,16 140,10" stroke="currentColor" stroke-width="2"/><circle cx="140" cy="10" r="3" fill="currentColor"/></svg>
             </div>
             <div class="markerCard-cta">
-              <p>target state:<span> 4.0 – 5.6 %</span></p>
-              <p>impact:<span> ≈51 % improve with early catch</span></p>
+              <p>hand-checked range:<span data-marker-range> —</span></p>
+              <p>direction:<span data-marker-direction> —</span></p>
               <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
             </div>
           </div>
           <div class="markerCard" data-marker="tsh">
             <div class="markerCard-background"></div>
             <div class="markerCard-top">
-              <h2 class="mc-name">tsh</h2>
-              <div class="markerCard-latinName"><p>loinc// 3016-3</p><p>stable</p></div>
+              <h2 class="mc-name" data-marker-name>tsh</h2>
+              <div class="markerCard-latinName"><p data-marker-loinc>loinc// —</p><p data-marker-panel>—</p></div>
             </div>
             <div class="markerCard-imageHolder">
               <svg viewBox="0 0 140 48" preserveAspectRatio="none" fill="none"><polyline points="0,24 20,23 40,25 60,24 80,23 100,24 120,23 140,24" stroke="currentColor" stroke-width="2"/><circle cx="140" cy="24" r="3" fill="currentColor"/></svg>
             </div>
             <div class="markerCard-cta">
-              <p>target state:<span> 0.4 – 4.0 µIU/mL</span></p>
-              <p>impact:<span> drifts caught 2.1x sooner</span></p>
+              <p>hand-checked range:<span data-marker-range> —</span></p>
+              <p>direction:<span data-marker-direction> —</span></p>
               <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
             </div>
           </div>
-          <div class="markerCard" data-marker="crp">
+          <div class="markerCard" data-marker="ldl">
             <div class="markerCard-background"></div>
             <div class="markerCard-top">
-              <h2 class="mc-name">hs crp</h2>
-              <div class="markerCard-latinName"><p>loinc// 30522-7</p><p>low</p></div>
+              <h2 class="mc-name" data-marker-name>ldl</h2>
+              <div class="markerCard-latinName"><p data-marker-loinc>loinc// —</p><p data-marker-panel>—</p></div>
             </div>
             <div class="markerCard-imageHolder">
               <svg viewBox="0 0 140 48" preserveAspectRatio="none" fill="none"><polyline points="0,12 20,16 40,14 60,22 80,28 100,32 120,34 140,35" stroke="currentColor" stroke-width="2"/><circle cx="140" cy="35" r="3" fill="currentColor"/></svg>
             </div>
             <div class="markerCard-cta">
-              <p>target state:<span> &lt; 1.0 mg/L</span></p>
-              <p>impact:<span> &gt;95 % verified against the lab</span></p>
+              <p>hand-checked range:<span data-marker-range> —</span></p>
+              <p>direction:<span data-marker-direction> —</span></p>
               <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
             </div>
           </div>
@@ -361,25 +378,25 @@
               <div class="phone">
                 <div class="phone-screen">
                   <div class="ph-status"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
-                  <div class="ph-header"><span class="ph-brand">kivo</span><span class="ph-date">twin · day 214</span></div>
+                  <div class="ph-header"><span class="ph-brand">kivo</span><span class="ph-date">example view</span></div>
                   <div class="ph-greeting">
                     <p class="ph-greetingTitle">your twin, this morning</p>
-                    <p class="ph-greetingSub">3 markers watched · 1 worth a glance</p>
+                    <p class="ph-greetingSub">your markers, mapped and watched</p>
                   </div>
                   <div class="ph-cards">
                     <div class="ph-card">
-                      <div class="ph-cardTop"><span class="ph-cardName">hba1c</span><span class="ph-cardValue">5.9 %</span></div>
-                      <div class="ph-cardBottom"><span class="ph-cardDelta ph-cardDelta--up">▲ 0.3 this quarter</span></div>
+                      <div class="ph-cardTop"><span class="ph-cardName" data-ph-name="hba1c">hba1c</span><span class="ph-cardValue" data-ph-value="hba1c">—</span></div>
+                      <div class="ph-cardBottom"><span class="ph-cardDelta" data-ph-note="hba1c">—</span></div>
                       <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,26 20,24 40,25 60,20 80,16 100,12 120,8" fill="none"/></svg>
                     </div>
                     <div class="ph-card">
-                      <div class="ph-cardTop"><span class="ph-cardName">tsh</span><span class="ph-cardValue">2.1 µIU/mL</span></div>
-                      <div class="ph-cardBottom"><span class="ph-cardDelta">— stable for 11 months</span></div>
+                      <div class="ph-cardTop"><span class="ph-cardName" data-ph-name="tsh">tsh</span><span class="ph-cardValue" data-ph-value="tsh">—</span></div>
+                      <div class="ph-cardBottom"><span class="ph-cardDelta" data-ph-note="tsh">—</span></div>
                       <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,16 20,15 40,17 60,16 80,15 100,16 120,15" fill="none"/></svg>
                     </div>
                     <div class="ph-card">
-                      <div class="ph-cardTop"><span class="ph-cardName">hs crp</span><span class="ph-cardValue">0.4 mg/L</span></div>
-                      <div class="ph-cardBottom"><span class="ph-cardDelta ph-cardDelta--down">▼ low · good</span></div>
+                      <div class="ph-cardTop"><span class="ph-cardName" data-ph-name="ldl">ldl</span><span class="ph-cardValue" data-ph-value="ldl">—</span></div>
+                      <div class="ph-cardBottom"><span class="ph-cardDelta" data-ph-note="ldl">—</span></div>
                       <svg class="ph-spark" viewBox="0 0 120 32" preserveAspectRatio="none"><polyline points="0,10 20,14 40,12 60,18 80,22 100,24 120,25" fill="none"/></svg>
                     </div>
                   </div>
@@ -401,7 +418,7 @@
     <section class="learn" id="learnSection">
       <div class="learn-wrapper">
         <h2>we learn across every verified result</h2>
-        <p>the more reports, the sharper the twin — measured by brier score, not vibes.</p>
+        <p>the more reports, the sharper the twin — measured against readings it has never seen, not vibes.</p>
       </div>
     </section>
 
@@ -409,7 +426,7 @@
     <section class="stats" id="statsSection">
       <div class="stats-wrapper">
         <div class="stats-block stats-grid01">
-          <div class="stats-title"><h2><span data-kivo="markers">1,226</span></h2><p>markers, loinc-verified</p></div>
+          <div class="stats-title"><h2><span data-kivo="markers">—</span></h2><p>markers, loinc-verified</p></div>
           <div class="stats-imageHolder">
             <div class="chipGrid">
               <span></span><span class="chip--on"></span><span></span><span></span><span class="chip--on"></span><span></span>
@@ -420,7 +437,7 @@
           </div>
         </div>
         <div class="stats-block stats-grid02">
-          <h2>99.4%</h2>
+          <h2><span data-kivo="loinc">—</span></h2>
           <p>of markers carry a standard loinc code — nothing guessed, nothing invented</p>
         </div>
         <div class="stats-block stats-grid03">
@@ -428,18 +445,18 @@
             <div class="miniPhones"><span class="miniPhone"></span><span class="miniPhone"></span></div>
           </div>
           <div class="stats-text">
-            <h2>0.07</h2>
-            <p>brier score on hold-out predictions</p>
+            <h2><span data-kivo="calibration">—</span></h2>
+            <p>confidence error on readings the model had never seen · lower is better</p>
           </div>
         </div>
         <div class="stats-block stats-grid04">
-          <h2>532+</h2>
-          <p>backend tests · zero flaky</p>
+          <h2><span data-kivo="core">—</span></h2>
+          <p>core markers carry a hand-checked range and a written explanation</p>
         </div>
         <div class="stats-block stats-grid05">
           <div class="stats-text">
             <h2>0</h2>
-            <p>external services — every byte stays on your machine</p>
+            <p>third-party services — your results are never sold, shared or shipped out</p>
           </div>
           <div class="stats-imageHolder stats-imageHolder--pod">
             <div class="miniPhones"><span class="miniPhone miniPhone--dark"></span></div>
@@ -447,16 +464,16 @@
         </div>
         <div class="stats-block stats-grid06">
           <div class="stats-background">
-            <p class="stats-marquee"><span>cameras • ocr engines • loinc codes • brier scores • trend lines • risk flags • verification loops • &nbsp;</span><span>cameras • ocr engines • loinc codes • brier scores • trend lines • risk flags • verification loops • &nbsp;</span></p>
+            <p class="stats-marquee"><span>lab reports • loinc codes • personal baselines • trend lines • risk flags • verification loops • &nbsp;</span><span>lab reports • loinc codes • personal baselines • trend lines • risk flags • verification loops • &nbsp;</span></p>
           </div>
           <div class="stats-text">
-            <h2><span data-kivo="panels">18</span></h2>
+            <h2><span data-kivo="panels">—</span></h2>
             <p>clinical panels, from a1c to lipids</p>
           </div>
         </div>
         <div class="stats-block stats-grid07">
           <div class="stats-text">
-            <h2><span data-kivo="aliases">2,928</span></h2>
+            <h2><span data-kivo="aliases">—</span></h2>
             <p>matchable aliases in the lab dictionary</p>
           </div>
           <svg class="stats-mark" viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="96" stroke="currentColor"/><path d="M20 100h40l20-45 30 90 25-70 15 25h50" stroke="currentColor" stroke-width="2"/></svg>
@@ -468,8 +485,8 @@
     <section class="community" id="community">
       <div class="community-wrapper">
         <div class="community-headline">
-          <h2>never a twin alone</h2>
-          <p>join the kivo community — share what your twin taught you, and what yours is still learning</p>
+          <h2>never a number alone</h2>
+          <p>three things kivo does with every report — nothing invented, nothing hidden</p>
         </div>
         <div class="community-list" id="communityList">
           <div class="community-listHolder">
@@ -477,16 +494,16 @@
             <button class="community-next" id="quoteNext" aria-label="next quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
             <div class="community-quoteList" id="quoteList">
               <div class="quote">
-                <h2>my twin caught the a1c drift eight weeks before my next check-up. i walked in asking the right question.</h2>
-                <p>@earlybird</p>
+                <h2>every value is checked against the standard clinical dictionary before it is allowed to count.</h2>
+                <p>verification first</p>
               </div>
               <div class="quote">
-                <h2>first time i understood what a loinc code was actually doing for me.</h2>
-                <p>@dataandtea</p>
+                <h2>your baselines come from your own history — never from someone else's average.</h2>
+                <p>personal baselines</p>
               </div>
               <div class="quote">
                 <h2>it's not a diagnosis. it's a conversation you can bring with you.</h2>
-                <p>@calmcharts</p>
+                <p>the safety line</p>
               </div>
             </div>
           </div>
@@ -517,7 +534,7 @@
           <p class="footer-title-sm">kivo</p>
           <a href="/app/">the app</a>
           <a href="/doctor/">for doctors</a>
-          <a href="/">api &amp; docs</a>
+          <a href="#twinStory">how it works</a>
         </div>
         <div class="footer-col footer-col--product">
           <p class="footer-title-sm">product</p>
@@ -527,14 +544,15 @@
         </div>
         <div class="footer-col footer-col--learn">
           <p class="footer-title-sm">learn</p>
-          <a href="#twinStory">how it works</a>
           <a href="#twinStory">verify first</a>
-          <a href="#community">the community</a>
+          <a href="#community">personal baselines</a>
+          <a href="#community">the safety line</a>
         </div>
         <div class="footer-col footer-col--follow">
-          <p class="footer-title-sm">follow</p>
-          <a href="https://github.com/ssambit635-svg/kivo" target="_blank" rel="noopener">github</a>
-          <a href="https://github.com/ssambit635-svg/kivo/issues" target="_blank" rel="noopener">issues</a>
+          <p class="footer-title-sm">inside the app</p>
+          <a href="#appSection">report scanner</a>
+          <a href="#appSection">voice journal</a>
+          <a href="/app/">doctor shorts</a>
         </div>
         <div class="footer-col footer-col--join">
           <p class="footer-title-sm">join</p>
@@ -550,7 +568,7 @@
   <script src="/vendor/gsap.min.js?v=2"></script>
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
-  <script src="/js/twin-visualizer.js?v=1"></script>
-  <script src="/js/main.js?v=4"></script>
+  <script src="/js/twin-visualizer.js?v=2"></script>
+  <script src="/js/main.js?v=6"></script>
 </body>
 </html>

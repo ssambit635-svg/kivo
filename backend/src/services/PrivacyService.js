@@ -65,7 +65,7 @@ export class PrivacyService {
 
     return {
       exportedAt: new Date().toISOString(),
-      format: 'medtwin-export/1',
+      format: 'kivo-export/1',
       user: {
         ...user.toJSON(),
         consentedAt: user.consented_at ?? null,

@@ -1,4 +1,4 @@
-/* MedTwin AI — Care tab styles (subscription · doctors · consultations · shorts)
+/* kivo — Care tab styles (subscription · doctors · consultations · shorts)
    Extends styles.css tokens; nothing here touches the health-twin screens. */
 
 #care-view { padding-bottom: 96px; }
@@ -22,7 +22,7 @@
 .care-plan-main { display: flex; flex-direction: column; }
 .care-plan-main strong { font-size: 15px; }
 .care-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip.mock { background: #fff4d6; color: #8a5a00; border: 1px dashed #e0b64d; font-weight: 700; letter-spacing: 0.04em; }
+.chip.demo { background: #eef2ff; color: #3b3f8f; border: 1px dashed #a5aee8; font-weight: 700; letter-spacing: 0.04em; }
 
 /* ---------- lists ---------- */
 .care-list { display: flex; flex-direction: column; gap: 10px; }
@@ -105,7 +105,7 @@
 
 .pay-amount { font-size: 26px; font-weight: 800; margin: 6px 0 10px; }
 .pay-methods { display: flex; gap: 6px; margin-bottom: 12px; }
-.mock-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); margin: 0 0 6px; }
+.demo-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); margin: 0 0 6px; }
 .pay-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); padding: 8px 0; font-size: 13px; }
 
 .care-form .field { margin-bottom: 10px; }

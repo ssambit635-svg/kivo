@@ -9,106 +9,102 @@
 (function () {
   'use strict';
 
+  /**
+   * The markers this canvas plots.
+   *
+   * Only LAYOUT lives here — where a node sits, how big its radar value is.
+   * Every clinical field (name, LOINC identity, unit, hand-checked range,
+   * panel) is filled from the public lab dictionary as soon as it arrives, so
+   * this visual can never show a value the product does not actually know.
+   * Until then the fields stay blank rather than guessing.
+   */
   const MARKERS = [
-    {
-      id: 'hba1c',
-      name: 'HbA1c',
-      fullName: 'Glycated Hemoglobin',
-      category: 'Metabolic Panel',
-      loinc: '4548-4',
-      value: '5.9 %',
-      delta: '▲ 0.3% this quarter',
-      status: 'Optimal Baseline',
-      baseline: '5.4 – 6.0 %',
-      confidence: '99.4% Verified',
-      radarVal: 0.78,
-      coord: [0.08, 0.48, 0.85],
-    },
-    {
-      id: 'tsh',
-      name: 'TSH',
-      fullName: 'Thyroid Stimulating Hormone',
-      category: 'Endocrine Panel',
-      loinc: '3016-3',
-      value: '2.1 µIU/mL',
-      delta: '— stable for 11 mo',
-      status: 'In Reference',
-      baseline: '0.45 – 4.5 µIU/mL',
-      confidence: '99.8% Verified',
-      radarVal: 0.72,
-      coord: [0.82, -0.18, 0.52],
-    },
-    {
-      id: 'crp',
-      name: 'hs-CRP',
-      fullName: 'High-Sensitivity C-Reactive Protein',
-      category: 'Inflammation Panel',
-      loinc: '30522-7',
-      value: '0.4 mg/L',
-      delta: '▼ low · good',
-      status: 'Optimal Baseline',
-      baseline: '< 1.0 mg/L',
-      confidence: '99.1% Verified',
-      radarVal: 0.86,
-      coord: [-0.75, 0.42, 0.48],
-    },
-    {
-      id: 'vitd',
-      name: 'Vitamin D',
-      fullName: '25-Hydroxyvitamin D',
-      category: 'Cellular Health',
-      loinc: '1989-3',
-      value: '32 ng/mL',
-      delta: '▲ +2.0 winter baseline',
-      status: 'In Target',
-      baseline: '30 – 100 ng/mL',
-      confidence: '98.7% Verified',
-      radarVal: 0.65,
-      coord: [0.58, 0.65, -0.45],
-    },
-    {
-      id: 'hgb',
-      name: 'Hemoglobin',
-      fullName: 'Hemoglobin (Oxygen Transport)',
-      category: 'Hematology Panel',
-      loinc: '718-7',
-      value: '14.2 g/dL',
-      delta: '— stable for 8 mo',
-      status: 'Optimal Target',
-      baseline: '13.5 – 17.5 g/dL',
-      confidence: '99.9% Verified',
-      radarVal: 0.88,
-      coord: [-0.52, -0.62, 0.58],
-    },
-    {
-      id: 'ferritin',
-      name: 'Ferritin',
-      fullName: 'Ferritin Iron Storage',
-      category: 'Iron Profile',
-      loinc: '2276-4',
-      value: '88 ng/mL',
-      delta: '▲ +5.0 normalized',
-      status: 'Normal Reserve',
-      baseline: '30 – 400 ng/mL',
-      confidence: '98.9% Verified',
-      radarVal: 0.68,
-      coord: [0.38, -0.80, -0.42],
-    },
-    {
-      id: 'egfr',
-      name: 'eGFR',
-      fullName: 'Estimated Glomerular Filtration',
-      category: 'Renal Function',
-      loinc: '33914-3',
-      value: '98 mL/min',
-      delta: '— optimal baseline',
-      status: 'High Function',
-      baseline: '> 90 mL/min',
-      confidence: '99.6% Verified',
-      radarVal: 0.92,
-      coord: [-0.82, -0.18, -0.52],
-    },
-  ];
+    { id: 'hba1c', key: 'hba1c', radarVal: 0.78, coord: [0.08, 0.48, 0.85] },
+    { id: 'tsh', key: 'tsh', radarVal: 0.72, coord: [0.82, -0.18, 0.52] },
+    { id: 'ldl', key: 'ldl', radarVal: 0.86, coord: [-0.75, 0.42, 0.48] },
+    { id: 'vitd', key: 'vitamin_d', radarVal: 0.65, coord: [0.58, 0.65, -0.45] },
+    { id: 'hgb', key: 'hemoglobin', radarVal: 0.88, coord: [-0.52, -0.62, 0.58] },
+    { id: 'ferritin', key: 'ferritin', radarVal: 0.68, coord: [0.38, -0.80, -0.42] },
+    { id: 'egfr', key: 'egfr', radarVal: 0.92, coord: [-0.82, -0.18, -0.52] },
+  ].map((m) => ({
+    ...m,
+    name: '—',
+    fullName: '',
+    category: '—',
+    loinc: '',
+    value: '—',
+    delta: '',
+    status: '',
+    baseline: '',
+    confidence: '',
+  }));
+
+  /** "HbA1c (Glycated Hemoglobin)" → "HbA1c" */
+  const shortName = (name) => String(name || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  /** "HbA1c (Glycated Hemoglobin)" → "Glycated Hemoglobin" */
+  const longName = (name) => {
+    const m = String(name || '').match(/\(([^)]*)\)/);
+    return m ? m[1].trim() : shortName(name);
+  };
+  const num = (n) => Number(n).toLocaleString('en-US');
+
+  /** The dictionary's range, phrased for the HUD. */
+  function rangeFor(entry) {
+    const r = entry && entry.typicalRange;
+    const unit = (r && r.unit) || (entry && entry.defaultUnit) || '';
+    if (!r || (r.low == null && r.high == null)) return null;
+    if (r.low == null) return { full: 'up to ' + num(r.high) + ' ' + unit, short: '≤ ' + num(r.high) + ' ' + unit };
+    if (r.high == null) return { full: 'at least ' + num(r.low) + ' ' + unit, short: '≥ ' + num(r.low) + ' ' + unit };
+    return { full: num(r.low) + ' – ' + num(r.high) + ' ' + unit, short: num(r.low) + ' – ' + num(r.high) + ' ' + unit };
+  }
+
+  /**
+   * Fills the visual from real catalogue data.
+   * @param {{markers: object}} dictionary  /api/meta/lab-dictionary
+   * @param {object} knowledge              /api/meta/knowledge (stats + panel names)
+   */
+  function applyDictionary(dictionary, knowledge) {
+    const markers = dictionary && dictionary.markers;
+    if (!markers) return;
+    const panelNames = {};
+    const panels = knowledge && knowledge.panels;
+    if (panels) Object.keys(panels).forEach((k) => { panelNames[panels[k].key] = panels[k].name; });
+    const panelName = (key) => panelNames[key] || String(key || '').replace(/_/g, ' ');
+
+    MARKERS.forEach((marker) => {
+      const entry = markers[marker.key];
+      if (!entry) return;
+      const range = rangeFor(entry);
+      const handChecked = entry.rangeSource === 'curated-prototype';
+      marker.name = shortName(entry.name);
+      marker.fullName = longName(entry.name);
+      marker.category = panelName(entry.panel);
+      marker.loinc = entry.loinc || '';
+      marker.value = range ? range.short : entry.defaultUnit || '—';
+      marker.baseline = range ? range.full : 'as printed on your own report';
+      marker.status = handChecked ? 'Hand-checked range' : 'Report-only range';
+      marker.delta = handChecked ? 'typical adult reference' : 'compared with your report';
+      marker.confidence = entry.loinc ? 'LOINC verified' : 'Dictionary entry';
+    });
+
+    RADAR_AXES.forEach((axis) => {
+      const marker = MARKERS[axis.markerIndex];
+      const entry = marker && markers[marker.key];
+      if (entry) axis.label = panelName(entry.panel).toUpperCase();
+    });
+
+    const loincNode = NEURAL_NODES.find((n) => n.id === 'loinc');
+    const total = knowledge && knowledge.stats && knowledge.stats.markers;
+    if (loincNode && total) loincNode.label = 'LOINC DICTIONARY (' + num(total) + ')';
+
+    // Satellite chips quote the same dictionary entry the HUD shows.
+    NEURAL_NODES.filter((n) => n.satellite).forEach((node) => {
+      const marker = MARKERS[node.markerIndex];
+      if (!marker || !marker.loinc) return;
+      node.label = marker.name;
+      node.role = 'LOINC ' + marker.loinc;
+    });
+  }
 
   const RADAR_AXES = [
     { label: 'METABOLIC', markerIndex: 0 },
@@ -119,16 +115,22 @@
     { label: 'RENAL', markerIndex: 6 },
   ];
 
+  /**
+   * The pipeline this graph draws — described in the words a patient would
+   * use, in the order their report travels. Labels carry no figures: the two
+   * satellite chips are filled from the lab dictionary (see applyDictionary),
+   * so nothing on this canvas can quote a number the product does not hold.
+   */
   const NEURAL_NODES = [
-    { id: 'camera', label: 'CAMERA INGEST', role: '300 DPI Optical Scan', x: -0.65, y: -0.5, vx: 0, vy: 0, markerIndex: null },
-    { id: 'ocr', label: 'OCR NORMALIZER', role: 'Confidence Scored Engine', x: -0.35, y: -0.2, vx: 0, vy: 0, markerIndex: null },
-    { id: 'loinc', label: 'LOINC DICT (1,226)', role: 'Verified Clinical Standards', x: -0.1, y: -0.65, vx: 0, vy: 0, markerIndex: 0 },
-    { id: 'twin', label: 'TWIN CORE', role: 'Unified Patient Model', x: 0.05, y: 0.05, vx: 0, vy: 0, markerIndex: 0 },
-    { id: 'bayes', label: 'BAYESIAN BASELINE', role: 'Adaptive Kalman Filter', x: 0.45, y: -0.35, vx: 0, vy: 0, markerIndex: 1 },
-    { id: 'drift', label: 'DRIFT MONITOR', role: 'Context Drift Warning', x: 0.6, y: 0.25, vx: 0, vy: 0, markerIndex: 2 },
-    { id: 'audit', label: 'DOCTOR VERIFY', role: 'Human-in-the-Loop Co-Pilot', x: 0.15, y: 0.65, vx: 0, vy: 0, markerIndex: 4 },
-    { id: 'sat1', label: 'HbA1c', role: 'LOINC 4548-4 · 5.9%', x: -0.55, y: 0.35, vx: 0, vy: 0, markerIndex: 0 },
-    { id: 'sat2', label: 'eGFR', role: 'LOINC 33914-3 · 98mL', x: 0.7, y: -0.1, vx: 0, vy: 0, markerIndex: 6 },
+    { id: 'camera', label: 'PHOTO OF REPORT', role: 'straight-on, well lit', x: -0.65, y: -0.5, vx: 0, vy: 0, markerIndex: null },
+    { id: 'ocr', label: 'TEXT RECOGNITION', role: 'reads every printed line', x: -0.35, y: -0.2, vx: 0, vy: 0, markerIndex: null },
+    { id: 'loinc', label: 'LOINC DICTIONARY', role: 'standard clinical codes', x: -0.1, y: -0.65, vx: 0, vy: 0, markerIndex: 0 },
+    { id: 'twin', label: 'YOUR TWIN', role: 'one model of your history', x: 0.05, y: 0.05, vx: 0, vy: 0, markerIndex: 0 },
+    { id: 'baseline', label: 'PERSONAL BASELINE', role: 'learned from your own reports', x: 0.45, y: -0.35, vx: 0, vy: 0, markerIndex: 1 },
+    { id: 'drift', label: 'DRIFT MONITOR', role: 'flags a change that matters', x: 0.6, y: 0.25, vx: 0, vy: 0, markerIndex: 2 },
+    { id: 'audit', label: 'YOU VERIFY', role: 'nothing counts until you confirm', x: 0.15, y: 0.65, vx: 0, vy: 0, markerIndex: 4 },
+    { id: 'sat1', label: '—', role: '', satellite: true, x: -0.55, y: 0.35, vx: 0, vy: 0, markerIndex: 0 },
+    { id: 'sat2', label: '—', role: '', satellite: true, x: 0.7, y: -0.1, vx: 0, vy: 0, markerIndex: 6 },
   ];
 
   const NEURAL_LINKS = [
@@ -136,14 +138,14 @@
     ['ocr', 'loinc'],
     ['loinc', 'twin'],
     ['ocr', 'twin'],
-    ['twin', 'bayes'],
+    ['twin', 'baseline'],
     ['twin', 'drift'],
-    ['bayes', 'drift'],
+    ['baseline', 'drift'],
     ['drift', 'audit'],
     ['twin', 'audit'],
     ['camera', 'sat1'],
     ['sat1', 'twin'],
-    ['bayes', 'sat2'],
+    ['baseline', 'sat2'],
     ['sat2', 'drift'],
   ];
 
@@ -269,7 +271,7 @@
       if (hudTitle) hudTitle.textContent = marker.name + ' · ' + marker.fullName;
       if (hudValue) hudValue.textContent = marker.value;
       if (hudDelta) hudDelta.textContent = marker.status + ' · ' + marker.delta;
-      if (hudRange) hudRange.textContent = 'Personal Baseline: ' + marker.baseline + ' · ' + marker.category;
+      if (hudRange) hudRange.textContent = marker.status + ': ' + marker.baseline + ' · ' + marker.category;
       if (hudCard) hudCard.classList.remove('twin-hudCard--hidden');
     }
     updateHUD(MARKERS[0]);
@@ -290,9 +292,9 @@
 
       // Update status text
       if (statusText) {
-        if (newMode === 'mesh') statusText.textContent = 'BIO-TWIN ENGINE // OPTION 01';
+        if (newMode === 'mesh') statusText.textContent = 'VERIFIED TWIN MODEL // OPTION 01';
         else if (newMode === 'radar') statusText.textContent = 'HEX RADAR TOPOLOGY // OPTION 02';
-        else if (newMode === 'neural') statusText.textContent = 'LOINC NEURAL GRAPH // OPTION 03';
+        else if (newMode === 'neural') statusText.textContent = 'LOINC GRAPH // OPTION 03';
       }
 
       // Trigger pulse scan upon mode switch
@@ -898,6 +900,15 @@
 
     animate();
   }
+
+  /**
+   * The page's data layer (main.js) publishes the public knowledge + lab
+   * dictionary once they land; until then this canvas only draws layout.
+   */
+  document.addEventListener('kivo:data', (event) => {
+    const detail = (event && event.detail) || {};
+    applyDictionary(detail.dictionary, detail.knowledge);
+  });
 
   // Self-init when DOM is ready
   if (document.readyState === 'loading') {

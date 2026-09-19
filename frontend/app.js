@@ -1,14 +1,14 @@
 /**
- * MedTwin AI — demo dashboard logic (vanilla JS, no build step).
+ * kivo — dashboard logic (vanilla JS, no build step).
  *
  * Three product widgets, all fed by real API data:
  *   1. Health Score Timeline    GET /api/members/:id/health-score
  *   2. Health Milestones        GET /api/members/:id/milestones
  *   3. Report Confidence Badge  badge field on /api/members/:id/reports
  *
- * CSP note: the API server sends `script-src 'self'` and forbids inline
- * handlers — everything here wires events with addEventListener and icons
- * come from ./icons.js (trusted markup constants only).
+ * Security note: the page is served under a strict `script-src 'self'`
+ * policy that forbids inline handlers — everything here wires events with
+ * addEventListener and icons come from ./icons.js (trusted markup only).
  */
 (function () {
   'use strict';
@@ -112,14 +112,14 @@
       }
       return res.json().then(function (body) {
         if (!res.ok) {
-          var err = new Error((body && body.error && body.error.message) || 'Request failed (' + res.status + ')');
+          var err = new Error((body && body.error && body.error.message) || 'Something went wrong on our side — please try again.');
           err.status = res.status;
           err.body = body;
           throw err;
         }
         return body;
       }, function () {
-        throw new Error('Request failed (' + res.status + ')');
+        throw new Error('Something went wrong on our side — please try again.');
       });
     });
   }
@@ -628,7 +628,7 @@
         toast('Report verified — your twin just grew. Watch the score and milestones.');
         return refreshAll();
       })
-      .catch(function (err) { toast(err.message || 'Verification failed'); });
+      .catch(function (err) { toast(err.message || 'We could not verify that report — please try again.'); });
   }
 
   function onUpload(ev) {
@@ -653,7 +653,7 @@
       toast('Scanned — badge: ' + badge + '. Verify it to feed your twin.');
       return refreshAll();
     }).catch(function (err) {
-      errBox.textContent = err.message || 'Upload failed';
+      errBox.textContent = err.message || 'We could not read that report — please try again.';
       errBox.classList.remove('hidden');
     }).finally(function () {
       $('btn-upload').disabled = false;
@@ -678,15 +678,15 @@
       }
       return res.json().then(function (body) {
         if (!res.ok) {
-          var err = new Error((body && body.error && body.error.message) || 'Upload failed (' + res.status + ')');
+          var err = new Error((body && body.error && body.error.message) || 'We could not read that report — please try again.');
           err.status = res.status;
           err.body = body;
           throw err;
         }
         return body;
       }, function () {
-        // Non-JSON error body (proxy / connection edge) — still report status.
-        throw new Error('Upload failed (' + res.status + ')');
+        // Non-JSON error body (dropped connection / proxy edge).
+        throw new Error('The upload did not go through — check your connection and try again.');
       });
     });
   }
@@ -738,9 +738,9 @@
     $('scanner-view').classList.add('hidden');
   }
 
-  // Phone sensors (12–200MP) produce frames far larger than any server
-  // should accept — and Tesseract reads documents better at moderate
-  // resolution anyway. Everything uploaded is shrunk to <=1600px / JPEG.
+  // Phone sensors (12–200MP) produce frames far larger than the reader
+  // needs, and the text comes out cleaner at moderate resolution. Everything
+  // uploaded is shrunk to <=1600px / JPEG.
   var SCAN_MAX_EDGE = 1600;
 
   function canvasToJpeg(canvas, name, done) {
@@ -803,7 +803,7 @@
         toast(msg);
         return refreshAll();
       })
-      .catch(function (err) { toast(err.message || 'Scan failed'); });
+      .catch(function (err) { toast(err.message || 'We could not read that scan — try again in better light.'); });
   }
 
   /* ---------------------------------------------------------------- */
@@ -843,7 +843,16 @@
     };
     recognition.onerror = function (ev) {
       stopVoice();
-      err.textContent = 'Voice error: ' + (ev && ev.error ? ev.error : 'unknown');
+      var code = ev && ev.error ? ev.error : '';
+      var human =
+        code === 'not-allowed' || code === 'service-not-allowed'
+          ? 'Microphone access is blocked — allow it in your browser settings and try again.'
+          : code === 'no-speech'
+            ? 'We could not hear anything — try again a little closer to the mic.'
+            : code === 'audio-capture'
+              ? 'No microphone was found on this device.'
+              : 'Voice input stopped before we caught that — please try again.';
+      err.textContent = human;
       err.classList.remove('hidden');
     };
     recognition.onend = function () { stopVoice(); };

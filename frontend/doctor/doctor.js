@@ -1,4 +1,4 @@
-/* MedTwin AI — Doctor console (vanilla JS, CSP-safe, no build step).
+/* kivo — Doctor console (vanilla JS, CSP-safe, no build step).
  *
  * A separate frontend for a separate role:
  *   • ONE screen per patient consultation — a brief compiled from verified
@@ -288,13 +288,13 @@
     if (state.doctor.status === 'active') {
       var row = el('div', { class: 'doc-card doc-row doc-verified' });
       var left = el('div');
-      left.appendChild(el('strong', { text: 'Demo verified (mock KYC) — ' + state.doctor.identityCardNo }));
+      left.appendChild(el('strong', { text: 'Verified for this preview — ' + state.doctor.identityCardNo }));
       left.appendChild(
         el('span', {
           class: 'muted',
           text:
-            'Patients see your name, headline "' + state.doctor.headline + '" and the mock-verification badge. ' +
-            'No registry check happened in this build.',
+            'Patients see your name, headline "' + state.doctor.headline + '" and a demo verification badge. ' +
+            'No medical registry has been checked yet.',
         }),
       );
       row.appendChild(left);
@@ -306,15 +306,16 @@
       el('p', {
         class: 'muted',
         text:
-          'This demo build simulates KYC. In production a reviewer would check your registration before any chart access.',
+          'Your registration is not registry-checked yet, so patients see a demo verification badge on your card. ' +
+          'Charts stay closed until a patient shares one with you for a consultation.',
       }),
     );
-    var btn = el('button', { class: 'btn primary', type: 'button' }, ['Complete mock verification']);
+    var btn = el('button', { class: 'btn primary', type: 'button' }, ['Complete verification step']);
     btn.addEventListener('click', function () {
       api('/doctor/kyc/mock', { method: 'POST', body: {} })
         .then(function (res) {
           state.doctor = res.doctor;
-          toast('Mock verification complete.');
+          toast('Verification step complete — your profile is live for this preview.');
           return boot();
         })
         .catch(function (e) { toast(e.message); });
@@ -516,7 +517,7 @@
     card.appendChild(q);
 
     if (!d.chartAccess.granted) {
-      var noChart = el('div', { class: 'doc-card doc-mock-note' });
+      var noChart = el('div', { class: 'doc-card doc-note' });
       noChart.appendChild(el('strong', { text: 'No chart access' }));
       noChart.appendChild(el('p', { class: 'muted', text: d.chartAccess.reason + ' You can still read the question, but a clinical reply needs the chart.' }));
       card.appendChild(noChart);
@@ -621,7 +622,7 @@
 
     // risk
     var risk = el('div', { class: 'brief-block' });
-    risk.appendChild(el('h4', { text: 'Prototype risk flag' }));
+    risk.appendChild(el('h4', { text: 'Risk flag (not clinically validated)' }));
     if (!brief.riskFlags.length) risk.appendChild(el('p', { class: 'muted', text: 'Not computable from the current data.' }));
     else {
       brief.riskFlags.forEach(function (r) {
@@ -700,7 +701,7 @@
     var draft = plan.aiDraft;
     if (draft && draft.skipped && draft.skipped.suspiciousOcrValues.length) {
       wrap.appendChild(
-        el('p', { class: 'doc-mock-note', text: 'Excluded as probable OCR misreads: ' + draft.skipped.suspiciousOcrValues.map(function (s) { return s.name; }).join(', ') }),
+        el('p', { class: 'doc-note', text: 'Excluded as probable OCR misreads: ' + draft.skipped.suspiciousOcrValues.map(function (s) { return s.name; }).join(', ') }),
       );
     }
     if (draft && draft.considerations && draft.considerations.length) {
@@ -721,7 +722,7 @@
       box.appendChild(ul);
       if (item.possibleDuplicate) {
         box.appendChild(
-          el('p', { class: 'doc-mock-note', text: 'Possible duplicate: the patient already records ' + item.possibleDuplicate.recordedAs + '.' }),
+          el('p', { class: 'doc-note', text: 'Possible duplicate: the patient already records ' + item.possibleDuplicate.recordedAs + '.' }),
         );
       }
       if (item.followUp.markerCodes.length) {
@@ -830,7 +831,7 @@
     send.addEventListener('click', function () {
       if (body.value.trim().length < 5) return toast('Write the reply first.');
       if (d.consultation.status === 'payment_pending') {
-        return toast('This consultation is still awaiting (mock) payment.');
+        return toast('This consultation is still awaiting payment.');
       }
       api('/doctor/consultations/' + d.consultation.id + '/reply', {
         method: 'POST',
@@ -1123,10 +1124,10 @@
     form.appendChild(save);
 
     if (d.status !== 'active') {
-      var kyc = el('button', { class: 'btn secondary', type: 'button' }, ['Complete mock verification']);
+      var kyc = el('button', { class: 'btn secondary', type: 'button' }, ['Complete verification step']);
       kyc.addEventListener('click', function () {
         api('/doctor/kyc/mock', { method: 'POST', body: {} })
-          .then(function (res) { state.doctor = res.doctor; toast('Mock verification complete.'); boot(); })
+          .then(function (res) { state.doctor = res.doctor; toast('Verification step complete — your profile is live for this preview.'); boot(); })
           .catch(function (e) { toast(e.message); });
       });
       form.appendChild(kyc);
@@ -1159,7 +1160,10 @@
     meta.appendChild(el('span', { text: d.consultFeeInr ? rs(d.consultFeeInr) + ' consult' : 'free consult' }));
     card.appendChild(meta);
     card.appendChild(el('div', { class: 'id-code', text: d.identityCardNo }));
-    card.appendChild(el('div', { class: 'id-verify', text: 'Verify: /api/public/doctors/' + d.slug + ' · ' + (d.verified ? 'DEMO VERIFIED (MOCK KYC)' : 'VERIFICATION PENDING') }));
+    card.appendChild(el('div', {
+      class: 'id-verify',
+      text: d.verified ? 'Demo verification · registry check pending' : 'Verification pending',
+    }));
     return card;
   }
 

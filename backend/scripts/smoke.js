@@ -841,12 +841,12 @@ async function main() {
     expectStatus(reply.status, 403, 'reply after revoke');
     if (reply.json?.error?.code !== 'CONSENT_REQUIRED') throw new Error(`code ${reply.json?.error?.code}`);
   });
-  await check('GET /api/doctor/earnings (split arithmetic, mock ledger)', async () => {
+  await check('GET /api/doctor/earnings (split arithmetic, demo ledger)', async () => {
     const r = await req('GET', '/api/doctor/earnings', { token: doctorTok });
     expectStatus(r.status, 200, 'earnings');
     if (r.json.totals.consultationSharePaise !== 28000) throw new Error(`consult share ${r.json.totals.consultationSharePaise}`);
     if (r.json.pools.shorts.accrualPaise !== 4975) throw new Error(`pool ${r.json.pools.shorts.accrualPaise}`);
-    if (r.json.payoutNote.search(/mock/i) === -1) throw new Error('missing mock payout note');
+    if (r.json.payoutNote.search(/demo ledger/i) === -1) throw new Error('missing demo payout note');
     return `₹${r.json.totals.totalInr} this period`;
   });
   await check('GET /api/admin/doctors (verification queue)', async () => {

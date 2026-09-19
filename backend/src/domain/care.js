@@ -59,7 +59,7 @@ export class DoctorProfile {
       verified: this.isVerified,
       verification: {
         mode: 'mock',
-        label: 'Demo verification (mock KYC)',
+        label: 'Demo verification',
         registrationCouncil: this.registration_council || null,
       },
       identityCardNo: this.identity_card_no,
@@ -162,7 +162,7 @@ export class PaymentIntent {
       failureReason: this.failure_reason ?? null,
       // Unmissable in every client: no real money moves in this build.
       mode: 'mock',
-      mockNotice: 'Demo payment only — no real gateway, no card/UPI credentials stored, no money moves.',
+      mockNotice: 'Demo checkout: no card, UPI or bank detail is ever collected and no money moves.',
       createdAt: this.created_at,
       completedAt: this.completed_at ?? null,
     };

@@ -16,17 +16,28 @@ const ALLOWED_MIME = new Set([
  * (tesseract.js rejects with `err.toString()`), even worker payloads. The
  * pipeline must never persist an empty `ocr_error` or return an empty
  * `preview.note`: both feed the red badge + manual-entry guidance.
+ *
+ * The raw reason is OPERATOR detail (module names, file paths, download
+ * errors). It is logged, never returned in the response — a patient reads
+ * `preview.note`, so that copy stays plain and actionable.
  */
 function ocrFailureMessage(err) {
-  if (typeof err === 'string' && err.trim()) return err;
-  if (err?.message) return err.message;
-  try {
-    const s = String(err);
-    if (s && s !== '[object Object]') return s;
-  } catch {
-    /* fall through to the default */
+  let detail = null;
+  if (typeof err === 'string' && err.trim()) detail = err;
+  else if (err?.message) detail = err.message;
+  else {
+    try {
+      const s = String(err);
+      if (s && s !== '[object Object]') detail = s;
+    } catch {
+      /* nothing usable */
+    }
   }
-  return 'OCR failed to read this file — paste the report text into the upload dialog, or run `npm run ocr:setup` to enable image OCR.';
+  if (detail) console.warn('[reports] OCR failed:', detail);
+  return (
+    'We could not read this file automatically. Check every value against the paper report and fix anything ' +
+    'that looks wrong — or paste the report text instead.'
+  );
 }
 
 /**
@@ -134,7 +145,9 @@ export class ReportService {
       extracted = Array.isArray(out?.extracted) ? out.extracted : [];
       detectedReportDate = out?.detectedReportDate ?? null;
     } catch (err) {
-      extractionNote = `Automatic value extraction stumbled on this report (${err?.message || 'unexpected error'}) — review the text below and add values manually.`;
+      console.warn('[reports] extraction failed:', err?.message || err);
+      extractionNote =
+        'We saved your report but could not pull the values out automatically — add them by hand from the text below.';
     }
     const updated = this.reports.setOcrResult(report.id, {
       status: 'needs_review',

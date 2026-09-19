@@ -7,7 +7,7 @@ function boot() {
   const { host, port } = container.config;
 
   const server = app.listen(port, host, () => {
-    console.log(`MedTwin AI backend v${container.config.appVersion}`);
+    console.log(`kivo api v${container.config.appVersion}`);
     console.log(`env=${container.config.nodeEnv} db=${container.config.dbPath} llm=${container.config.llmProvider}`);
     console.log(`listening on http://${host}:${port}`);
   });

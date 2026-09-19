@@ -140,7 +140,8 @@ describe('shorts pool settlement', () => {
     expect(statement.pools.shorts.accrualPaise).toBeGreaterThan(0);
     expect(statement.pools.shorts.yourSharePercent).toBeGreaterThan(0);
     expect(statement.revenueModel.explainer.join(' ')).toMatch(/watched seconds/i);
-    expect(statement.payoutNote).toMatch(/mock/i);
+    expect(statement.payoutNote).toMatch(/demo ledger/i);
+    expect(statement.payoutNote).toMatch(/no bank transfer/i);
   });
 });
 
