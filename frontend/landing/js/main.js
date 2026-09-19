@@ -247,7 +247,7 @@
         anticipatePin: 1,
       },
     });
-    tl.to(['#twinBlackTitle', '#twinWhiteTitle'], { x: '-100vw', duration: 1.1 }, 0)
+    tl.to('#twinBlackTitle', { x: '-100vw', duration: 1.1 }, 0)
       .to('#twinCircle', { scale: 1, ease: 'power2.inOut', duration: 1.5 }, 0.2)
       .fromTo('.twin-para--one p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.4 }, 0.55)
       .fromTo('.twin-para--two p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.4 }, 0.65)
