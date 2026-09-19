@@ -284,7 +284,7 @@ img,svg{display:block}
   gap:14px;
   min-width:0;
 }
-.bottomBar-scroll{color:#fff;font-size:14px;line-height:14px;letter-spacing:-.005em;white-space:nowrap}
+.bottomBar-scroll{color:#fff;font-size:12px;line-height:12px;letter-spacing:.01em;white-space:nowrap}
 .bottomBar-line{
   position:relative;
   display:block;
@@ -303,7 +303,7 @@ img,svg{display:block}
   transform:scaleX(0);
   transform-origin:left;
 }
-.bottomBar-pct{color:#fff;font-size:35px;line-height:35px;letter-spacing:-.03em;min-width:74px;text-align:right;font-variant-numeric:tabular-nums}
+.bottomBar-pct{color:#fff;font-size:24px;line-height:24px;letter-spacing:-.025em;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
 
 /* ============ hero ============ */
 .hero{
@@ -423,12 +423,9 @@ img,svg{display:block}
   margin:0;
 }
 .waterStick-filler{
-  position:absolute;
-  left:0;
-  top:0;
-  width:100%;
-  color:#fff;
-  clip-path:inset(0 0 100% 0);
+  /* Keep the statement consistently grey; the section's motion comes from
+     the capsule rather than a white text wipe. */
+  display:none;
 }
 .waterStick-shape{
   width:min(280px,64vw);
@@ -1108,7 +1105,8 @@ img,svg{display:block}
 
 /* ============ footer ============ */
 .footer{
-  background:#fff;
+  background:#000;
+  color:#f7f7f7;
   margin-top:0;
   position:relative;
   z-index:2;
@@ -1132,7 +1130,7 @@ img,svg{display:block}
   font-size:clamp(48px,9.3vw,180px);
   line-height:.96;
   letter-spacing:-.035em;
-  color:#000;
+  color:#f7f7f7;
   margin:0 0 0 -.055em;
   padding-bottom:.1em;
   padding-right:.02em;
@@ -1147,7 +1145,7 @@ img,svg{display:block}
   top:22px;
   font-size:14px;
   line-height:14px;
-  color:#000;
+  color:rgba(247,247,247,.68);
   opacity:0;
   white-space:nowrap;
 }
@@ -1160,7 +1158,7 @@ img,svg{display:block}
 }
 .footer-divider{
   height:1px;
-  background:#121212;
+  background:rgba(247,247,247,.28);
   transform:scaleX(0);
   transform-origin:left;
   margin-block:20px;
@@ -1178,7 +1176,7 @@ img,svg{display:block}
   font-size:15px;
   line-height:15px;
   letter-spacing:-.005em;
-  color:#121212;
+  color:#f7f7f7;
   margin-bottom:22px;
   opacity:0;
   transform:translateY(20px);
@@ -1187,7 +1185,7 @@ img,svg{display:block}
   font-size:15px;
   line-height:15px;
   letter-spacing:-.005em;
-  color:#121212;
+  color:#f7f7f7;
   margin-bottom:14px;
   opacity:0;
   transform:translateY(20px);
@@ -1201,7 +1199,7 @@ img,svg{display:block}
   font-size:15px;
   line-height:20px;
   letter-spacing:-.005em;
-  color:#121212;
+  color:#f7f7f7;
   white-space:nowrap;
   opacity:0;
 }
@@ -1212,7 +1210,7 @@ img,svg{display:block}
 .no-motion .appScreen-cta,.no-motion .appSection-text--two{opacity:1}
 .no-motion .community-list{opacity:1;transform:none}
 .no-motion .quote:first-child{opacity:1;transform:none}
-.no-motion .footer-title-sm,.no-motion .footer-col a,.no-motion .footer-copyright{opacity:1;transform:none}
+.no-motion .footer-title span,.no-motion .footer-title-sm,.no-motion .footer-col a,.no-motion .footer-copyright{opacity:1;transform:none}
 .no-motion .twin-featureDivider{transform:none}
 .no-motion .waterStick-filler{clip-path:inset(0)}
 
