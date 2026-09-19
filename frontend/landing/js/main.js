@@ -88,8 +88,11 @@
     tl.set(heroTitle, { yPercent: 120 })
       .set(heroText, { opacity: 0, y: 30 })
       .set(heroCta, { opacity: 0, scale: 0.9 })
-      .set(topNav, { yPercent: -100 })
-      .set(bottomBar, { yPercent: 100 })
+      // the stylesheet parks both bars off-screen with translateY(±100%);
+      // gsap reads that as a pixel offset, so zero it before tweening yPercent
+      // or the bars animate "in" yet stay hidden.
+      .set(topNav, { y: 0, yPercent: -100 })
+      .set(bottomBar, { y: 0, yPercent: 100 })
       .set(heroPhone, { opacity: 0, y: sm ? 120 : md ? 140 : 240 })
       .to(heroTitle, { yPercent: 0, duration: 1.1, ease: 'power4', stagger: 0.12 })
       .to(heroText, { opacity: 1, y: 0, duration: 0.9, ease: 'power3' }, '-=0.55')
@@ -320,27 +323,18 @@
       yPercent: 0, duration: 1.2, ease: 'power4',
       scrollTrigger: { trigger: '#appSection', start: 'top 65%' },
     });
-    gsap.fromTo('.appScreen-cta', { y: 60, opacity: 0 }, {
+    gsap.fromTo('.appScreen .phone', { y: 80, opacity: 0 }, {
+      y: 0, opacity: 1, duration: 1.1, ease: 'power3',
+      scrollTrigger: { trigger: '#appScreensHolder', start: 'top 70%' },
+    });
+    gsap.fromTo('.appScreen-cta', { y: 40, opacity: 0 }, {
       y: 0, opacity: 1, duration: 0.9, ease: 'power3',
       scrollTrigger: { trigger: '#appScreensHolder', start: 'top 60%' },
     });
-    gsap.fromTo('.appSection-text--two', { y: -60, opacity: 0 }, {
+    gsap.fromTo('.appSection-text--two', { y: 40, opacity: 0 }, {
       y: 0, opacity: 1, duration: 0.9, ease: 'power3',
       scrollTrigger: { trigger: '#appScreensHolder', start: 'top 55%' },
     });
-    const scrub = gsap.timeline({
-      defaults: { ease: 'none' },
-      scrollTrigger: {
-        trigger: '#appScreensHolder',
-        start: isDesktop() ? 'top 75%' : 'top 90%',
-        end: isDesktop() ? 'bottom 35%' : 'bottom 10%',
-        scrub: 1,
-      },
-    });
-    scrub.to('.ph-scrub--1', { opacity: 0, scale: 0.96, duration: 1 }, 0)
-      .to('.ph-scrub--2', { opacity: 1, scale: 1, duration: 1 }, 1)
-      .to('.ph-scrub--2', { opacity: 0, scale: 0.96, duration: 1 }, 2)
-      .to('.ph-scrub--3', { opacity: 1, scale: 1, duration: 1 }, 3);
   }
 
   /* ---------- learn (title break) ---------- */
@@ -379,13 +373,21 @@
       if (!reduced) qTimer = setInterval(() => showQuote(qi + 1), 4600);
     };
     const startCommunity = () => {
-      gsap.to('.community-list', { opacity: 1, scale: 1, duration: 1.1, ease: 'power3' });
+      gsap.to('.community-list', { opacity: 1, scale: 1, duration: 1.1, ease: 'power3', delay: 0.25 });
       showQuote(0);
     };
     if (reduced) {
       gsap.set('.community-list', { opacity: 1, transform: 'none' });
       gsap.set(quotes[0], { opacity: 1, transform: 'none' });
     } else {
+      gsap.fromTo('.community-headline h2', { yPercent: 110 }, {
+        yPercent: 0, duration: 1.2, ease: 'power4',
+        scrollTrigger: { trigger: '#community', start: 'top 70%' },
+      });
+      gsap.fromTo('.community-headline p', { opacity: 0, y: 20 }, {
+        opacity: 1, y: 0, duration: 0.8, ease: 'power3',
+        scrollTrigger: { trigger: '#community', start: 'top 65%' },
+      });
       ScrollTrigger.create({
         trigger: '#community',
         start: 'top 65%',
@@ -395,18 +397,6 @@
     }
     document.getElementById('quoteNext').addEventListener('click', () => showQuote(qi + 1));
     document.getElementById('quotePrev').addEventListener('click', () => showQuote(qi - 1));
-  }
-
-  /* ---------- image break parallax ---------- */
-  if (!reduced) {
-    gsap.fromTo('#imageBreakBg', { yPercent: -5, scale: 1.2 }, {
-      yPercent: 5, scale: 1.2, ease: 'none',
-      scrollTrigger: { trigger: '#imageBreak', start: 'top bottom', end: 'bottom top', scrub: 1 },
-    });
-    gsap.fromTo('.imageBreak-text p', { opacity: 0, y: 20 }, {
-      opacity: 1, y: 0, duration: 0.8, ease: 'power3',
-      scrollTrigger: { trigger: '#imageBreak', start: 'top 60%' },
-    });
   }
 
   /* ---------- footer ---------- */

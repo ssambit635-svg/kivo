@@ -6,7 +6,7 @@
   <title>kivo — your digital health twin</title>
   <meta name="description" content="kivo reads your lab results into a digital health twin — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/styles.css?v=3">
+  <link rel="stylesheet" href="/styles.css?v=4">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -286,17 +286,17 @@
       </div>
     </section>
 
-    <!-- ============ application (two phones) ============ -->
+    <!-- ============ application (one phone, text either side) ============ -->
     <section class="appSection" id="appSection">
       <div class="appSection-wrapper">
         <div class="appSection-title"><h2>we work to make every number in your report make sense</h2></div>
         <div class="appSection-screensHolder" id="appScreensHolder">
           <div class="appSection-screens">
+            <div class="appScreen-cta">
+              <p>your twin, every morning — the three markers worth a glance, and the one worth a call.</p>
+              <a class="ctaLink" href="/app/">open the app</a>
+            </div>
             <div class="appScreen appScreen--one">
-              <div class="appScreen-cta">
-                <p>your twin, every morning — the three markers worth a glance, and the one worth a call.</p>
-                <a class="ctaLink" href="/app/">open the app</a>
-              </div>
               <div class="phone">
                 <div class="phone-screen">
                   <div class="ph-status"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
@@ -327,47 +327,6 @@
                 </div>
               </div>
             </div>
-            <div class="appScreen appScreen--video">
-              <div class="phone phone--dark">
-                <div class="phone-screen phone-screen--dark">
-                  <div class="ph-status ph-status--dark"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
-                  <div class="ph-scrubs">
-                    <div class="ph-scrub ph-scrub--1">
-                      <div class="ph-header"><span class="ph-brand">tsh</span><span class="ph-date">loinc 3016-3</span></div>
-                      <div class="ph-big"><p class="ph-bigValue">2.1 <span>µIU/mL</span></p><p class="ph-bigSub">range 0.4 – 4.0 · inside yours</p></div>
-                      <svg class="ph-chart" viewBox="0 0 260 120" preserveAspectRatio="none" fill="none"><line x1="0" y1="40" x2="260" y2="40" stroke="currentColor" stroke-opacity=".2"/><line x1="0" y1="80" x2="260" y2="80" stroke="currentColor" stroke-opacity=".2"/><polyline points="0,64 30,62 60,66 90,63 120,65 150,62 180,64 210,61 240,63 260,62" stroke="currentColor" stroke-width="2"/></svg>
-                      <div class="ph-rows">
-                        <div class="ph-row"><span>stable for</span><span>11 months</span></div>
-                        <div class="ph-row"><span>drift caught</span><span>2.1x sooner</span></div>
-                        <div class="ph-row"><span>model brier</span><span>0.07</span></div>
-                      </div>
-                      <div class="ph-note">never a diagnosis — awareness, always</div>
-                    </div>
-                    <div class="ph-scrub ph-scrub--2">
-                      <div class="ph-header"><span class="ph-brand">hba1c</span><span class="ph-date">loinc 4548-4</span></div>
-                      <div class="ph-big"><p class="ph-bigValue">5.9 <span>%</span></p><p class="ph-bigSub">▲ 0.3 this quarter · watch</p></div>
-                      <svg class="ph-chart" viewBox="0 0 260 120" preserveAspectRatio="none" fill="none"><line x1="0" y1="40" x2="260" y2="40" stroke="currentColor" stroke-opacity=".2"/><line x1="0" y1="80" x2="260" y2="80" stroke="currentColor" stroke-opacity=".2"/><polyline points="0,96 30,92 60,94 90,84 120,76 150,68 180,60 210,52 240,44 260,40" stroke="currentColor" stroke-width="2"/></svg>
-                      <div class="ph-rows">
-                        <div class="ph-row"><span>target state</span><span>4.0 – 5.6 %</span></div>
-                        <div class="ph-row"><span>early catch</span><span>≈51 % improve</span></div>
-                        <div class="ph-row"><span>history</span><span>9 reports</span></div>
-                      </div>
-                      <div class="ph-note">never a diagnosis — awareness, always</div>
-                    </div>
-                    <div class="ph-scrub ph-scrub--3">
-                      <div class="ph-header"><span class="ph-brand">ask your doctor</span><span class="ph-date">prepared by your twin</span></div>
-                      <div class="ph-askCards">
-                        <div class="ph-askCard"><p>my a1c drifted +0.3 in one quarter — is this worth re-testing sooner?</p></div>
-                        <div class="ph-askCard"><p>my tsh has been flat for a year — can we extend the interval?</p></div>
-                      </div>
-                      <div class="ph-note">awareness, not a verdict — the decision stays yours</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="appSection-textHolder">
             <div class="appSection-text appSection-text--two" id="appTextTwo">
               <p>screens that answer, not decorate: what changed, why it matters, what to ask about.</p>
               <p>every screen is built from loinc-verified values — no marketing, no guesswork.</p>
@@ -452,11 +411,10 @@
           <p>join the kivo community — share what your twin taught you, and what yours is still learning</p>
         </div>
         <div class="community-list" id="communityList">
-          <div class="community-quotes"></div>
           <div class="community-listHolder">
             <button class="community-prev" id="quotePrev" aria-label="previous quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
             <button class="community-next" id="quoteNext" aria-label="next quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-            <div class="community-list" id="quoteList">
+            <div class="community-quoteList" id="quoteList">
               <div class="quote">
                 <h2>my twin caught the a1c drift eight weeks before my next check-up. i walked in asking the right question.</h2>
                 <p>@earlybird</p>
@@ -474,37 +432,6 @@
           <a class="ctaLink" href="/app/">open the app</a>
         </div>
       </div>
-    </section>
-
-    <!-- ============ image break ============ -->
-    <section class="imageBreak" id="imageBreak">
-      <div class="imageBreak-bg" id="imageBreakBg">
-        <svg class="imageBreak-wave" viewBox="0 0 1440 900" preserveAspectRatio="none" fill="none"><path d="M0 560h180l60-140 90 280 80-210 70 120h110l50-100 60 200 70-150h140l40-80 80 160 90-120h150l45 90 70-180 80 130h170" stroke="#f7f7f7" stroke-opacity=".25" stroke-width="2"/></svg>
-        <div class="imageBreak-phone">
-          <div class="phone phone--dark">
-            <div class="phone-screen phone-screen--dark">
-              <div class="ph-status ph-status--dark"><span>9:41</span><span class="ph-statusIcons">◦ ◦ ◦</span></div>
-              <div class="ph-header"><span class="ph-brand">kivo</span><span class="ph-date">signals</span></div>
-              <div class="ph-scrubs">
-                <div class="ph-scrub ph-scrub--1">
-                  <div class="ph-greeting">
-                    <p class="ph-greetingTitle ph-greetingTitle--dark">every report, a signal</p>
-                    <p class="ph-greetingSub ph-greetingSub--dark"><span data-kivo="narratives">127</span> narratives generated · <span data-kivo="curated">17</span> curated</p>
-                  </div>
-                  <div class="ph-rows ph-rows--big">
-                    <div class="ph-row"><span>hba1c drift</span><span>▲ 0.3</span></div>
-                    <div class="ph-row"><span>tsh stability</span><span>11 months</span></div>
-                    <div class="ph-row"><span>crp</span><span>low · good</span></div>
-                    <div class="ph-row"><span>brier</span><span>0.07</span></div>
-                  </div>
-                  <div class="ph-note">never a diagnosis — awareness, always</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="imageBreak-text"><p>your twin generates signals with every report</p></div>
     </section>
 
   </main>
@@ -570,6 +497,6 @@
   <script src="/vendor/gsap.min.js?v=2"></script>
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
-  <script src="/js/main.js?v=3"></script>
+  <script src="/js/main.js?v=4"></script>
 </body>
 </html>

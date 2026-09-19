@@ -90,7 +90,6 @@ img,svg{display:block}
   display:flex;
   flex-direction:column;
 }
-.phone-screen--dark{background:#01040e;color:#f7f7f7}
 .ph-status{
   display:flex;
   justify-content:space-between;
@@ -111,8 +110,6 @@ img,svg{display:block}
 .ph-greeting{padding:18px 26px 0}
 .ph-greetingTitle{font-size:17px;line-height:20px;letter-spacing:-.02em;margin-bottom:4px}
 .ph-greetingSub{font-size:12px;line-height:14px;color:#b3b3b3}
-.ph-greetingTitle--dark{color:#f7f7f7}
-.ph-greetingSub--dark{color:#7a7f8f}
 .ph-cards{padding:16px 26px 0;display:flex;flex-direction:column;gap:12px}
 .ph-card{
   background:#fff;
@@ -149,49 +146,6 @@ img,svg{display:block}
 }
 .ph-tab{width:22px;height:4px;border-radius:4px;background:#d9d9d9}
 .ph-tab--on{background:#121212}
-.phone-screen--dark .ph-note{color:#7a7f8f}
-/* dark phone screens (scrub states) */
-.ph-scrubs{position:relative;flex:1;margin-top:0}
-.ph-scrub{
-  position:absolute;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  padding:0 26px 22px;
-  opacity:0;
-  transform:scale(.96);
-}
-.ph-scrub--1{opacity:1;transform:scale(1)}
-.ph-big{padding:14px 0 4px}
-.ph-bigValue{font-size:44px;line-height:44px;letter-spacing:-.03em}
-.ph-bigValue span{font-size:18px;line-height:18px;letter-spacing:-.01em}
-.ph-bigSub{margin-top:8px;font-size:12px;line-height:14px;color:#7a7f8f}
-.ph-chart{
-  width:100%;
-  height:120px;
-  margin-top:14px;
-  color:#f7f7f7;
-}
-.ph-chart polyline{stroke:currentColor;stroke-width:2;fill:none}
-.ph-rows{margin-top:auto;display:flex;flex-direction:column;gap:10px}
-.ph-row{
-  display:flex;
-  justify-content:space-between;
-  font-size:12.5px;
-  line-height:14px;
-  color:#c9cdd8;
-}
-.ph-row span:first-child{color:#7a7f8f}
-.ph-rows--big{margin-top:16px;gap:14px}
-.ph-rows--big .ph-row{font-size:13.5px}
-.ph-askCards{margin-top:16px;display:flex;flex-direction:column;gap:12px}
-.ph-askCard{
-  background:rgba(247,247,247,.06);
-  border:1px solid rgba(247,247,247,.14);
-  border-radius:18px;
-  padding:14px 16px;
-}
-.ph-askCard p{font-size:12.5px;line-height:16px;color:#e8eaef}
 
 /* ============ loader ============ */
 .loader{
@@ -812,9 +766,9 @@ img,svg{display:block}
 .markerCard-cta div{flex:none;width:18px;height:18px}
 .markerCard-cta div svg{width:100%;height:auto}
 
-/* ============ application (two phones) ============ */
+/* ============ application (one phone, text either side) ============ */
 .appSection-wrapper{max-width:2560px;margin:0 auto;padding-top:165px}
-.appSection-title{padding-inline:52px;position:relative}
+.appSection-title{padding-inline:52px;position:relative;overflow:hidden}
 .appSection-title h2{
   font-size:120px;
   line-height:100px;
@@ -822,40 +776,34 @@ img,svg{display:block}
   color:#000;
   width:1233px;
   max-width:100%;
+  padding-bottom:.08em;
 }
 .appSection-screensHolder{
-  margin:clamp(80px,14vh,200px) auto 0;
-  min-height:100vh;
-  min-height:100dvh;
-  padding-block:clamp(48px,8vh,110px);
+  margin:clamp(64px,9vh,120px) auto 0;
+  padding-inline:52px;
   position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
 }
+/* three columns: text | phone | text — the copy hugs the phone instead of
+   drifting to the viewport edges, and nothing overlaps the device. */
 .appSection-screens{
-  width:min(1350px,100%);
-  padding-inline:clamp(20px,4vw,52px);
-  display:flex;
+  width:min(1200px,100%);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
   align-items:center;
-  justify-content:center;
-  gap:clamp(40px,5vw,90px);
-  flex-wrap:wrap;
-  position:relative;
+  column-gap:clamp(40px,6vw,110px);
 }
-.appScreen{width:350px;max-width:100%;flex:none}
+.appScreen{width:350px;max-width:100%;justify-self:center;min-width:0}
+.appScreen .phone{box-shadow:0 40px 80px rgba(0,0,0,.08)}
 .appScreen-cta{
-  width:min(310px,80vw);
-  flex:none;
+  width:min(310px,100%);
+  justify-self:end;
   opacity:0;
 }
-.appScreen-cta p{font-size:15px;line-height:18px;letter-spacing:-.005em;color:#121212;margin-bottom:40px}
-.appScreen--video{position:relative}
-.appSection-textHolder{
-  width:min(320px,80vw);
-  flex:none;
-}
+.appScreen-cta p{font-size:15px;line-height:18px;letter-spacing:-.005em;color:#121212;margin-bottom:32px}
 .appSection-text--two{
+  width:min(320px,100%);
+  justify-self:start;
   opacity:0;
 }
 .appSection-text--two p{font-size:15px;line-height:18px;letter-spacing:-.005em;color:#121212}
@@ -1040,45 +988,45 @@ img,svg{display:block}
 .stats-mark{position:absolute;left:0;top:0;z-index:0;width:100%;height:100%;color:#dedede}
 
 /* ============ community (testimonials) ============ */
+/* headline, quotes and cta sit in normal flow (no absolute overlap) — the
+   section still fills a viewport, and it hands straight over to the footer. */
 .community{
-  height:100vh;
-  height:100dvh;
-  min-height:620px;
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;
+  align-items:center;
+  padding-block:clamp(96px,14vh,160px);
   overflow:hidden;
 }
 .community-wrapper{
   padding-inline:52px;
   max-width:2560px;
+  width:100%;
   margin:0 auto;
-  height:100%;
-  position:relative;
   display:flex;
+  flex-direction:column;
   align-items:center;
-  justify-content:center;
 }
 .community-headline{
-  padding-inline:52px;
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
   display:flex;
   flex-direction:column;
   align-items:center;
   width:100%;
-  z-index:0;
+  text-align:center;
+  overflow:hidden;
 }
 .community-headline h2{
-  font-size:clamp(120px,10vw,194px);
+  font-size:clamp(64px,9.4vw,180px);
   line-height:.9;
   text-align:center;
   letter-spacing:-.035em;
   color:#000;
   white-space:nowrap;
   font-weight:500;
+  padding-bottom:.08em;
 }
 .community-headline p{
-  margin-top:20px;
+  margin-top:16px;
   width:528px;
   max-width:100%;
   font-size:15px;
@@ -1093,14 +1041,14 @@ img,svg{display:block}
   flex-direction:column;
   align-items:center;
   opacity:0;
-  transform:scale(.9);
-  position:relative;
-  z-index:2;
+  transform:scale(.96);
+  margin-top:clamp(48px,7vh,88px);
 }
-.community-listHolder{width:100%;height:280px;position:relative;margin-top:60px}
+.community-listHolder{width:min(1100px,100%);position:relative}
 .community-prev,.community-next{
   position:absolute;
-  top:22%;
+  top:50%;
+  transform:translateY(-50%);
   background:none;
   padding:0;
   border:none;
@@ -1109,26 +1057,34 @@ img,svg{display:block}
   width:40px;
   height:40px;
   z-index:3;
+  transition:opacity .3s ease;
 }
+.community-prev:hover,.community-next:hover{opacity:.5}
 .community-prev svg,.community-next svg{width:100%;height:auto}
-.community-prev{left:189px}
-.community-next{right:189px}
-#quoteList{width:100%;position:relative;height:100%}
+.community-prev{left:0}
+.community-next{right:0}
+/* all quotes share one grid cell, so the holder is as tall as the longest
+   quote and the crossfade never needs a hard-coded height. */
+.community-quoteList{
+  width:100%;
+  display:grid;
+  padding-inline:72px;
+}
 .quote{
-  position:absolute;
-  left:0;top:0;
-  transform:scale(.8);
+  grid-area:1/1;
+  transform:scale(.9);
   opacity:0;
   width:100%;
   display:flex;
   align-items:center;
   flex-direction:column;
+  justify-content:center;
 }
 .quote h2{
   margin:0 auto;
-  width:min(calc(100vw - 650px),100%);
+  width:min(820px,100%);
   font-size:44px;
-  line-height:44px;
+  line-height:46px;
   text-align:center;
   letter-spacing:-.02em;
   color:#121212;
@@ -1142,56 +1098,12 @@ img,svg{display:block}
   color:#121212;
   margin-top:28px;
 }
-.community-list > .ctaLink{margin-top:100px;pointer-events:auto}
-
-/* ============ image break ============ */
-.imageBreak{
-  height:100vh;
-  height:100dvh;
-  min-height:620px;
-  overflow:hidden;
-  background:#000;
-  position:relative;
-}
-.imageBreak-bg{
-  position:absolute;
-  left:0;
-  top:-10%;
-  width:100%;
-  height:120%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:radial-gradient(120% 90% at 50% 10%,#121212 0%,#000 70%);
-}
-.imageBreak-wave{
-  position:absolute;
-  left:0;
-  top:50%;
-  transform:translateY(-50%);
-  width:100%;
-  height:60%;
-  pointer-events:none;
-}
-.imageBreak-phone{
-  position:relative;
-  z-index:2;
-  transform:translateX(14vw);
-}
-.imageBreak-text{
-  position:absolute;
-  left:0;
-  top:60px;
-  z-index:3;
-  padding-inline:52px;
-  width:100%;
-}
-.imageBreak-text p{font-size:15px;line-height:18px;letter-spacing:-.005em;color:#f7f7f7}
+.community-list > .ctaLink{margin-top:56px;pointer-events:auto}
 
 /* ============ footer ============ */
 .footer{
   background:#fff;
-  margin-top:65px;
+  margin-top:0;
   position:relative;
   z-index:2;
 }
@@ -1199,7 +1111,7 @@ img,svg{display:block}
   width:100%;
   max-width:1920px;
   margin:0 auto;
-  padding:40px 52px 219px;
+  padding:40px 52px 160px;
   display:flex;
   flex-direction:column;
   justify-content:space-between;
@@ -1211,7 +1123,7 @@ img,svg{display:block}
 }
 .footer-title{position:relative;overflow:hidden}
 .footer-title p{
-  font-size:clamp(48px,11.5vw,180px);
+  font-size:clamp(48px,9.3vw,180px);
   line-height:.96;
   letter-spacing:-.035em;
   color:#000;
@@ -1221,8 +1133,7 @@ img,svg{display:block}
   font-weight:500;
   white-space:nowrap;
 }
-.footer-title--2{margin-top:-20px}
-.footer-title--3{margin-top:-40px}
+.footer-title--2,.footer-title--3{margin-top:-.1em}
 .footer-title span{
   position:absolute;
   left:50%;
@@ -1306,8 +1217,8 @@ img,svg{display:block}
   .stats-grid01 .stats-title h2{font-size:64px;line-height:60px}
   .stats-grid04 h2{font-size:100px;line-height:90px}
   .stats-grid06 .stats-marquee{font-size:64px;line-height:60px}
-  .community-headline h2{font-size:280px;line-height:260px}
-  .quote h2{width:1620px}
+  .community-headline h2{font-size:240px;line-height:.9}
+  .quote h2{width:min(1200px,100%);font-size:56px;line-height:58px}
   .twinStory-titleHolder h2{font-size:470px;line-height:470px;letter-spacing:-11.75px}
   .markers-text h2{font-size:180px;line-height:172px;letter-spacing:-6.3px}
   .markerCard-top h2{font-size:100px;line-height:90px;letter-spacing:-3.5px}
@@ -1328,14 +1239,9 @@ img,svg{display:block}
   .stats-grid01 .stats-title h2{font-size:36px;line-height:32px}
   .stats-grid04 h2{font-size:52px;line-height:48px}
   .stats-grid02 h2,.stats-grid03 .stats-text h2,.stats-grid05 .stats-text h2,.stats-grid06 .stats-text h2,.stats-grid07 .stats-text h2{font-size:80px;line-height:80px}
-  .community-headline{padding-inline:20px}
-  .community-headline h2{font-size:140px;line-height:120px}
   .community-headline p{width:450px}
-  .community-prev{left:166px}
-  .community-next{right:166px}
-  .community-prev,.community-next{top:28%}
-  .quote h2{width:min(calc(100vw - 560px),100%)}
-  .community-list > .ctaLink{margin-top:40px}
+  .quote h2{font-size:40px;line-height:42px}
+  .community-list > .ctaLink{margin-top:48px}
   .topNav{padding:20px 52px}
 }
 
@@ -1346,7 +1252,7 @@ img,svg{display:block}
   .twinStory-illustration{width:578px;height:578px}
   .markers{padding-top:98px;padding-bottom:130px}
   .markers-cardHolder{margin-top:130px}
-  .appSection-screens{width:min(972px,100%)}
+  .appSection-screens{width:min(1040px,100%);column-gap:clamp(40px,5vw,90px)}
   .phone{width:272px;height:580px;border-radius:38px}
   .phone-screen{border-radius:34px}
   .appScreen{width:272px}
@@ -1355,7 +1261,6 @@ img,svg{display:block}
   .stats-wrapper{grid-template-rows:repeat(3,minmax(0,187px))}
   .stats-grid01 .stats-title h2{font-size:28px;line-height:32px}
   .stats-grid04 h2{font-size:44px;line-height:44px}
-  .community-headline h2{font-size:120px;line-height:100px}
   .hero-title{font-size:180px;line-height:172px}
   .twin-title h2{font-size:min(220px,19.5vw,30dvh)}
 }
@@ -1374,15 +1279,17 @@ img,svg{display:block}
   .stats-grid03 .stats-imageHolder{padding:28px 0 28px 20px}
   .footer-title p{white-space:normal}
   .footer-title--2,.footer-title--3{margin-top:0}
+  .footer-titles{margin-bottom:100px}
 }
 
 @media only screen and (max-width:1050px){
-  .twin{height:auto;min-height:0;padding-top:300px;overflow:visible}
+  .twin{height:auto;min-height:0;padding-top:120px;overflow:visible}
   .twin-holder{height:auto}
-  .twin-textHolder{grid-template-rows:auto;grid-template-columns:repeat(6,minmax(0,1fr));gap:40px;padding-bottom:80px}
+  .twin-textHolder{grid-template-rows:auto;grid-template-columns:repeat(6,minmax(0,1fr));gap:40px;padding-bottom:72px}
   .twin-titleHolder{grid-row:auto;grid-column:1/-1}
   .twin-title h2{font-size:clamp(72px,12vw,120px);line-height:.92;white-space:normal}
-  .twin-para{width:auto}
+  .twin-title h2 br{display:none}
+  .twin-para{width:auto;max-width:560px}
   .twin-para--one{grid-row:auto;grid-column:1/span 6;align-self:auto}
   .twin-para--two{grid-row:auto;grid-column:1/span 6;align-self:auto}
   .twin-features{
@@ -1391,8 +1298,9 @@ img,svg{display:block}
     display:grid;
     grid-template-columns:repeat(6,minmax(0,1fr));
     grid-template-rows:auto;
-    padding-block:60px;
-    gap:40px 20px;
+    padding-block:72px;
+    gap:48px 20px;
+    background:#000;
   }
   .twin-feature--long .twin-featureElements,
   .twin-feature--personal .twin-featureElements,
@@ -1400,10 +1308,12 @@ img,svg{display:block}
   .twin-feature--plain .twin-featureElements{grid-column:1/span 3;align-self:start;justify-self:start}
   .twin-feature--connect .twin-featureElements,.twin-feature--plain .twin-featureElements{grid-column:4/span 3}
   .twin-featureDivider{display:none}
+  .twin-featureElements{gap:16px}
   .twin-featureElements h2{font-size:36px;line-height:34px;white-space:normal}
   .twin-featureElements p{width:auto;padding-right:40px}
   .twin-videoHolder{display:none}
   .twinStory-titleHolder h2{font-size:clamp(110px,16vw,200px);line-height:1}
+  .markers-text h2{font-size:clamp(56px,10vw,100px);line-height:.9}
   .twinStory-information{grid-template-columns:repeat(6,minmax(0,1fr))}
   .twinStory-divider{grid-column:1/-1}
   .twinStory-informationTitle{grid-column:1/span 2}
@@ -1413,8 +1323,10 @@ img,svg{display:block}
   .markerCard:first-of-type{grid-column:1/span 3}
   .markerCard:nth-of-type(2){grid-column:4/span 3}
   .markerCard:nth-of-type(3){grid-column:1/span 3}
-  .appSection-screens{justify-content:center}
-  .appScreen{width:272px}
+  .appSection-wrapper{padding-top:120px}
+  .appSection-title h2{font-size:clamp(56px,9.5vw,100px);line-height:.92;width:auto}
+  .appSection-screens{column-gap:clamp(32px,4vw,60px)}
+  .appScreen{width:260px}
   .phone{width:260px;height:562px}
   .stats-wrapper{
     grid-template-columns:repeat(6,minmax(0,1fr));
@@ -1431,10 +1343,11 @@ img,svg{display:block}
   .stats-grid06 .stats-marquee{font-size:44px;line-height:40px}
   .bottomBar-left{display:none}
   .bottomBar{justify-content:flex-end}
-  .community-headline h2{font-size:clamp(64px,10.5vw,120px);line-height:1;white-space:normal}
+  .community-headline h2{font-size:clamp(56px,10.5vw,120px);line-height:.95;white-space:normal}
   .footer-holder{padding-inline:52px}
   .footer-bottom{grid-template-columns:repeat(6,minmax(0,1fr))}
   .footer-title-sm{font-size:14px}
+  .footer-copyright{white-space:normal}
   .footer-col{grid-column:span 2}
   .footer-col--main{grid-column:1/span 2;grid-row:2}
   .footer-col--product{grid-column:3/span 2;grid-row:2}
@@ -1442,19 +1355,19 @@ img,svg{display:block}
   .footer-col--follow{grid-column:1/span 2;grid-row:4;margin-top:64px}
   .footer-col--join{grid-column:3/span 2;grid-row:4;margin-top:64px}
   .footer-divider--two{grid-row:5}
-  .quote h2{width:min(calc(100vw - 280px),100%)}
-  .community-prev{left:50px}
-  .community-next{right:50px}
-  .community-prev,.community-next{top:43%}
+  .quote h2{font-size:36px;line-height:38px}
 }
 
 @media only screen and (max-width:950px){
   .twinStory-illustrationHolder{align-items:flex-start;margin-bottom:0}
   .twinStory-illustrationText{margin-top:160px}
   .twinStory-illustration{left:auto;right:0;top:auto;bottom:0;transform:none;width:min(calc(100vw - 40px),560px);height:auto;aspect-ratio:1}
-  .imageBreak-phone{transform:none}
-  .imageBreak-bg{justify-content:flex-end;padding-right:8vw}
   .stats-wrapper{padding-inline:40px}
+  /* app section stacks: intro copy → phone → detail copy, all centred */
+  .appSection-screensHolder{margin-top:56px;padding-inline:20px}
+  .appSection-screens{grid-template-columns:minmax(0,1fr);justify-items:center;row-gap:40px}
+  .appScreen-cta,.appSection-text--two{justify-self:center;width:min(360px,100%);text-align:center}
+  .appScreen-cta p{margin-bottom:24px}
 }
 
 @media only screen and (max-width:850px){
@@ -1469,14 +1382,14 @@ img,svg{display:block}
   .stats-grid06{grid-row:4;grid-column:1/span 3}
   .stats-grid07{grid-row:5;grid-column:1/span 3}
   .stats-grid02 h2,.stats-grid03 .stats-text h2,.stats-grid05 .stats-text h2,.stats-grid06 .stats-text h2,.stats-grid07 .stats-text h2{font-size:64px;line-height:60px}
-  .community-headline h2{font-size:clamp(52px,11vw,100px);line-height:1}
-  .community-listHolder{height:auto;min-height:280px;padding-bottom:56px}
-  .quote{position:relative;transform:none;display:none}
-  .quote:first-child{display:flex}
-  .quote h2{width:100%}
-  .community-prev,.community-next{top:unset;bottom:0}
-  .community-prev{left:calc(50% - 96px)}
-  .community-next{right:calc(50% - 96px)}
+  .community-headline h2{font-size:clamp(48px,11vw,100px);line-height:.95}
+  /* arrows drop below the quote so the copy can use the full width */
+  .community-listHolder{padding-bottom:64px}
+  .community-quoteList{padding-inline:0}
+  .community-prev,.community-next{top:auto;bottom:0;transform:none}
+  .community-prev{left:calc(50% - 72px)}
+  .community-next{right:calc(50% - 72px)}
+  .community-list > .ctaLink{margin-top:32px}
   .footer-holder{padding-block:140px}
   .topNav{padding:16px 40px}
   .bottomBar{padding:16px 40px}
@@ -1503,26 +1416,31 @@ img,svg{display:block}
 
 @media only screen and (max-width:770px){
   .twinStory-wrapper{padding-bottom:140px}
-  .twinStory-illustrationHolder{margin-bottom:200px}
-  .twinStory-illustrationText{margin-top:10vh}
-  .twinStory-illustration{margin-top:4vh;width:min(calc(100vw - 80px),520px)}
-  .imageBreak-phone{transform:none}
+  .twinStory-illustrationHolder{height:auto;min-height:0;display:block;margin-bottom:120px}
+  .twinStory-illustrationText{margin-top:0}
+  .twinStory-illustrationText p{position:static;margin-bottom:28px}
+  .twinStory-titleHolder{justify-content:flex-start}
+  .twinStory-titleHolder h2{white-space:normal;font-size:clamp(64px,15vw,150px);line-height:.95}
+  .twinStory-illustration{position:relative;right:auto;bottom:auto;margin:40px auto 0;width:min(calc(100vw - 80px),520px)}
   .footer-holder{padding-bottom:120px}
   .footer-titles{margin-bottom:120px}
 }
 
 @media only screen and (max-width:700px){
   .learn-wrapper h2{font-size:60px;line-height:60px}
-  .community-headline h2{font-size:clamp(44px,12vw,84px);line-height:1}
-  .quote h2{font-size:34px;line-height:36px}
+  .community-headline h2{font-size:clamp(44px,12vw,84px);line-height:.95}
+  .quote h2{font-size:32px;line-height:36px}
   .stats-grid04 h2{font-size:64px;line-height:60px}
 }
 
 @media only screen and (max-width:650px){
   .hero-title{font-size:120px;line-height:110px;top:110px}
-  .twinStory-titleHolder h2{font-size:clamp(64px,17vw,110px);line-height:1}
-  .twinStory-illustrationText p{top:15px}
+  .twinStory-titleHolder h2{font-size:clamp(56px,15vw,96px);line-height:.95}
   .twinStory{margin-top:30px}
+  .markers-cardHolder{margin-top:64px}
+  .markerCard:first-of-type,.markerCard:nth-of-type(2),.markerCard:nth-of-type(3){grid-column:1/-1}
+  .markerCard-imageHolder svg{width:140px;height:48px}
+  .appSection-title h2{font-size:clamp(44px,11.5vw,72px)}
   .twinStory-wrapper{padding-bottom:100px}
   .twinStory-information{grid-template-columns:repeat(6,minmax(0,1fr));column-gap:12px}
   .twinStory-informationTitle,.twinStory-informationText{grid-column:1/-1}
@@ -1548,17 +1466,16 @@ img,svg{display:block}
   .stats-grid06{min-height:190px}
   .stats-grid06 .stats-marquee{font-size:32px;line-height:30px}
   .stats-grid07{min-height:200px}
-  .community-headline h2{font-size:clamp(44px,13vw,74px);line-height:1}
+  .community-headline h2{font-size:clamp(44px,13vw,74px);line-height:.95}
   .community-headline p{width:100%}
+  .community{padding-block:96px 80px}
   .hero-img{right:0;left:0;width:auto;justify-content:center;align-items:flex-start}
   .phone--hero{transform:translateY(60px) scale(.68)}
   .hero-text{top:auto;bottom:239px;left:50%;transform:translateX(-50%);margin-left:0;width:340px;max-width:calc(100vw - 40px);text-align:center}
 }
 
 @media only screen and (max-width:600px){
-  .community-headline h2{font-size:clamp(40px,13vw,64px);line-height:1}
-  .imageBreak-bg{justify-content:center;padding-right:0}
-  .imageBreak-phone{transform:translateX(-6vw)}
+  .community-headline h2{font-size:clamp(40px,13vw,64px);line-height:.95}
   .footer-holder{padding-bottom:120px}
   .footer-titles{margin-bottom:100px}
 }
@@ -1568,16 +1485,23 @@ img,svg{display:block}
 }
 
 @media only screen and (max-width:510px){
-  .community-headline h2{font-size:clamp(40px,12vw,52px);line-height:1}
-  .appSection-screens{gap:24px}
+  .community-headline h2{font-size:clamp(40px,12vw,52px);line-height:.95}
   .phone{width:240px;height:519px}
   .appScreen{width:240px}
+  /* narrower device: tighten the mock screen's gutters so lines don't break */
+  .ph-status,.ph-header,.ph-greeting,.ph-cards{padding-inline:16px}
+  .ph-note{margin-inline:16px}
+  .ph-greetingTitle{font-size:16px}
 }
 
 @media only screen and (max-width:500px){
-  .twin{padding-top:240px}
+  .twin{padding-top:96px}
   .twin-title--black{padding-left:20px}
+  .twin-textHolder{padding-inline:20px}
+  .twin-features{padding:56px 20px}
+  .twin-featureElements p{padding-right:0}
   .twinStory-information{padding-inline:20px}
+  .twinStory-illustrationText p,.twinStory-titleHolder{padding-inline:20px}
   .markers-wrapper{padding-inline:20px}
   .markers-cardHolder{column-gap:12px}
   .markerCard-top{padding:12px 12px 0}
@@ -1604,24 +1528,20 @@ img,svg{display:block}
 }
 
 @media only screen and (max-width:400px){
-  .twin{padding-top:200px}
-  .twin-features{padding-block:100px}
-  .twin-featureElements p{padding-right:0}
+  .twin{padding-top:80px}
+  .twin-features{padding:48px 12px}
   .markers-wrapper{padding-inline:12px}
   .stats-wrapper{padding-inline:12px}
   .community-wrapper{padding-inline:12px}
-  .community-headline{padding-inline:12px}
   .footer-holder{padding-inline:12px;padding-bottom:80px}
   .footer-titles{margin-bottom:60px}
   .topNav{padding:16px 12px}
   .bottomBar{padding:16px 12px}
   .waterStick-shape{width:min(200px,64vw)}
   .loader-numberIndicator,.loader-year{display:none}
-  .imageBreak-text{padding-inline:12px}
   .twinStory-illustrationText p,.twinStory-titleHolder{padding-inline:12px}
   .hero-cta{bottom:120px}
   .hero-text{max-width:calc(100vw - 24px)}
-  .footer-copyright{white-space:normal}
 }
 
 /* landscape phones / very short viewports: stack instead of clipping */
@@ -1635,10 +1555,6 @@ img,svg{display:block}
   .phone--hero{width:240px;height:519px;transform:none}
   .waterStick{height:auto;min-height:100vh;min-height:100dvh;padding-block:80px}
   .waterStick-shape{height:220px}
-  .community{height:auto;min-height:100vh;min-height:100dvh;padding-block:90px}
-  .community-wrapper{height:auto}
-  .community-listHolder{height:auto;min-height:280px}
-  .imageBreak{height:auto;min-height:100vh;min-height:100dvh;padding-block:70px}
-  .imageBreak-bg{top:0;height:100%}
+  .community{padding-block:90px}
   .learn{padding-block:90px}
 }

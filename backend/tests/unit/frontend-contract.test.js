@@ -158,3 +158,98 @@ describe('frontend contract', () => {
     }
   });
 });
+
+/**
+ * Landing page (`/`, frontend/landing). It is animation-driven: gsap and
+ * ScrollTrigger are handed dozens of selector strings, and a selector that no
+ * longer matches anything (a section that was removed, a class that was
+ * renamed) fails silently — the tween just never plays. These tests parse the
+ * selectors out of main.js and assert every one of them still resolves.
+ */
+describe('landing page', () => {
+  const html = read('landing/index.html');
+  const css = read('landing/styles.css');
+  const js = read('landing/js/main.js');
+
+  /** every single-quoted string in main.js that looks like a css selector list */
+  function selectorLiterals(source) {
+    const out = new Set();
+    for (const m of source.matchAll(/'([^'\n]*)'/g)) {
+      const s = m[1].trim();
+      if (/^[.#][A-Za-z_-]/.test(s)) out.add(s);
+    }
+    return out;
+  }
+
+  it('ships every root-relative asset the html references', () => {
+    const refs = [...html.matchAll(/(?:href|src)="(\/[^"]+)"/g)]
+      .map((m) => m[1].split('?')[0])
+      .filter((p) => !['/', '/app/', '/doctor/'].includes(p));
+    expect(refs.length).toBeGreaterThan(3);
+    for (const ref of refs) {
+      expect(existsSync(path.join(frontend, 'landing', ref)), `${ref} is missing`).toBe(true);
+    }
+    // the stylesheet's self-hosted fonts must be shipped too
+    for (const m of css.matchAll(/url\((\/fonts\/[^)]+)\)/g)) {
+      expect(existsSync(path.join(frontend, 'landing', m[1])), `${m[1]} is missing`).toBe(true);
+    }
+  });
+
+  it('every element id main.js looks up exists in the landing html', () => {
+    const missing = [...referencedIds(js)].filter((id) => !html.includes(`id="${id}"`));
+    expect(missing).toEqual([]);
+  });
+
+  it('every gsap / ScrollTrigger selector still resolves to markup or a style rule', () => {
+    const literals = selectorLiterals(js);
+    expect(literals.size).toBeGreaterThan(30);
+    const missing = new Set();
+    for (const list of literals) {
+      for (const compound of list.split(',')) {
+        for (const token of compound.trim().split(/\s+/)) {
+          const bare = token.replace(/:[a-z-]+(\([^)]*\))?/g, ''); // drop pseudo-classes
+          if (bare.startsWith('#')) {
+            if (!html.includes(`id="${bare.slice(1)}"`)) missing.add(`${list} → ${bare}`);
+          } else if (bare.startsWith('.')) {
+            const cls = bare.slice(1);
+            if (!html.includes(cls) && !css.includes(`.${cls}`)) missing.add(`${list} → ${bare}`);
+          }
+        }
+      }
+    }
+    expect([...missing]).toEqual([]);
+  });
+
+  it('every class the noscript / no-motion fallbacks target exists', () => {
+    const noscript = html.match(/<noscript><style>([\s\S]*?)<\/style><\/noscript>/);
+    expect(noscript).not.toBeNull();
+    const fallback = noscript[1] + '\n' + (css.match(/\.no-motion[^\n]*/g) || []).join('\n');
+    const classes = new Set([...fallback.matchAll(/\.([A-Za-z][A-Za-z0-9_-]*)/g)].map((m) => m[1]));
+    classes.delete('no-motion');
+    const missing = [...classes].filter((cls) => !html.includes(`class="${cls}`) && !html.includes(` ${cls}`) && !html.includes(`${cls} `) && !html.includes(`${cls}"`));
+    expect(missing).toEqual([]);
+  });
+
+  it('keeps the section layout the page was tuned for (one app phone, no dark interlude before the footer)', () => {
+    // the application section shows a single (light) phone with copy either side
+    const app = html.slice(html.indexOf('id="appSection"'), html.indexOf('id="learnSection"'));
+    expect((app.match(/class="phone"/g) || []).length).toBe(1);
+    expect(app).not.toContain('phone--dark');
+    expect(app).toContain('class="appScreen-cta"');
+    expect(app).toContain('class="appSection-text appSection-text--two"');
+    // the community section hands straight over to the footer
+    expect(html).not.toContain('imageBreak');
+    expect(html.indexOf('id="community"')).toBeLessThan(html.indexOf('<footer'));
+    expect(html.slice(html.indexOf('id="community"'), html.indexOf('<footer'))).not.toMatch(/<section/);
+    // the two testimonials containers are distinct so the reveal tween targets one node
+    expect(html).toContain('class="community-quoteList" id="quoteList"');
+  });
+
+  it('no inline event handlers and vendor scripts are self-hosted (CSP: script-src \'self\')', () => {
+    expect(html).not.toMatch(/\son[a-z]+\s*=/i);
+    for (const m of html.matchAll(/<script[^>]*src="([^"]+)"/g)) {
+      expect(m[1].startsWith('/'), `${m[1]} is not self-hosted`).toBe(true);
+    }
+    expect(html).not.toMatch(/<script(?![^>]*src=)[^>]*>[\s\S]*?<\/script>/);
+  });
+});
