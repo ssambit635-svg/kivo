@@ -13,9 +13,9 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -36,8 +36,8 @@ jobs:
       - name: Security posture (headers, CORS, monitor)
         run: npm run security:headers
 
-      - name: Dependency vulnerability audit
-        run: npm audit --omit=dev --audit-level=high
+      - name: Dependency advisory gate (high / critical)
+        run: npm run security:deps
 
       - name: End-to-end endpoint smoke test
         run: npm run smoke
