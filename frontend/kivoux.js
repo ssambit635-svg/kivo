@@ -706,10 +706,27 @@
 
   /* ------------------------------------------------------------------ init */
 
+  function injectAuthHero() {
+    var auth = $('auth-view');
+    if (!auth || !auth.parentNode || auth.parentNode.querySelector('.auth-hero')) return;
+    var h = document.createElement('div');
+    h.className = 'auth-hero';
+    h.innerHTML = '<img src="./img/walk.jpg" alt="" />' +
+      '<div class="auth-hero-shade"></div>' +
+      '<div class="auth-hero-copy">' +
+      '<span class="hero-greet">your body, alive</span>' +
+      '<p>Scan it. Understand it. <b>Grow your twin.</b></p>' +
+      '</div>';
+    auth.parentNode.insertBefore(h, auth);
+  }
+
   function init() {
     paintStaticIcons();
     bindNav();
     bindHeroAndQA();
+    injectAuthHero();
+    var sc = $('scan-close'); if (sc) Icons.set(sc.querySelector('.btn-ic'), 'x', 15);
+    var sg = $('scan-gallery'); if (sg) Icons.set(sg.querySelector('.btn-ic'), 'upload', 15);
 
     // ranges need --fill even before first input
     document.querySelectorAll('input[type="range"]').forEach(paintFill);

@@ -146,6 +146,18 @@
     <!-- ================= DASHBOARD ================= -->
     <section id="dash-view" class="hidden">
 
+      <!-- member strip: kept for app.js/CI contract, visually retired by theme.css -->
+      <div class="member-strip card">
+        <span class="avatar" id="member-icon" aria-hidden="true">A</span>
+        <div class="member-info">
+          <strong id="member-name">—</strong>
+          <span class="muted" id="member-sub">kivo health</span>
+        </div>
+        <button id="btn-refresh" class="btn ghost sm icon-btn" type="button" title="Refresh data" aria-label="Refresh data">
+          <span id="refresh-icon" class="btn-ic" aria-hidden="true">↻</span>
+        </button>
+      </div>
+
       <!-- ========== PAGE · HOME ========== -->
       <div class="page" id="page-home">
         <section class="hero" aria-label="Greeting">
