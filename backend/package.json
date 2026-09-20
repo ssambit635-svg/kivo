@@ -20,6 +20,7 @@
     "security:all": "npm run security:scan && npm run security:headers && npm run security:deps",
     "seed:admin": "node scripts/create-admin.js",
     "seed:demo": "node scripts/seed-demo.js",
+    "apk:build": "node scripts/apk/build-apk.js",
     "ocr:setup": "node scripts/ocr-setup.js",
     "knowledge:vendor": "node scripts/knowledge/vendor.js",
     "knowledge:build": "node scripts/knowledge/build.js",
