@@ -54,6 +54,16 @@ jobs:
     name: Build, sign and verify kivo.apk
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    # Loop breaker. This job commits android/BUILD_REPORT.md — and, when the
+    # package verifies, frontend/kivo.apk — back to the branch it built. On a
+    # pull_request event GitHub matches `paths` against the whole PR diff rather
+    # than the last push, so excluding BUILD_REPORT.md there cannot stop the
+    # resulting push from waking this job again: it would rebuild, re-report and
+    # re-push forever. Skipping runs whose sender is the workflow's own bot ends
+    # that after exactly one commit, while every human/bot-PR push still builds.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.sender.login != 'github-actions[bot]'
 
     steps:
       - name: Check out the repository
