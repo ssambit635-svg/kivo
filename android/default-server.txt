@@ -1,0 +1,15 @@
+# kivo — baked-in default server
+# -------------------------------
+# The first non-blank, non-comment line of this file is compiled into kivo.apk
+# as the server it opens straight into (no first-run "server address" screen).
+#
+#   1. Deploy the backend once (free): README.md → "Permanent cloud deploy".
+#   2. Replace the line below with your URL, e.g.
+#          https://kivo-mvp.onrender.com
+#   3. Commit. CI rebuilds kivo.apk automatically (Releases → apk-latest).
+#
+# Leave this file with comments only to keep the classic first-run picker.
+#
+# Examples:
+#   https://kivo-mvp.onrender.com          (Render free tier, permanent URL)
+#   http://192.168.1.7:8080                (laptop on the demo Wi-Fi)

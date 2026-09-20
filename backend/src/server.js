@@ -1,7 +1,23 @@
 import { Container } from './container/Container.js';
 import { createApp } from './app.js';
+import { Config } from './config/Config.js';
 
-function boot() {
+async function boot() {
+  // Cloud hosts (Render free tier) wipe the disk on every restart. When
+  // SEED_DEMO_ON_BOOT=1, restore the demo journey BEFORE the server opens its
+  // own container, so the two never hold the SQLite file at the same time.
+  // The seed is a no-op when the demo account already exists.
+  const bootstrapConfig = new Config();
+  if (bootstrapConfig.seedOnBoot) {
+    console.log('SEED_DEMO_ON_BOOT=1 — restoring demo data if the database is empty…');
+    try {
+      const { seedDemo } = await import('../scripts/seed-demo.js');
+      await seedDemo();
+    } catch (err) {
+      console.error(`demo seed failed (server continues anyway): ${err.message}`);
+    }
+  }
+
   const container = new Container();
   const app = createApp(container);
   const { host, port } = container.config;

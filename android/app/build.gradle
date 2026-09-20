@@ -38,6 +38,26 @@ if (keystorePropertiesFile.exists()) {
 def apkVersionCode = Integer.parseInt((project.findProperty('kivoVersionCode') ?: '1000').toString())
 def apkVersionName = (project.findProperty('kivoVersionName') ?: '1.1.0').toString()
 
+// Baked-in default server (hackathon/cloud mode).
+//
+// Put the permanent kivo URL — e.g. https://kivo-mvp.onrender.com — into
+// android/default-server.txt (first non-blank, non-comment line) and every
+// build of the app opens straight into that server: no first-run "server
+// address" screen, no laptop, no npm start. The picker is still reachable
+// from the menu ("Change server…") for a local LAN demo. When the file is
+// empty or missing, the resource is not generated and the app keeps the
+// classic first-run picker behaviour.
+def defaultServerFile = rootProject.file('default-server.txt')
+def kivoDefaultServer = ''
+if (defaultServerFile.exists()) {
+    defaultServerFile.eachLine { line ->
+        def trimmed = line.trim()
+        if (kivoDefaultServer.isEmpty() && !trimmed.isEmpty() && !trimmed.startsWith('#')) {
+            kivoDefaultServer = trimmed
+        }
+    }
+}
+
 android {
     namespace 'ai.kivo.app'
     compileSdk 34
@@ -48,6 +68,9 @@ android {
         targetSdk 34       // Android 14
         versionCode apkVersionCode
         versionName apkVersionName
+        if (!kivoDefaultServer.isEmpty()) {
+            resValue "string", "kivo_default_server", kivoDefaultServer
+        }
     }
 
     signingConfigs {

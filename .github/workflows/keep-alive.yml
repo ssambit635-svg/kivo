@@ -1,0 +1,54 @@
+name: Keep the kivo cloud awake
+
+# Render's free tier spins the service down after ~15 minutes without traffic;
+# the next visitor then waits ~30-60 s while it boots. The APK already retries
+# through that window by itself, but on demo day "the judge opens the app and
+# it just opens" is the whole point — so this workflow pings /api/health every
+# 10 minutes and keeps the service warm.
+#
+# One-time setup AFTER the Render deploy (a repository VARIABLE, not a secret):
+#   Settings → Secrets and variables → Actions → Variables → New repository variable
+#     Name:  KIVO_SERVER_URL
+#     Value: https://your-kivo-url.onrender.com
+#
+# Until that variable exists the job exits silently, so merging this file
+# before deploying is safe. (GitHub also disables scheduled workflows on repos
+# with no activity for 60 days — re-enable them from the Actions tab.)
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping /api/health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the kivo server
+        env:
+          URL: ${{ vars.KIVO_SERVER_URL }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "KIVO_SERVER_URL is not set — nothing to keep awake."
+            echo "Add it: Settings → Secrets and variables → Actions → Variables → New repository variable."
+            exit 0
+          fi
+          echo "Keeping $URL awake…"
+          for i in 1 2 3; do
+            code=$(curl -s -o /tmp/health.json -w '%{http_code}' --max-time 60 "$URL/api/health") || code=000
+            echo "attempt $i: HTTP $code $(head -c 120 /tmp/health.json 2>/dev/null)"
+            if [ "$code" = "200" ]; then
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::warning::kivo cloud did not answer 200 after 3 attempts — check the Render dashboard"

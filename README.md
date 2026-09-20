@@ -65,9 +65,16 @@ Or just take the artifact CI already built:
 `kivo.apk` (also served by the backend at `/download/apk`, which is what every
 "Download App (APK)" button in the web app points at).
 
-Install it, allow "install unknown apps", start the backend (`cd backend && npm start`) and type
-your computer's LAN address — e.g. `http://192.168.1.7:8080`. `localhost` is the phone, not your
-laptop; the app says so if you try it.
+**Two ways the APK finds its server:**
+
+- **Cloud build (default for the demo):** put the permanent URL into
+  [`android/default-server.txt`](android/default-server.txt) and CI bakes it into the APK. The app
+  then opens straight into the product — no first-run screen, no laptop, no `npm start`. If the
+  free-tier cloud host is waking from sleep, the shell retries quietly (a bounded 2 attempts)
+  before showing any error. The menu's "Change server…" keeps the picker reachable for a LAN demo.
+- **LAN build (file left empty):** classic behaviour — start the backend (`cd backend && npm start`)
+  and type your computer's LAN address, e.g. `http://192.168.1.7:8080`. `localhost` is the phone,
+  not your laptop; the app says so if you try it.
 
 The APK is **built by the Android toolchain in CI and verified twice before publication**
 (`apksigner` + `aapt2 dump badging`, then an independent
@@ -77,6 +84,40 @@ exists because a previously committed, hand-assembled APK was rejected by Androi
 *"There was a problem parsing the package"* — its hand-built resource table had zero entries, so
 the manifest's `android:icon` reference resolved to nothing. Details and the post-mortem:
 [`android/README.md`](android/README.md).
+
+## Permanent cloud deploy (free, no laptop) — the hackathon setup
+
+The whole product runs on **one free Render web service** (Node + SQLite, zero external
+services): API, patient app, doctor console and the APK download, all from a single permanent
+`https` URL. Code lives on GitHub; every push to `main` auto-deploys.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/ssambit635-svg/kivo)
+
+**One-time setup (~3 minutes, browser only):**
+
+1. Click **Deploy to Render** above (or render.com → *New + → Blueprint* → pick this repo). Render
+   reads [`render.yaml`](render.yaml) and provisions the free service — it generates a strong
+   `JWT_SECRET` automatically and sets `SEED_DEMO_ON_BOOT=1`.
+2. Copy the service URL Render gives you (e.g. `https://kivo-api-xxxx.onrender.com` — you can set
+   a cleaner subdomain under Settings → *Render Subdomain*).
+3. Paste that URL into [`android/default-server.txt`](android/default-server.txt) and commit to
+   `main`. CI rebuilds `kivo.apk` with the server baked in → download it from
+   [releases/tag/apk-latest](https://github.com/ssambit635-svg/kivo/releases/tag/apk-latest),
+   install once, done — **the app opens straight into kivo, every time, from anywhere.**
+4. Recommended for demo day: add a repository variable `KIVO_SERVER_URL = <your url>`
+   (Settings → Secrets and variables → Actions → Variables). The
+   [keep-alive workflow](.github/workflows/keep-alive.yml) then pings the service every 10 minutes
+   so the free tier never sleeps in front of the judges.
+
+**Honest free-tier notes** (worth saying to judges — this prototype states its trade-offs):
+the disk is ephemeral, so `SEED_DEMO_ON_BOOT` re-seeds the demo journey (patient, doctor, reports,
+care plans) at every boot — the app is always demo-ready, while judge-created accounts reset on
+restart. An idle service sleeps after ~15 min; the APK auto-retries through the ~30-60 s wake,
+and the keep-alive workflow removes even that. A paid instance + persistent disk removes both
+limits.
+
+Demo logins after deploy (seeded automatically): patient `demo@kivo.dev` / `Kivo!Demo#2026` ·
+doctor `dr.mohan@kivo.dev` / `Kivo!Doctor#2026`.
 
 ## Care network — subscription → consultation + doctor shorts
 
