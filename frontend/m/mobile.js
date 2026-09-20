@@ -8,6 +8,7 @@
   var state = {
     user: { email: 'demo@kivo.dev', name: 'Demo User' },
     member: { id: 'mem-demo', name: 'Demo Profile' },
+    tokens: null,
     score: 88,
     activeTab: 'home',
     reports: [
@@ -36,6 +37,18 @@
     setTimeout(function() {
       t.classList.remove('visible');
     }, 3000);
+  }
+  function loadTokens(){ try{ var raw=localStorage.getItem('mt.tokens'); if(raw) state.tokens=JSON.parse(raw);}catch(e){} }
+  function api(path, opts){
+    opts=opts||{};
+    var headers={'Content-Type':'application/json'};
+    if(state.tokens && state.tokens.accessToken) headers.Authorization='Bearer '+state.tokens.accessToken;
+    return fetch('/api'+path,{method:opts.method||'GET', headers:headers, body: opts.body? JSON.stringify(opts.body): undefined})
+      .then(function(res){ return res.json().then(function(body){ if(!res.ok) throw new Error((body && body.error && body.error.message)||'Request failed'); return body; }); });
+  }
+  function withLoading(btn, fn){
+    if(!btn || btn.disabled) return;
+    btn.disabled=true; var p=fn(); var done=function(){ btn.disabled=false; }; if(p && p.then) p.then(done,done); else done();
   }
 
   // Tab switching
@@ -115,6 +128,8 @@
 
   // Wire events
   function init() {
+    loadTokens();
+    if(state.tokens && state.tokens.accessToken){ api('/members').then(function(body){ var owned=body.owned||[]; var all=owned.concat(body.shared||[]); if(all.length){ state.member = owned.find(function(m){return m.relationship==='self';}) || all[0]; } }).catch(function(){}); }
     // Navigation tabs
     var navTabs = document.querySelectorAll('.nav-tab');
     navTabs.forEach(function(tab) {
@@ -232,14 +247,25 @@
         chatBox.appendChild(userMsg);
         chatInput.value = '';
 
-        // Simulate intelligent response
-        setTimeout(function() {
-          var botMsg = document.createElement('div');
-          botMsg.className = 'chat-msg bot';
-          botMsg.innerHTML = '<strong>kivo Intelligence:</strong> Analyzed against your LOINC lab history. HbA1c (5.4%) and fasting blood glucose (92 mg/dL) are in optimal metabolic ranges. LDL is slightly elevated at 112 mg/dL (target < 100 mg/dL). No urgent clinical anomalies detected.';
-          chatBox.appendChild(botMsg);
-          chatBox.scrollTop = chatBox.scrollHeight;
-        }, 600);
+        var memberId = state.member && state.member.id && state.member.id!=='mem-demo' ? state.member.id : null;
+        if(!memberId){
+          setTimeout(function(){
+            var botMsg=document.createElement('div'); botMsg.className='chat-msg bot';
+            botMsg.innerHTML='<strong>kivo:</strong> Please sign in on the main app for grounded answers. Demo insight: HbA1c 5.4% optimal, LDL 112 slightly above target.';
+            chatBox.appendChild(botMsg); chatBox.scrollTop=chatBox.scrollHeight;
+          },400);
+          return;
+        }
+        api('/members/'+memberId+'/ask',{method:'POST', body:{question:text}}).then(function(res){
+          var botMsg=document.createElement('div'); botMsg.className='chat-msg bot';
+          botMsg.innerHTML='<strong>kivo:</strong> '+(res.answer||res.text||JSON.stringify(res).slice(0,300));
+          if(res.disclaimer) botMsg.innerHTML+='<div style="font-size:11px; color:#6b8291; margin-top:6px;">'+res.disclaimer+'</div>';
+          chatBox.appendChild(botMsg); chatBox.scrollTop=chatBox.scrollHeight;
+        }).catch(function(err){
+          var botMsg=document.createElement('div'); botMsg.className='chat-msg bot';
+          botMsg.innerHTML='<strong>kivo:</strong> '+(err.message||'Could not answer — try again.');
+          chatBox.appendChild(botMsg); chatBox.scrollTop=chatBox.scrollHeight;
+        });
       }
 
       chatSend.addEventListener('click', sendChat);
@@ -252,7 +278,7 @@
     var apkBtns = document.querySelectorAll('.apk-download-trigger');
     apkBtns.forEach(function(btn) {
       btn.addEventListener('click', function() {
-        showToast('Downloading kivo.apk (Direct Installer)...');
+withLoading(btn, function(){ showToast('Downloading kivo.apk…'); return Promise.resolve(); });
       });
     });
 
