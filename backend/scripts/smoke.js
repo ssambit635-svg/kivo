@@ -160,16 +160,16 @@ async function main() {
   });
   // The mobile surface: a phone judge taps /m/ and the APK button. A silent
   // 404 here is a dead button on stage, so both are probed end-to-end.
-  await check('GET /m/ (dedicated mobile app served)', async () => {
+  await check('GET /m/ (legacy APK opens real login)', async () => {
     const r = await req('GET', '/m/');
     expectStatus(r.status, 200, 'mobile app');
-    if (!r.text.includes('app-viewport')) throw new Error('phone shell markup missing');
+    if (!r.text.includes('id="auth-form"')) throw new Error('real login markup missing');
     if (!r.headers.get('content-security-policy')) throw new Error('no CSP on /m/');
   });
   await check('GET /m/mobile.js (mobile logic served)', async () => {
     const r = await req('GET', '/m/mobile.js');
     expectStatus(r.status, 200, 'mobile.js');
-    if (!r.text.includes('data-goto-tab')) throw new Error('mobile.js does not wire its jump links');
+    if (!r.text.includes("location.replace('/app/')")) throw new Error('legacy mobile entry does not forward to the real app');
   });
   await check('GET /download/apk (installer served as an attachment)', async () => {
     const r = await req('GET', '/download/apk');

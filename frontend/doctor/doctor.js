@@ -1200,8 +1200,10 @@
       .catch(function () { /* the form stays usable without the catalog */ });
 
     try {
-      var raw = localStorage.getItem(TOKEN_KEY);
-      if (raw) state.tokens = JSON.parse(raw);
+      var handoff = sessionStorage.getItem('kivo.role-handoff');
+      sessionStorage.removeItem('kivo.role-handoff');
+      var raw = handoff || localStorage.getItem(TOKEN_KEY);
+      if (raw) saveTokens(JSON.parse(raw));
     } catch (e) { /* private mode */ }
 
     if (state.tokens && state.tokens.accessToken) {

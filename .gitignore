@@ -13,3 +13,6 @@ uploads/
 # python byte-code from the android/tools scripts
 __pycache__/
 *.pyc
+
+playwright-report/
+test-results/

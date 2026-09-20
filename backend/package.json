@@ -26,7 +26,8 @@
     "knowledge:build": "node scripts/knowledge/build.js",
     "knowledge:train": "node scripts/knowledge/train.js",
     "knowledge:verify": "node scripts/knowledge/verify.js",
-    "knowledge:all": "npm run knowledge:build && npm run knowledge:train"
+    "knowledge:all": "npm run knowledge:build && npm run knowledge:train",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -38,6 +39,7 @@
     "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "supertest": "^7.1.0",
     "vitest": "^2.1.9"
   }

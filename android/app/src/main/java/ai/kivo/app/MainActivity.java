@@ -38,6 +38,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
@@ -47,27 +51,11 @@ import java.util.Enumeration;
 import java.util.List;
 
 /**
- * kivo — Android shell.
- *
- * The whole product is a phone-first web app served by the kivo backend, so the
- * native side is deliberately thin and has zero dependencies (no AndroidX, no
- * Kotlin, no third-party SDK). What it adds on top of a browser:
- *
- *   - a launcher icon and an app entry that points at your kivo server;
- *   - the runtime permissions the report scanner (getUserMedia → camera) and
- *     voice journaling (microphone) need, granted to the WebView;
- *   - a file chooser so the "upload from gallery" fallback works;
- *   - a first-run screen for the server address, with the phone's own LAN IPs
- *     shown so the "which address do I type?" question answers itself;
- *   - honest error screens (host not found / refused / TLS rejected) instead of
- *     a blank page — this is a demo that has to survive a hotel Wi-Fi;
- *   - a menu that switches between the three surfaces the backend serves
- *     (/m/ phone app, /app/ dashboard, /doctor/ console) without reinstalling.
- *
- * The page is loaded from the server rather than bundled into the APK on
- * purpose: the web app calls `/api/...` with relative URLs, registers a service
- * worker and shares one origin with its assets. Loading it from the server keeps
- * all of that working and means a frontend change never needs a new APK.
+ * kivo Android shell. Patient and doctor UI assets are packaged into the APK
+ * and served under the configured cloud origin by shouldInterceptRequest.
+ * The login document needs no network; /api and protected media always use
+ * the real cloud. /native/ deliberately avoids old /app service workers.
+ * Camera/microphone permissions and gallery selection are native bridges.
  */
 public class MainActivity extends Activity {
 
@@ -75,8 +63,8 @@ public class MainActivity extends Activity {
     private static final String KEY_SERVER = "server_url";
     private static final String KEY_SURFACE = "surface";
 
-    /** The three frontends the backend serves. `/m/` is the phone-first one. */
-    private static final String SURFACE_PHONE = "/m/";
+    /** The bundled phone app plus patient and doctor compatibility surfaces. */
+    private static final String SURFACE_PHONE = "/native/";
     private static final String SURFACE_DASHBOARD = "/app/";
     private static final String SURFACE_DOCTOR = "/doctor/";
 
@@ -151,21 +139,16 @@ public class MainActivity extends Activity {
         configureWebView();
         showLanHint();
 
-        String savedServer = prefs.getString(KEY_SERVER, "");
-        currentSurface = prefs.getString(KEY_SURFACE, SURFACE_PHONE);
-        if (TextUtils.isEmpty(savedServer)) {
-            String baked = defaultServer();
-            if (!TextUtils.isEmpty(baked)) {
-                // Cloud build (android/default-server.txt baked at compile
-                // time): straight into the product — no server picker, no
-                // laptop, no npm start. The menu still has "Change server…".
-                start(baked, currentSurface);
-                return;
-            }
-            showSetup();
+        // A cloud APK always starts on the bundled login, never a stale LAN
+        // preference or the last-opened doctor/dashboard surface. LAN overrides
+        // are deliberate, session-only choices in the advanced menu.
+        String baked = defaultServer();
+        String server = TextUtils.isEmpty(baked) ? prefs.getString(KEY_SERVER, "") : baked;
+        currentSurface = SURFACE_PHONE;
+        if (TextUtils.isEmpty(server)) {
+            showSetup(); // development builds only
         } else {
-            serverInput.setText(savedServer);
-            start(savedServer, currentSurface);
+            start(server, SURFACE_PHONE);
         }
     }
 
@@ -212,7 +195,7 @@ public class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setMediaPlaybackRequiresUserGesture(false);   // voice journal, video shorts
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setTextZoom(100);
         // Only https origins are ever loaded, so file access stays off.
         settings.setAllowFileAccess(false);
@@ -285,7 +268,7 @@ public class MainActivity extends Activity {
         setupPanel.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
         updateBar();
-        webView.loadUrl(server + path);
+        webView.loadUrl(server + path + (SURFACE_PHONE.equals(path) ? "?login=1" : ""));
     }
 
     private void reload() {
@@ -326,7 +309,7 @@ public class MainActivity extends Activity {
         if (barServer == null) {
             return;
         }
-        barServer.setText(getString(R.string.bar_server, hostOf(currentServer), currentSurface));
+        barServer.setVisibility(View.GONE); // infrastructure is not patient-facing UI
     }
 
     private static String hostOf(String server) {
@@ -367,11 +350,11 @@ public class MainActivity extends Activity {
         if (TextUtils.isEmpty(uri.getHost())) {
             return null;
         }
-        String result = uri.toString();
-        while (result.endsWith("/")) {
-            result = result.substring(0, result.length() - 1);
-        }
-        return result;
+        if (!("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
+                || uri.getUserInfo() != null) return null;
+        // Accept pasted /api/health, /m/ or /app/ URLs, but keep ONLY the
+        // origin. Otherwise appending a surface produces /api/health/m/.
+        return uri.buildUpon().path("").query(null).fragment(null).build().toString();
     }
 
     /** Anything unrecognised falls back to the phone app. */
@@ -725,11 +708,68 @@ public class MainActivity extends Activity {
         }
     }
 
+    private boolean sameOrigin(Uri url) {
+        if (url == null || TextUtils.isEmpty(currentServer)) return false;
+        Uri origin = Uri.parse(currentServer);
+        return TextUtils.equals(origin.getScheme(), url.getScheme())
+                && TextUtils.equals(origin.getHost(), url.getHost())
+                && effectivePort(origin) == effectivePort(url);
+    }
+
+    private static int effectivePort(Uri uri) {
+        return uri.getPort() >= 0 ? uri.getPort() : ("https".equals(uri.getScheme()) ? 443 : 80);
+    }
+
+    /** Only shipped UI files: no API interception, traversal, APK or patient data. */
+    static String bundledAsset(String path) {
+        if (path == null) return null;
+        String relative;
+        if (path.startsWith("/native/")) relative = path.substring(8);
+        else if (path.startsWith("/app/")) relative = path.substring(5);
+        else if (path.startsWith("/doctor/")) relative = "doctor/" + path.substring(8);
+        else return null;
+        if (relative.isEmpty()) relative = "index.html";
+        if ("doctor/".equals(relative)) relative += "index.html";
+        if (relative.contains("..") || relative.contains("\\") || relative.startsWith("/")) return null;
+        if (relative.matches("(?:index\\.html|[a-z-]+\\.(?:js|css)|manifest\\.webmanifest|icons/[a-z0-9-]+\\.png|doctor/(?:index\\.html|doctor\\.(?:js|css)))")) return relative;
+        return null;
+    }
+
+    private static String assetMime(String asset) {
+        if (asset.endsWith(".html")) return "text/html";
+        if (asset.endsWith(".js")) return "application/javascript";
+        if (asset.endsWith(".css")) return "text/css";
+        if (asset.endsWith(".png")) return "image/png";
+        return "application/manifest+json";
+    }
+
     /* ------------------------------------------------------------------ */
     /* WebViewClient                                                       */
     /* ------------------------------------------------------------------ */
 
     private final class KivoWebViewClient extends WebViewClient {
+
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            if (request == null || !"GET".equals(request.getMethod()) || !sameOrigin(request.getUrl())) return null;
+            String path = request.getUrl().getPath();
+            String asset = bundledAsset(path);
+            if (asset == null) return null; // /api and media always use the real server
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Cache-Control", "no-store");
+            headers.put("X-Content-Type-Options", "nosniff");
+            headers.put("Content-Security-Policy", "default-src 'self'; script-src 'self'; script-src-attr 'none'; "
+                    + "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; "
+                    + "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
+            try {
+                return new WebResourceResponse(assetMime(asset), "UTF-8", 200, "OK", headers,
+                        getAssets().open("web/" + asset));
+            } catch (IOException missing) {
+                // Never fall through to a backend 404/JSON screen for a UI asset.
+                return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", headers,
+                        new ByteArrayInputStream("App file missing. Please update kivo.".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            }
+        }
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -739,15 +779,14 @@ public class MainActivity extends Activity {
             }
             String scheme = url.getScheme() == null ? "" : url.getScheme().toLowerCase();
             if (scheme.equals("http") || scheme.equals("https")) {
-                String host = url.getHost();
-                String serverHost = "";
-                try {
-                    serverHost = Uri.parse(currentServer).getHost();
-                } catch (Exception ignored) {
-                    // currentServer can be empty before the first connect
-                }
-                if (host != null && host.equals(serverHost)) {
-                    return false; // our own app: stay inside the shell
+                if (sameOrigin(url)) {
+                    String path = url.getPath();
+                    if (request.isForMainFrame() && ("/".equals(path) || "/m/".equals(path)
+                            || "/m".equals(path) || (path != null && path.startsWith("/api")))) {
+                        webView.loadUrl(currentServer + SURFACE_PHONE);
+                        return true;
+                    }
+                    return false;
                 }
                 openExternal(url);  // anything else: real browser
                 return true;
@@ -814,6 +853,7 @@ public class MainActivity extends Activity {
                 handler.cancel();
             }
             String code = error == null ? "unknown" : String.valueOf(error.getPrimaryError());
+            loadHadError = true;
             showError(getString(R.string.err_ssl, code, currentServer));
         }
 
@@ -864,6 +904,7 @@ public class MainActivity extends Activity {
                 return;
             }
             runOnUiThread(() -> {
+                if (!sameOrigin(request.getOrigin())) { request.deny(); return; }
                 String[] wanted = request.getResources();
                 boolean needsCamera = false;
                 boolean needsMic = false;
