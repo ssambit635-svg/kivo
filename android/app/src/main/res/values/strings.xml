@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">kivo</string>
+    <string name="menu">Menu</string>
+    <string name="close">Close</string>
+    <string name="choose_file">Choose a report</string>
+
+    <!-- first-run server screen -->
+    <string name="setup_subtitle">Your health twin, in your pocket</string>
+    <string name="setup_label">kivo server address</string>
+    <string name="setup_placeholder">http://192.168.1.7:8080</string>
+    <string name="setup_connect">Connect</string>
+    <string name="setup_hint">Start the backend on your computer (cd backend, then npm start) and type that computer\'s address here. The phone and the computer must be on the same Wi-Fi.\n\nlocalhost will not work — on a phone, localhost is the phone.</string>
+    <string name="setup_hint_with_ips">Start the backend on your computer (cd backend, then npm start) and type that computer\'s address here. The phone and the computer must be on the same Wi-Fi.\n\nThis phone is on the network as %1$s — the server is almost certainly another address on the same subnet.\n\nlocalhost will not work — on a phone, localhost is the phone.</string>
+    <string name="warn_loopback">localhost points at the phone itself. Use your computer\'s LAN address, e.g. http://192.168.1.7:8080</string>
+
+    <!-- native bar -->
+    <string name="bar_server">%1$s · %2$s</string>
+
+    <!-- menu -->
+    <string name="action_reload">Reload</string>
+    <string name="action_surface_phone">Phone app (/m/)</string>
+    <string name="action_surface_dashboard">Dashboard (/app/)</string>
+    <string name="action_surface_doctor">Doctor console (/doctor/)</string>
+    <string name="action_change_server">Change server…</string>
+    <string name="action_open_browser">Open in browser</string>
+    <string name="action_about">About this build</string>
+
+    <!-- errors -->
+    <string name="error_title">Could not open kivo</string>
+    <string name="error_retry">Try again</string>
+    <string name="error_change_server">Change server</string>
+    <string name="err_invalid_url">That does not look like a server address. Try http://192.168.1.7:8080</string>
+    <string name="err_no_browser">No browser available to open that link.</string>
+    <string name="err_no_picker">No file picker available on this device.</string>
+    <string name="err_permission">Permission was not granted, so the scanner cannot use that hardware.</string>
+    <string name="err_host_lookup">No such host: %1$s\n\nCheck the address, and that the backend is running and on the same Wi-Fi as the phone.</string>
+    <string name="err_connect">Could not connect to %1$s\n\n%2$s\n\nIs the backend running? Does its firewall allow the port from the phone?</string>
+    <string name="err_timeout">%1$s took too long to answer.\n\nThe backend may be busy running OCR — try again in a few seconds.</string>
+    <string name="err_ssl">The TLS certificate was rejected (%1$s) for %2$s.\n\nFor a LAN demo use http:// — this shell refuses to ignore a bad certificate.</string>
+    <string name="err_http_404">The server answered 404 for %1$s\n\nThe backend is reachable but is not serving that page.</string>
+    <string name="err_http_generic">The server answered %1$s for %2$s</string>
+    <string name="err_generic">The page could not load (code %1$s) from %2$s\n\n%3$s</string>
+
+    <!-- about -->
+    <string name="about_no_server">not set</string>
+    <string name="about_unknown">unknown</string>
+    <string name="about_body">Package: %1$s\nVersion: %2$s (%3$s)\n\nServer: %4$s\nSurface: %5$s\nAndroid WebView: %6$s\n\nkivo is a risk-awareness prototype, not a diagnosis engine.</string>
+</resources>

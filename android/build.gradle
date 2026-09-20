@@ -1,0 +1,12 @@
+// kivo Android shell — top-level build script.
+//
+// The APK is a thin, dependency-free WebView wrapper around the frontend that
+// already ships in /frontend: no AndroidX, no Kotlin, no third-party libraries,
+// so a CI build only has to download the Android Gradle Plugin itself.
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}
+
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
+}

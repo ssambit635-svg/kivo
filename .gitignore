@@ -9,3 +9,7 @@ backend/data/
 backend/uploads/
 uploads/
 .DS_Store
+
+# python byte-code from the android/tools scripts
+__pycache__/
+*.pyc

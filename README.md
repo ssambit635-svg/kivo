@@ -29,6 +29,7 @@ City-battle strategy and gap analysis: [`HACKATHON_GAP_ANALYSIS.md`](HACKATHON_G
 | RBAC | Complete - `user_roles` table (`patient` / `doctor` / `admin`), server-side grants, re-read per request · doctors cannot touch the patient API · patients cannot open the console |
 | Tests | Complete - **564 passing** in 43 files (`cd backend && npm test`) + 120-check live endpoint smoke (`npm run smoke`) |
 | Frontend | Complete - Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
+| Android app | Complete - **Installable `kivo.apk`** (`ai.kivo.app`, minSdk 24 / targetSdk 34) built by GitHub Actions with the real toolchain (AAPT2 + javac + D8 + apksig v1/v2), verified twice before it is published · WebView shell with a surface switcher (`/m/`, `/app/`, `/doctor/`), camera + mic grants for the report scanner, gallery file chooser, honest network-error screens · see [`android/README.md`](android/README.md) |
 
 ## Quick start (cost-free)
 
@@ -43,8 +44,39 @@ npm run ocr:setup  # ONE-TIME: vendors Tesseract language data for offline image
 npm run seed:demo  # demo patient + demo doctor + 2 shorts (prints both logins)
 npm run smoke      # boots the real server & exercises EVERY endpoint (120 checks)
 npm run security:all  # secret scan + security-posture check + dependency audit
+npm run apk:build  # signed Android APK: local SDK if you have one, else GitHub Actions
 node scripts/create-admin.js admin@clinic.dev 'Admin' 'Str0ng!Passw0rd#x'
 ```
+
+## Android app (`kivo.apk`)
+
+The phone app is a thin, dependency-free WebView shell around the web product — no AndroidX, no
+Kotlin, no third-party SDK. It adds what a browser tab cannot: a launcher icon, camera and
+microphone runtime grants for the report scanner and voice journal, a gallery file chooser, a
+first-run server picker that shows the phone's own Wi-Fi IPs, a switcher between the three
+surfaces the backend serves, and real error screens instead of a blank page.
+
+```bash
+cd backend && npm run apk:build     # local SDK if present, otherwise it drives GitHub Actions via gh
+```
+
+Or just take the artifact CI already built:
+[releases/tag/apk-latest](https://github.com/ssambit635-svg/kivo/releases/tag/apk-latest) →
+`kivo.apk` (also served by the backend at `/download/apk`, which is what every
+"Download App (APK)" button in the web app points at).
+
+Install it, allow "install unknown apps", start the backend (`cd backend && npm start`) and type
+your computer's LAN address — e.g. `http://192.168.1.7:8080`. `localhost` is the phone, not your
+laptop; the app says so if you try it.
+
+The APK is **built by the Android toolchain in CI and verified twice before publication**
+(`apksigner` + `aapt2 dump badging`, then an independent
+[`android/tools/verify_apk.py`](android/tools/verify_apk.py) that re-checks the container, the
+binary manifest, the resource table, the DEX checksums and both signature schemes). That guard
+exists because a previously committed, hand-assembled APK was rejected by Android with
+*"There was a problem parsing the package"* — its hand-built resource table had zero entries, so
+the manifest's `android:icon` reference resolved to nothing. Details and the post-mortem:
+[`android/README.md`](android/README.md).
 
 ## Care network — subscription → consultation + doctor shorts
 

@@ -1,0 +1,16 @@
+# Gradle / Android build output — never commit these
+.gradle/
+build/
+app/build/
+local.properties
+captures/
+*.iml
+.idea/
+
+# Signing material. CI writes both; a real release key belongs in repository
+# secrets (KIVO_KEYSTORE_BASE64 / _PASSWORD / KIVO_KEY_ALIAS / KIVO_KEY_PASSWORD),
+# never in git.
+keystore.properties
+ci-signing/
+*.keystore
+*.jks
