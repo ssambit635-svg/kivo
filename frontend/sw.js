@@ -10,7 +10,7 @@
  * separate frontend for a separate role, and clinical screens should never be
  * served stale from a cache.
  */
-const VERSION = 'kivo-v2-login';
+const VERSION = 'kivo-v3-session';
 const SHELL = [
   '/app/',
   '/app/index.html',

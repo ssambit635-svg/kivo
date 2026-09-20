@@ -18,7 +18,11 @@ export class Config {
       throw new Error('FATAL: JWT_SECRET must be set in production');
     }
     this.accessTokenTtlSec = Number(env.ACCESS_TOKEN_TTL_SEC || 15 * 60); // 15 minutes
-    this.refreshTokenTtlSec = Number(env.REFRESH_TOKEN_TTL_SEC || 7 * 24 * 3600); // 7 days
+    // "Stay signed in on this device until I sign out": the refresh token is
+    // rotated (and its window extended) on every use, so an app that is opened
+    // at least once a month never asks for a password again. Signing out —
+    // or the server revoking the family — is what ends the session.
+    this.refreshTokenTtlSec = Number(env.REFRESH_TOKEN_TTL_SEC || 30 * 24 * 3600); // 30 days
     this.loginMaxFailedAttempts = Number(env.LOGIN_MAX_FAILED_ATTEMPTS || 5);
     this.lockoutMinutes = Number(env.LOCKOUT_MINUTES || 15);
 
@@ -102,6 +106,13 @@ export class Config {
     // There is no real KYC/registry integration anywhere in this build; the
     // value is echoed in API responses and badged "MOCK" in every UI surface.
     this.doctorKycMode = 'mock';
+    // A medical council certificate (PDF/JPEG/PNG) is read before a doctor
+    // account is allowed into the console. 4 MB covers a council PDF or a
+    // straight-on phone photo of the certificate without inviting abuse.
+    this.maxCertificateBytes = Math.max(
+      64 * 1024,
+      Math.round(Number(env.MAX_CERTIFICATE_MB || 4) * 1024 * 1024),
+    );
     // How long a patient's chart consent to a doctor lasts once a
     // consultation is booked (patient can revoke at any time before then).
     this.consentDefaultDays = Number(env.CONSENT_DEFAULT_DAYS || 30);

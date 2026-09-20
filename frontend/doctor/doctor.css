@@ -138,3 +138,9 @@
 
 /* Wordmark spacing on the auth card. */
 .doc-console-hint { margin-top: 10px; }
+
+/* Patient / Doctor role toggles on the auth card — the doctor side is a link
+   back to the patient app, so it keeps anchor defaults (no button reset). */
+.role-tabs a.tab { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.role-tabs a.tab:hover { color: var(--teal-dark); }
+.doc-body .role-tabs { margin-top: 16px; }

@@ -11,6 +11,15 @@ export const authSchemas = {
     password: z.string().min(12, 'Password must be at least 12 characters').max(128),
   }),
   login: z.object({ email: emailSchema, password: passwordSchema }),
+  /**
+   * Doctor sign-in additionally carries the medical council registration number
+   * — the certificate check happens BEFORE a doctor session is handed out.
+   */
+  doctorLogin: z.object({
+    email: emailSchema,
+    password: passwordSchema,
+    registrationNo: z.string().trim().min(3, 'Registration number required').max(40),
+  }),
   refresh: z.object({ refreshToken: z.string().min(20).max(512) }),
   logout: z.object({ refreshToken: z.string().min(20).max(512).optional() }),
   changePassword: z.object({
@@ -39,6 +48,15 @@ export class AuthController {
     try {
       const session = await this.auth.login(req.body, ctxFromReq(req));
       res.json(session);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  /** Doctor console sign-in: password + registration certificate number. */
+  doctorLogin = async (req, res, next) => {
+    try {
+      res.json(await this.auth.loginDoctor(req.body, ctxFromReq(req)));
     } catch (e) {
       next(e);
     }

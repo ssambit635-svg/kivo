@@ -43,8 +43,10 @@ export class DoctorService {
     authService,
     policyService,
     auditService,
+    certificateService = null,
   }) {
     this.config = config;
+    this.certificates = certificateService;
     this.doctors = doctorRepository;
     this.videos = videoRepository;
     this.consultations = consultationRepository;
@@ -62,11 +64,157 @@ export class DoctorService {
 
   // ----------------------------------------------------------------- apply
   /**
-   * Self-serve doctor onboarding. Creates the ACCOUNT (no health twin — a
-   * doctor is not a patient here), the professional profile, and — in demo
-   * mode — completes the mock KYC so the console is usable immediately.
+   * Self-serve doctor onboarding WITHOUT a certificate document: the typed
+   * registration number is checked (format + uniqueness) and recorded as a
+   * `registration_no_only` certificate verdict. In demo mode the profile is
+   * activated immediately so the hackathon flow needs no queue — production
+   * (DOCTOR_AUTO_APPROVE=false) leaves it pending for the admin to review.
    */
   apply(payload, ctx = {}) {
+    const { user, doctor, autoApprove } = this.createAccount(payload, ctx);
+    // Demo mode records the registration number as the certificate verdict, so
+    // the doctor can sign in with that number right away. Production keeps the
+    // profile pending until an admin reviews it.
+    const verdict = this.certificates
+      ? this.certificates.checkRegistrationNo({
+          registrationNo: doctor.registration_no,
+          profileRegistrationNo: doctor.registration_no,
+        })
+      : null;
+    if (verdict) this.recordCertificate(doctor.id, verdict, payload);
+    if (autoApprove) {
+      this.doctors.setKyc(doctor.id, {
+        status: 'mock_verified',
+        ref: `MOCK-KYC-${randomCode(8, SLUG_ALPHABET).toUpperCase()}`,
+      });
+      this.doctors.setStatus(doctor.id, 'active');
+      this.roles.grant(user.id, 'doctor', { grantedBy: null });
+    }
+    return this.finishApplication({ user, doctor, certificate: verdict, ctx });
+  }
+
+  /**
+   * The sign-up path the doctor console actually uses: the same account
+   * creation, but with the medical council certificate attached, and activation
+   * driven by the certificate check rather than by demo convenience.
+   */
+  async applyWithCertificate(payload, file, ctx = {}) {
+    const { user, doctor } = this.createAccount(payload, ctx);
+    const verdict = await this.certificates.verifyDocument({
+      file,
+      registrationNo: payload.registrationNo,
+      registrationCouncil: payload.registrationCouncil || null,
+      fullName: payload.displayName,
+      profileRegistrationNo: doctor.registration_no,
+    });
+    this.recordCertificate(doctor.id, verdict, payload, { userId: user.id, ctx });
+    // Only a verified certificate may activate a profile — and only when demo
+    // auto-approval is on. A rejected document leaves the account pending with
+    // the reasons attached, ready for a corrected upload.
+    if (verdict.status === 'verified' && this.config.doctorAutoApprove) {
+      this.doctors.setKyc(doctor.id, { status: 'mock_verified', ref: verdict.ref });
+      this.doctors.setStatus(doctor.id, 'active');
+      this.roles.grant(user.id, 'doctor', { grantedBy: null });
+    }
+    return this.finishApplication({ user, doctor, certificate: verdict, ctx });
+  }
+
+  /** Shared tail: session + the doctor/certificate payload every client reads. */
+  finishApplication({ user, doctor, certificate, ctx }) {
+    const fresh = this.doctors.findById(doctor.id);
+    const session = this.auth.issueSession(user, ctx, { familyId: newId() });
+    return {
+      ...session,
+      doctor: fresh.toJSON(),
+      certificate: certificate || fresh.certificate,
+      requiresCertificate: !fresh.isCertificateVerified,
+      activated: fresh.status === 'active',
+      certificatePolicy: this.certificates ? this.certificates.policy : null,
+    };
+  }
+
+  /**
+   * Persists a certificate verdict (metadata + sha256 only) and audits it.
+   * Used by sign-up, by the console's verification screen and by sign-in
+   * helpers, so every path leaves the same shape behind.
+   */
+  recordCertificate(doctorId, verdict, payload = {}, { userId = null, ctx = {} } = {}) {
+    const stored = this.doctors.setCertificate(doctorId, {
+      status: verdict.status,
+      ref: verdict.ref,
+      sha256: verdict.meta?.sha256 || null,
+      fileName: verdict.meta?.fileName || null,
+      mime: verdict.meta?.mime || null,
+      bytes: verdict.meta?.bytes ?? null,
+      checks: verdict.checks || [],
+      method: verdict.method || null,
+      reason: verdict.reason || null,
+      council: payload.registrationCouncil || null,
+      no: payload.certificateNo || null,
+    });
+    this.audit.record({
+      userId,
+      action: 'doctor.certificate_checked',
+      resourceType: 'doctor_profile',
+      resourceId: doctorId,
+      outcome: verdict.status === 'verified' ? 'success' : 'failure',
+      metadata: { method: verdict.method, status: verdict.status, reason: verdict.reason || null },
+      ctx,
+    });
+    return stored;
+  }
+
+  /**
+   * Certificate upload from the console (or right after sign-in): checks the
+   * document, records the verdict and — in demo mode — activates a doctor whose
+   * certificate checks out.
+   */
+  async verifyCertificate(actor, { file, registrationNo = null, certificateNo = null } = {}, ctx = {}) {
+    const doctor = this.requireProfile(actor);
+    const verdict = await this.certificates.verifyDocument({
+      file,
+      registrationNo: registrationNo || certificateNo || doctor.registration_no,
+      fullName: doctor.full_name,
+      profileRegistrationNo: doctor.registration_no,
+    });
+    this.recordCertificate(doctor.id, verdict, { certificateNo }, { userId: actor.id, ctx });
+
+    let activated = false;
+    if (verdict.status === 'verified') {
+      if (this.config.doctorAutoApprove && doctor.status !== 'suspended') {
+        this.doctors.setKyc(doctor.id, { status: 'mock_verified', ref: verdict.ref });
+        this.doctors.setStatus(doctor.id, 'active');
+        this.roles.grant(actor.id, 'doctor', { grantedBy: null });
+        activated = true;
+      }
+    }
+    const fresh = this.doctors.findById(doctor.id);
+    return {
+      doctor: fresh.toJSON(),
+      certificate: fresh.certificate,
+      verification: verdict,
+      activated,
+      mode: this.kycMode,
+    };
+  }
+
+  /** Certificate upload rules + current verdict, for the verification screen. */
+  certificateStatus(actor) {
+    const doctor = this.doctors.findByUserId(actor.id);
+    return {
+      doctor: doctor ? doctor.toJSON() : null,
+      certificate: doctor ? doctor.certificate : null,
+      policy: this.certificates ? this.certificates.policy : null,
+      mode: this.kycMode,
+    };
+  }
+
+  /**
+   * Creates the account + professional profile. Never grants a role —
+   * activation is a separate, audited decision (certificate check, admin
+   * approval, or the demo auto-approve in `apply`).
+   */
+  createAccount(payload, ctx = {}) {
     const {
       email,
       displayName,
@@ -126,14 +274,9 @@ export class DoctorService {
       city,
       bio,
       consultFeeInr,
-      status: autoApprove ? 'active' : 'pending_verification',
+      status: 'pending_verification',
       identityCardNo: this.uniqueCardNo(),
     });
-
-    if (autoApprove) {
-      this.doctors.setKyc(doctor.id, { status: 'mock_verified', ref: `MOCK-KYC-${randomCode(8, SLUG_ALPHABET).toUpperCase()}` });
-      this.roles.grant(user.id, 'doctor', { grantedBy: null });
-    }
 
     this.audit.record({
       userId: user.id,
@@ -144,8 +287,7 @@ export class DoctorService {
       ctx,
     });
 
-    const session = this.auth.issueSession(user, ctx, { familyId: newId() });
-    return { ...session, doctor: this.doctors.findById(doctor.id).toJSON() };
+    return { user, doctor, autoApprove };
   }
 
   uniqueSlug(name) {
@@ -171,6 +313,19 @@ export class DoctorService {
   completeMockKyc(actor, { ref = null, ctx = {} } = {}) {
     const doctor = this.requireProfile(actor);
     const kycRef = ref || `MOCK-KYC-${randomCode(8, SLUG_ALPHABET).toUpperCase()}`;
+    // A live profile must always be able to pass the sign-in gate, so the
+    // registration number goes on record as the certificate verdict here too.
+    if (this.certificates && !doctor.isCertificateVerified) {
+      this.recordCertificate(
+        doctor.id,
+        this.certificates.checkRegistrationNo({
+          registrationNo: doctor.registration_no,
+          profileRegistrationNo: doctor.registration_no,
+        }),
+        {},
+        { userId: actor.id, ctx },
+      );
+    }
     this.doctors.setKyc(doctor.id, { status: 'mock_verified', ref: kycRef });
     const activated = this.doctors.setStatus(doctor.id, 'active');
     this.roles.grant(actor.id, 'doctor', { grantedBy: null });
@@ -287,6 +442,20 @@ export class DoctorService {
     if (status === 'active') {
       if (updated.kyc_status !== 'mock_verified') {
         this.doctors.setKyc(doctorId, { status: 'mock_verified', ref: `MOCK-KYC-ADMIN-${randomCode(6, SLUG_ALPHABET).toUpperCase()}` });
+      }
+      // An admin activating a profile is itself a review: record it as the
+      // certificate verdict so the doctor can pass the sign-in gate.
+      if (this.certificates && !updated.isCertificateVerified) {
+        const verdict = this.certificates.checkRegistrationNo({
+          registrationNo: updated.registration_no,
+          profileRegistrationNo: updated.registration_no,
+        });
+        this.recordCertificate(
+          doctorId,
+          { ...verdict, method: 'admin_review', mode: 'mock' },
+          {},
+          { userId: actor.id, ctx },
+        );
       }
       this.roles.grant(doctor.user_id, 'doctor', { grantedBy: actor.id });
     } else {

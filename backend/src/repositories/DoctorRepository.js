@@ -152,6 +152,52 @@ export class DoctorRepository extends BaseRepository {
     return this.findById(id);
   }
 
+  /**
+   * Records a certificate verdict. Only the reference, the sha256 and file
+   * metadata are stored — the certificate document itself never touches the DB
+   * (same property as the rest of this build's KYC handling).
+   */
+  setCertificate(id, {
+    status,
+    ref = null,
+    sha256 = null,
+    fileName = null,
+    mime = null,
+    bytes = null,
+    checks = [],
+    method = null,
+    reason = null,
+    council = null,
+    no = null,
+    verifiedAt = null,
+  }) {
+    this.db.run(
+      `UPDATE doctor_profiles SET
+         certificate_status = ?, certificate_ref = ?, certificate_sha256 = ?, certificate_file_name = ?,
+         certificate_mime = ?, certificate_bytes = ?, certificate_checks = ?, certificate_method = ?,
+         certificate_reason = ?, certificate_council = COALESCE(?, certificate_council),
+         certificate_no = COALESCE(?, certificate_no),
+         certificate_verified_at = ?, certificate_submitted_at = ?, updated_at = ?
+       WHERE id = ?`,
+      status,
+      ref,
+      sha256,
+      fileName,
+      mime,
+      bytes,
+      JSON.stringify(checks || []),
+      method,
+      reason,
+      council,
+      no,
+      verifiedAt || (status === 'verified' ? this.now() : null),
+      this.now(),
+      this.now(),
+      id,
+    );
+    return this.findById(id);
+  }
+
   bumpCounter(id, column, by = 1) {
     if (!['video_count', 'consult_count'].includes(column)) return;
     this.db.run(

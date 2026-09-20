@@ -268,7 +268,10 @@ public class MainActivity extends Activity {
         setupPanel.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
         updateBar();
-        webView.loadUrl(server + path + (SURFACE_PHONE.equals(path) ? "?login=1" : ""));
+        // No `?login=1` here: the web app keeps the user signed in on this
+        // device until they tap Sign out, so a cold launch restores the stored
+        // session instead of showing the sign-in screen again.
+        webView.loadUrl(server + path);
     }
 
     private void reload() {

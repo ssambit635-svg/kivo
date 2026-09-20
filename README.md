@@ -27,7 +27,7 @@ City-battle strategy and gap analysis: [`HACKATHON_GAP_ANALYSIS.md`](HACKATHON_G
 | Clinical knowledge base | Complete - **1,226 markers** (1,219 with a LOINC code, 18 panels) built offline from pinned MIT-licensed sources — see [`backend/knowledge/README.md`](backend/knowledge/README.md) |
 | Extraction model | Complete - Calibrated confidence trained on a documented OCR-noise corpus (Brier 0.15 → 0.07, ECE 0.26 → 0.06) with a shipped model card |
 | Care network | Complete - Mock subscription (Care+) → doctor consultations + doctor-recorded shorts · consent-scoped chart sharing · payout ledger (70/30 consults, 25/35/40 subscription pools) |
-| Doctor console | Complete - **Separate frontend at `/doctor/`** — self-onboarding (mock KYC), shorts studio, one-screen clinical brief, AI medicine draft the doctor edits/approves, shareable identity card, earnings statement |
+| Doctor console | Complete - **Separate frontend at `/doctor/`** — certificate-checked self-onboarding (registration number + uploaded council certificate; mock KYC), shorts studio, one-screen clinical brief, AI medicine draft the doctor edits/approves, shareable identity card, earnings statement |
 | RBAC | Complete - `user_roles` table (`patient` / `doctor` / `admin`), server-side grants, re-read per request · doctors cannot touch the patient API · patients cannot open the console |
 | Tests | Complete - **564 passing** in 43 files (`cd backend && npm test`) + 120-check live endpoint smoke (`npm run smoke`) |
 | Frontend | Complete - Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
@@ -146,8 +146,11 @@ in the database, but **no gateway is ever contacted and no card/UPI detail is ev
 
 ### The doctor console (`/doctor/`) — a separate frontend for a separate role
 
-A doctor signs in at `/doctor/` (patients signing in at `/app/` are redirected there automatically),
-and gets a workspace patients can never open:
+A doctor signs in at `/doctor/` — or from the **Doctor** toggle on the `/app/` sign-in screen — with
+their **medical council registration number**, which is checked against the certificate on file
+(`POST /api/auth/doctor-login`, `POST /api/doctor/certificate`) before the console opens. Until that
+check passes, a doctor session can reach the verification screen and nothing else. The console itself
+is a workspace patients can never open:
 
 1. **Shorts studio** — record/upload a video (mp4/webm/mov) or publish a caption short; claim
    language ("cure", "guaranteed") is rejected at upload by the content lint.

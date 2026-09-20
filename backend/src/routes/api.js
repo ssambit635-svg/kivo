@@ -47,6 +47,9 @@ export function buildApiRouter(c) {
   auth.use(c.authRateLimiter.middleware());
   auth.post('/register', validate({ body: authSchemas.register }), c.authController.register);
   auth.post('/login', validate({ body: authSchemas.login }), c.authController.login);
+  // Doctor sign-in: password + medical council registration number. The
+  // certificate check happens before any doctor session exists.
+  auth.post('/doctor-login', validate({ body: authSchemas.doctorLogin }), c.authController.doctorLogin);
   auth.post('/refresh', validate({ body: authSchemas.refresh }), c.authController.refresh);
   auth.post('/logout', validate({ body: authSchemas.logout }), c.authController.logout);
   auth.post('/logout-all', c.authenticateMw, c.authController.logoutAll);
@@ -145,7 +148,16 @@ export function buildApiRouter(c) {
   r.get('/public/doctors', validate({ query: careSchemas.doctorListQuery }), c.careController.directory);
   r.get('/public/doctors/specialties', c.careController.specialties);
   r.get('/public/doctors/:doctorId', validate({ params: careSchemas.doctorParams }), c.careController.doctorProfile);
-  r.post('/doctor/apply', c.authRateLimiter.middleware(), validate({ body: doctorSchemas.apply }), c.doctorConsoleController.apply);
+  // Apply accepts JSON (registration number only) or multipart with the medical
+  // council certificate attached — the certificate is what the sign-in gate and
+  // the console's verification screen are built around.
+  r.post(
+    '/doctor/apply',
+    c.authRateLimiter.middleware(),
+    upload.single('certificate'),
+    validate({ body: doctorSchemas.apply }),
+    c.doctorConsoleController.apply,
+  );
   // Signed, expiring media stream (the signature is the authorization).
   r.get('/media/videos/:videoId', validate({ params: careSchemas.videoParams }), c.careController.mediaStream);
 
@@ -213,6 +225,16 @@ export function buildApiRouter(c) {
   secure('get', '/doctor/me', c.doctorConsoleController.me);
   secure('patch', '/doctor/profile', validate({ body: doctorSchemas.profileUpdate }), c.doctorConsoleController.updateProfile);
   secure('post', '/doctor/kyc/mock', validate({ body: doctorSchemas.mockKyc }), c.doctorConsoleController.mockKyc);
+  // Certificate upload: authenticated, but usable BEFORE activation — this is
+  // exactly how a doctor who signed in with an unchecked certificate finishes
+  // verification. multer runs first so multipart fields reach the validator.
+  secure(
+    'post',
+    '/doctor/certificate',
+    upload.single('certificate'),
+    validate({ body: doctorSchemas.certificate }),
+    c.doctorConsoleController.uploadCertificate,
+  );
   secure('get', '/doctor/identity-card', c.doctorConsoleController.identityCard);
   doctorSecure('get', '/doctor/revenue-model', c.doctorConsoleController.revenueModel);
   doctorSecure('get', '/doctor/videos', c.doctorConsoleController.library);

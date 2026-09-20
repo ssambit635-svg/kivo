@@ -43,9 +43,18 @@
       <!-- ================= AUTH ================= -->
       <section id="auth-view" class="card auth-card">
         <h2 id="auth-heading">Welcome back</h2>
-        <p class="muted">Sign in to see your kivo come alive.</p>
+        <p id="auth-subtitle" class="muted">Sign in to see your kivo come alive.</p>
 
-        <div class="tabs" role="tablist">
+        <!-- Two toggles: one account system, two frontends. Patients land in the
+             health twin; doctors land in the console, and their sign-in carries
+             the medical council registration number that gets checked against
+             the certificate on file. -->
+        <div id="role-tabs" class="tabs role-tabs" role="tablist" aria-label="Sign in as">
+          <button id="role-patient" class="tab active" type="button" role="tab" aria-selected="true">Patient</button>
+          <button id="role-doctor" class="tab" type="button" role="tab" aria-selected="false">Doctor</button>
+        </div>
+
+        <div id="auth-mode-tabs" class="tabs" role="tablist">
           <button id="tab-login" class="tab active" type="button" role="tab">Sign in</button>
           <button id="tab-register" class="tab" type="button" role="tab">Create account</button>
         </div>
@@ -64,10 +73,23 @@
             <span>Password</span>
             <input id="in-password" type="password" autocomplete="current-password" placeholder="••••••••••••" required />
           </label>
+          <label id="row-regno" class="field hidden">
+            <span>Medical registration no.</span>
+            <input id="in-regno" type="text" autocomplete="off" placeholder="MCI-123456" />
+          </label>
+          <p id="auth-note" class="hint hidden">
+            We check this number against the medical council certificate on your account before the doctor console opens.
+          </p>
           <p id="auth-error" class="error hidden" role="alert"></p>
           <button class="btn primary block" type="submit" id="auth-submit">Sign in</button>
         </form>
-        <p class="hint">Preview account: <code>demo@kivo.dev</code> · <code>Kivo!Demo#2026</code> — or create your kivo profile above.</p>
+        <p id="auth-apply-hint" class="hint hidden">
+          New to kivo as a doctor? <a href="/doctor/#apply">Join the doctor network</a> — upload your certificate and it is
+          checked before the console opens.
+        </p>
+        <p id="auth-demo-hint" class="hint">
+          Preview account: <code>demo@kivo.dev</code> · <code>Kivo!Demo#2026</code> — or create your kivo profile above.
+        </p>
       </section>
 
       <!-- ================= DASHBOARD ================= -->

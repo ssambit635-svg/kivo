@@ -9,11 +9,11 @@
 
 ## What changed
 
-- Cold launches use the configured cloud origin + `/native/?login=1`, regardless of old preferences. The query is consumed once: cold launch asks for login; ordinary refresh within the app preserves the session.
+- Cold launches use the configured cloud origin + `/native/`, regardless of old preferences. The web app restores the stored session on launch and **stays signed in until the user taps Sign out** (30-day rolling refresh token); `?login=1`, which older APKs still append, is stripped and ignored rather than clearing the session.
 - The actual patient app and doctor console are bundled by Gradle from `frontend/`. Java serves only those static assets at the cloud origin. No file://, cross-origin API, or embedded private data. `/api` and protected media always reach the live cloud.
 - Login works as UI even without connectivity. A bounded health probe (up to ~70 seconds) wakes a sleeping service, reports connection problems inside login, and never retries a mutation.
 - `/m/` redirects to the real responsive `/app/`. Old Android root requests also redirect to login rather than backend metadata.
-- Role-specific sign-in transfers the doctor session once without asking for the password twice. Patient and doctor persistent tokens remain separate.
+- Role-specific sign-in: two toggles (Patient / Doctor) on the sign-in screen. Doctors sign in with their medical council registration number, which is checked against the certificate on file before the console opens; the session transfers once without asking for the password twice. Patient and doctor persistent tokens remain separate.
 - The native toolbar no longer displays infrastructure URLs; APK download buttons are hidden inside the installed app.
 - Browser shell updates are network-first; only allowlisted public assets are cached. Native `/native/` bypasses old `/app/` service-worker scope.
 - CI rebuilds on frontend changes too, checks bundled bytes against source, and uses increasing second-resolution version codes.
