@@ -284,10 +284,13 @@ describe('frontend/kivo.apk — is it a package Android will install?', () => {
     expect(resPngs.length, 'no compiled PNG resources in the package').toBeGreaterThanOrEqual(5);
     const mipmapPngs = resPngs.filter((n) => n.startsWith('res/mipmap'));
     if (mipmapPngs.length > 0) {
+      // AAPT2 names a density bucket mipmap-mdpi-v4/, not mipmap-mdpi/ — the
+      // -v4 is the config qualifier it appends, so match it optionally.
       for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
+        const wanted = new RegExp(`^res/mipmap-${density}(-v\\d+)?/ic_launcher\\.png$`);
         expect(
-          mipmapPngs.some((n) => n.includes(`mipmap-${density}/ic_launcher.png`)),
-          `no ${density} launcher icon`,
+          mipmapPngs.some((n) => wanted.test(n)),
+          `no ${density} launcher icon (have: ${mipmapPngs.join(', ')})`,
         ).toBe(true);
       }
     }

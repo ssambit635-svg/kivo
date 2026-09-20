@@ -544,10 +544,15 @@ jobs:
             echo "Nothing changed — the branch already has this build."
             exit 0
           fi
+          # Absolute paths on purpose: the step has already cd'd into the fresh
+          # clone ($WORK), where dist/ does not exist — read relative to the
+          # runner's workspace and every build gets labelled "failed".
           STATUS="failed"
-          if [ -f dist/kivo.apk ] && grep -q "\[verify\] PASSED" dist/verify.log 2>/dev/null; then
+          if [ -f "$GITHUB_WORKSPACE/dist/kivo.apk" ] \
+            && grep -q "\[verify\] PASSED" "$GITHUB_WORKSPACE/dist/verify.log" 2>/dev/null; then
             STATUS="verified"
           fi
+          echo "commit status: ${STATUS}"
           # Deliberately NOT marked skip-ci: this push carries frontend/kivo.apk,
           # and the backend suite has a test that asserts the package it serves is
           # installable. Re-running is the point. (This workflow does not re-run:
