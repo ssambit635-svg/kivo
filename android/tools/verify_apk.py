@@ -395,13 +395,25 @@ def main(argv: list[str]) -> int:
 
     # -- 5. v1 signature -----------------------------------------------------
     print("[verify] v1 (JAR) signature")
+    meta_inf = [n for n in names if n.startswith("META-INF/")]
+    sf_files = [n for n in meta_inf if n.upper().endswith(".SF")]
+    key_blocks = [n for n in meta_inf if n.upper().endswith((".RSA", ".DSA", ".EC"))]
     try:
         manifest_mf = zf.read("META-INF/MANIFEST.MF").decode("utf-8", "replace")
         mismatches = jar_digest_mismatches(zf, manifest_mf)
         check(not mismatches, "every MANIFEST.MF digest matches the stored bytes"
               if not mismatches else f"{len(mismatches)} digest mismatch(es): {mismatches[:3]}")
+        check(bool(sf_files) and bool(key_blocks),
+              f"v1 signature files present ({', '.join(sf_files + key_blocks) or 'none'})")
+        # apksigner names the signer CERT; backend/tests/unit/apk-package.test.js
+        # asserts that exact path, so catch a rename here rather than in the suite.
+        check("META-INF/CERT.SF" in names,
+              "v1 signer is named CERT.SF (apksigner's default)")
     except KeyError:
-        check(False, "META-INF/MANIFEST.MF is present (minSdk 24 needs the v1 scheme too)")
+        check(False, "META-INF/MANIFEST.MF is present — AGP turns v1 (JAR) signing off by "
+                     "default when minSdk >= 24, so android/app/build.gradle sets "
+                     "enableV1Signing true; without it this package fails the repo's own "
+                     "v1 checks and cannot be verified by pre-24 devices or zip tooling")
     except Exception as exc:  # noqa: BLE001
         check(False, f"v1 digests verified ({exc})")
 

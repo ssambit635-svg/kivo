@@ -57,7 +57,22 @@ android {
                 storePassword keystoreProperties.getProperty('storePassword')
                 keyAlias keystoreProperties.getProperty('keyAlias')
                 keyPassword keystoreProperties.getProperty('keyPassword')
+                // AGP switches v1 (JAR) signing OFF by default once minSdk >= 24,
+                // on the reasoning that API 24+ accepts v2 alone. Sign with both:
+                // v2 is what Android 7+ verifies at install time, and v1 keeps the
+                // package readable to older devices and to plain zip tooling — plus
+                // two checks in this repo assert the META-INF/CERT.SF digests
+                // (tools/verify_apk.py and backend/tests/unit/apk-package.test.js).
+                // Costs a fraction of a second.
+                enableV1Signing true
+                enableV2Signing true
             }
+        }
+        debug {
+            // A local build with no release key falls back to this config, and
+            // `gradle assembleRelease` output should still pass verify_apk.py.
+            enableV1Signing true
+            enableV2Signing true
         }
     }
 
