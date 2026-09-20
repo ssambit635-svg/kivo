@@ -19,8 +19,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-const PORT = Number(process.env.SMOKE_PORT || 8091);
-const BASE = `http://127.0.0.1:${PORT}`;
+const BASE_PORT = Number(process.env.SMOKE_PORT || 8091);
+// Try BASE_PORT, then fall back to random free ports if busy (CI runners sometimes reuse)
+let PORT = BASE_PORT;
+let BASE = `http://127.0.0.1:${PORT}`;
 const scratch = mkdtempSync(path.join(tmpdir(), 'medtwin-smoke-'));
 const dbPath = path.join(scratch, 'smoke.db');
 const uploadDir = path.join(scratch, 'uploads');
@@ -73,21 +75,38 @@ async function startServer() {
     p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`create-admin exited ${code}`))));
   });
 
-  server = spawn('node', ['--disable-warning=ExperimentalWarning', 'src/server.js'], {
-    env: { ...process.env, PORT: String(PORT), DB_PATH: dbPath, UPLOAD_DIR: uploadDir, JWT_SECRET, NODE_ENV: 'development' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  server.stdout.on('data', () => {});
-  server.stderr.on('data', (d) => process.stderr.write(`[server] ${d}`));
+  // Try up to 3 ports: 8091, 8092, random
+  const portsToTry = [PORT, 8092, 8093, 0];
+  let lastErr = null;
+  for (const tryPort of portsToTry) {
+    const actualPort = tryPort === 0 ? Math.floor(10000 + Math.random() * 50000) : tryPort;
+    PORT = actualPort;
+    BASE = `http://127.0.0.1:${PORT}`;
+    server = spawn('node', ['--disable-warning=ExperimentalWarning', 'src/server.js'], {
+      env: { ...process.env, PORT: String(PORT), DB_PATH: dbPath, UPLOAD_DIR: uploadDir, JWT_SECRET, NODE_ENV: 'development' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    server.stdout.on('data', () => {});
+    server.stderr.on('data', (d) => process.stderr.write(`[server] ${d}`));
 
-  for (let i = 0; i < 60; i += 1) {
-    try {
-      const r = await fetch(`${BASE}/api/health`);
-      if (r.ok) return;
-    } catch { /* not up yet */ }
-    await new Promise((r) => setTimeout(r, 250));
+    let healthy = false;
+    for (let i = 0; i < 60; i += 1) {
+      try {
+        const r = await fetch(`${BASE}/api/health`);
+        if (r.ok) { healthy = true; break; }
+      } catch { /* not up yet */ }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    if (healthy) {
+      console.log(`smoke server healthy on ${BASE}`);
+      return;
+    }
+    // kill and try next
+    try { server.kill('SIGTERM'); } catch {}
+    await new Promise((r) => setTimeout(r, 500));
+    lastErr = `port ${actualPort} not healthy`;
   }
-  throw new Error('server did not become healthy in 15s');
+  throw new Error(`server did not become healthy in 15s (tried ports, last: ${lastErr})`);
 }
 
 const REPORT1 = [

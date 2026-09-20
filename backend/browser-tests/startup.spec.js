@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FRONTEND_ROOT = path.resolve(__dirname, '..', '..', 'frontend');
 
 async function signIn(page, email = 'demo@kivo.dev', password = 'Kivo!Demo#2026') {
   await page.locator('#in-email').fill(email);
@@ -15,7 +19,14 @@ async function nativeShell(page) {
   await page.route('**/native/**', async route => {
     const name = new URL(route.request().url()).pathname.slice('/native/'.length) || 'index.html';
     const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png' };
-    await route.fulfill({ body: await fs.readFile(path.resolve('../frontend', name)), contentType: types[path.extname(name)] || 'application/json' });
+    const filePath = path.join(FRONTEND_ROOT, name);
+    try {
+      const body = await fs.readFile(filePath);
+      await route.fulfill({ body, contentType: types[path.extname(name)] || 'application/json' });
+    } catch {
+      // Fallback to 404 with JSON so the test shows a clear miss rather than hanging
+      await route.fulfill({ status: 404, body: `missing frontend asset: ${name}`, contentType: 'text/plain' });
+    }
   });
 }
 
