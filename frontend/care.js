@@ -1,6 +1,6 @@
 /* kivo — Care tab: subscription (demo checkout), doctor consults, shorts.
  *
- * Deliberately separate from app.js (the health-twin dashboard) so the twin
+ * Deliberately separate from app.js (the health dashboard) so the twin
  * screens stay untouched while the care network grows. It borrows the shell's
  * api client / toasts / DOM helpers through window.MtApp and stays inside the
  * same CSP rules (external file, no inline handlers).
@@ -11,6 +11,7 @@
   var App = window.MtApp;
   var Icons = window.MtIcons;
   var el = App.el;
+  function withLoading(btn, fn){ if(!btn||btn.disabled) return; var orig=btn.textContent; btn.disabled=true; btn.style.opacity='0.7'; var p=fn(); var done=function(){btn.disabled=false; btn.style.opacity='';}; if(p&&p.then) p.then(done,done); else done(); }
   var icon = App.icon;
   var toast = App.toast;
   var api = App.api;
@@ -160,7 +161,7 @@
     card.appendChild(
       el('div', { class: 'care-plan-row' }, [
         el('div', { class: 'care-plan-main' }, [
-          el('strong', { text: ent && ent.active ? ent.plan.name : 'Free twin' }),
+          el('strong', { text: ent && ent.active ? ent.plan.name : 'Free kivo' }),
           el('span', {
             class: 'muted',
             text: ent && ent.active
@@ -423,7 +424,7 @@
     s.body.appendChild(
       el('p', {
         class: 'muted',
-        text: 'Every plan keeps the free twin. Demo payments — no card, UPI ID or bank detail is ever collected.',
+        text: 'Every plan keeps the free kivo. Demo payments — no card, UPI ID or bank detail is ever collected.',
       }),
     );
     state.plans.forEach(function (plan) {

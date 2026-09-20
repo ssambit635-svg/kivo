@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
     <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-    <title>kivo — digital health twin</title>
+    <title>kivo — your health companion</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./care.css" />
   </head>
@@ -21,7 +21,7 @@
         <span id="brand-logo" class="brand-logo" aria-hidden="true"></span>
         <div class="brand-text">
           <h1>kivo</h1>
-          <p>Your living digital health twin</p>
+          <p>Your personal health companion</p>
         </div>
       </div>
       <div class="topbar-actions">
@@ -43,7 +43,7 @@
       <!-- ================= AUTH ================= -->
       <section id="auth-view" class="card auth-card">
         <h2 id="auth-heading">Welcome back</h2>
-        <p class="muted">Sign in to see your health twin come alive.</p>
+        <p class="muted">Sign in to see your kivo come alive.</p>
 
         <div class="tabs" role="tablist">
           <button id="tab-login" class="tab active" type="button" role="tab">Sign in</button>
@@ -66,7 +66,7 @@
           <p id="auth-error" class="error hidden" role="alert"></p>
           <button class="btn primary block" type="submit" id="auth-submit">Sign in</button>
         </form>
-        <p class="hint">Preview account: <code>demo@kivo.dev</code> · <code>Kivo!Demo#2026</code> — or create your own twin above.</p>
+        <p class="hint">Preview account: <code>demo@kivo.dev</code> · <code>Kivo!Demo#2026</code> — or create your kivo profile above.</p>
       </section>
 
       <!-- ================= DASHBOARD ================= -->
@@ -75,7 +75,7 @@
           <span class="avatar" id="member-icon" aria-hidden="true"></span>
           <div class="member-info">
             <strong id="member-name">—</strong>
-            <span class="muted" id="member-sub">health twin</span>
+            <span class="muted" id="member-sub">kivo health</span>
           </div>
           <button id="btn-refresh" class="btn ghost sm icon-btn" type="button" title="Refresh data" aria-label="Refresh data">
             <span id="refresh-icon" class="btn-ic" aria-hidden="true"></span>
@@ -164,6 +164,127 @@
 
             <div id="reports-body"></div>
           </section>
+
+          <!-- ============ 4. HEALTH INSIGHTS (Trends • Risk • Guidance) ============ -->
+          <section class="card widget widget-intel" aria-labelledby="insights-h">
+            <div class="widget-head">
+              <span id="insights-head-ic" class="widget-ic ic-teal" aria-hidden="true"></span>
+              <div>
+                <h2 id="insights-h">Health Insights</h2>
+                <p class="muted">Trends, risk, guidance and medication awareness — from verified data</p>
+              </div>
+            </div>
+            <div class="intel-tabs" role="tablist" id="insights-tabs">
+              <button class="intel-tab active" type="button" data-insights-tab="trends">Trends</button>
+              <button class="intel-tab" type="button" data-insights-tab="risk">Risk</button>
+              <button class="intel-tab" type="button" data-insights-tab="guidance">Guidance</button>
+              <button class="intel-tab" type="button" data-insights-tab="meds">Meds</button>
+              <button class="intel-tab" type="button" data-insights-tab="summary">Doctor Summary</button>
+            </div>
+            <div id="insights-body"><p class="muted">Select a tab to load insights.</p></div>
+          </section>
+
+          <!-- ============ 5. KIVO INTELLIGENCE (Baseline • Patterns • What-If) ============ -->
+          <section class="card widget widget-intel" aria-labelledby="intel-h">
+            <div class="widget-head">
+              <span id="intel-head-ic" class="widget-ic ic-indigo" aria-hidden="true"></span>
+              <div>
+                <h2 id="intel-h">kivo Intelligence</h2>
+                <p class="muted">Baselines, patterns and what-if scenarios — model-based, not predictions</p>
+              </div>
+            </div>
+            <div class="intel-tabs" role="tablist" id="intel-tabs">
+              <button class="intel-tab active" type="button" data-intel-tab="baseline">Baselines</button>
+              <button class="intel-tab" type="button" data-intel-tab="patterns">Patterns</button>
+              <button class="intel-tab" type="button" data-intel-tab="anomalies">Anomalies</button>
+              <button class="intel-tab" type="button" data-intel-tab="whatif">What-If</button>
+            </div>
+            <div id="intel-body"><p class="muted">Loading intelligence…</p></div>
+            <div id="whatif-body" class="hidden" style="margin-top:12px;">
+              <h4 style="margin:12px 0 8px; font-size:14px;">Run a what-if scenario</h4>
+              <p class="muted" style="margin:0 0 10px;">Model-based projection only — not a prediction or recommendation.</p>
+              <div class="simulate-row">
+                <label class="field"><span>Weight (kg)</span><input id="sim-weight" type="number" step="0.1" placeholder="e.g. 72" /></label>
+                <label class="field"><span>Activity min/week</span><input id="sim-activity" type="number" placeholder="e.g. 150" /></label>
+              </div>
+              <div class="simulate-row">
+                <label class="field"><span>HbA1c %</span><input id="sim-hba1c" type="number" step="0.1" placeholder="e.g. 5.6" /></label>
+                <label class="field"><span>Systolic BP</span><input id="sim-sbp" type="number" placeholder="e.g. 120" /></label>
+              </div>
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button id="btn-simulate" class="btn primary" type="button">Simulate</button>
+                <button id="btn-explore" class="btn ghost" type="button">Explore presets</button>
+              </div>
+              <p id="simulate-error" class="error hidden" role="alert"></p>
+              <div id="simulate-result" style="margin-top:10px;"></div>
+              <div id="scenarios-result" style="margin-top:10px;"></div>
+            </div>
+          </section>
+
+          <!-- ============ 6. ASK KIVO ============ -->
+          <section class="card widget widget-ask" aria-labelledby="ask-h">
+            <div class="widget-head">
+              <span id="ask-head-ic" class="widget-ic ic-gold" aria-hidden="true"></span>
+              <div>
+                <h2 id="ask-h">Ask kivo</h2>
+                <p class="muted">Grounded answers from your verified health data</p>
+              </div>
+            </div>
+            <div id="ask-suggestions" class="suggestion-chips" style="margin-bottom:10px;"></div>
+            <div id="ask-chat" class="chat"></div>
+            <div class="ask-box">
+              <div class="ask-input-row">
+                <input id="ask-input" type="text" placeholder="Ask about your trends, e.g. Why did my LDL rise?" maxlength="300" />
+                <button id="ask-send" class="btn primary" type="button">Ask</button>
+              </div>
+              <p id="ask-error" class="error hidden" role="alert"></p>
+              <p class="muted" style="font-size:11.5px;">Answers are grounded in verified data and carry the model's disclaimer.</p>
+            </div>
+          </section>
+
+          <!-- ============ 7. REMINDERS & OBSERVATIONS ============ -->
+          <section class="card widget widget-reminders" aria-labelledby="rem-h">
+            <div class="widget-head">
+              <span id="rem-head-ic" class="widget-ic ic-rose" aria-hidden="true"></span>
+              <div>
+                <h2 id="rem-h">Reminders & Journal</h2>
+                <p class="muted">Stay on track — observations, reminders and storage</p>
+              </div>
+            </div>
+            <div class="intel-tabs" role="tablist" id="rem-tabs">
+              <button class="intel-tab active" type="button" data-rem-tab="obs">Observations</button>
+              <button class="intel-tab" type="button" data-rem-tab="reminders">Reminders</button>
+              <button class="intel-tab" type="button" data-rem-tab="storage">Storage</button>
+            </div>
+            <div id="rem-body"></div>
+            <div id="obs-body" style="margin-top:12px;">
+              <form id="obs-form" style="display:flex; gap:8px; margin-bottom:10px;">
+                <select id="obs-kind" style="max-width:140px;">
+                  <option value="note">Note</option>
+                  <option value="weight">Weight</option>
+                  <option value="bp">BP</option>
+                  <option value="activity">Activity</option>
+                  <option value="sleep">Sleep</option>
+                  <option value="symptom">Symptom</option>
+                  <option value="medication">Medication</option>
+                </select>
+                <input id="obs-text" type="text" placeholder="Add observation (e.g. 72kg, slept poorly)" style="flex:1;" />
+                <button class="btn secondary" type="submit">Add</button>
+              </form>
+              <div id="obs-list" class="obs-timeline"></div>
+            </div>
+            <div id="reminders-body" class="hidden" style="margin-top:12px;">
+              <form id="reminder-form" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                <input id="rem-title" type="text" placeholder="Reminder title" style="flex:1; min-width:140px;" required />
+                <input id="rem-due" type="datetime-local" style="max-width:190px;" />
+                <button class="btn secondary" type="submit">Create</button>
+              </form>
+              <div id="reminders-list"></div>
+            </div>
+            <div id="storage-body" class="hidden" style="margin-top:12px;">
+              <div id="storage-info"></div>
+            </div>
+          </section>
         </div>
 
         <footer class="foot">
@@ -180,7 +301,7 @@
         <nav id="bottom-nav" class="bottom-nav" aria-label="Primary">
           <button class="nav-item active" type="button" data-tab="home" id="nav-home">
             <span class="nav-ic" aria-hidden="true"></span>
-            <span class="nav-label">Twin</span>
+            <span class="nav-label">Kivo</span>
           </button>
           <button class="nav-fab" type="button" id="nav-scan" aria-label="Scan a report">
             <span class="nav-ic" aria-hidden="true"></span>

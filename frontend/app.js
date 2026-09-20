@@ -25,6 +25,17 @@
     reports: null,
     selectedDay: null,
     lastWidgetDataAt: 0,
+    insights: null,
+    intel: null,
+    trends: null,
+    risk: null,
+    guidance: null,
+    meds: null,
+    summary: null,
+    observations: null,
+    reminders: null,
+    askSuggestions: null,
+    chat: [],
   };
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -200,7 +211,7 @@
     $('tab-login').classList.toggle('active', isLogin);
     $('tab-register').classList.toggle('active', !isLogin);
     $('row-name').classList.toggle('hidden', isLogin);
-    $('auth-heading').textContent = isLogin ? 'Welcome back' : 'Create your health twin';
+    $('auth-heading').textContent = isLogin ? 'Welcome back' : 'Create your kivo profile';
     $('auth-submit').textContent = isLogin ? 'Sign in' : 'Create account';
     $('auth-error').classList.add('hidden');
   }
@@ -262,23 +273,24 @@
       var owned = body.owned || [];
       var shared = body.shared || [];
       var all = owned.concat(shared);
-      if (all.length === 0) throw new Error('No health twin member found on this account.');
+      if (all.length === 0) throw new Error('No kivo health member found on this account.');
       state.member =
         owned.find(function (m) { return m.relationship === 'self'; }) || owned[0] || all[0];
       $('member-name').textContent = state.member.name;
-      $('member-sub').textContent = (state.member.relationship || 'self') + ' · digital health twin';
+      $('member-sub').textContent = (state.member.relationship || 'self') + ' · kivo health';
       notifyMember();
       showDash();
       return refreshAll();
     }).catch(function (err) {
       if (err.status === 401) throw err;
-      toast(err.message || 'Could not load your health twin');
+      toast(err.message || 'Could not load your kivo health');
     });
   }
 
   function refreshAll() {
     if (!state.member) return Promise.resolve();
     var id = state.member.id;
+    // core widgets (blocking)
     return Promise.all([
       api('/members/' + id + '/health-score').catch(function () { return null; }),
       api('/members/' + id + '/milestones').catch(function () { return null; }),
@@ -291,6 +303,13 @@
       renderScore();
       renderMilestones();
       renderReports();
+      // non-blocking: enrich with intelligence, insights, journal
+      loadObservations();
+      loadReminders();
+      loadAskSuggestions();
+      loadInsights('trends');
+      loadIntel('baseline');
+      updateStorageInfo();
     });
   }
 
@@ -625,7 +644,7 @@
   function verifyReport(reportId) {
     api('/reports/' + reportId + '/verify', { method: 'POST', body: {} })
       .then(function () {
-        toast('Report verified — your twin just grew. Watch the score and milestones.');
+        toast('Report verified — your kivo just grew. Watch the score and milestones.');
         return refreshAll();
       })
       .catch(function (err) { toast(err.message || 'We could not verify that report — please try again.'); });
@@ -799,7 +818,7 @@
           msg += ' ' + flagged + ' value' + (flagged === 1 ? '' : 's') + ' look' + (flagged === 1 ? 's' : '') +
             ' implausible for that test — check against the report.';
         }
-        msg += ' Verify to feed your twin.';
+        msg += ' Verify to feed your kivo.';
         toast(msg);
         return refreshAll();
       })
@@ -912,6 +931,496 @@
     }
   }
 
+
+  /* buttery smooth helper: disables button, shows spinner, prevents double tap */
+  function withLoading(btn, fn) {
+    if (!btn || btn.disabled) return;
+    var orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add('loading');
+    // subtle spinner via icon replacement if present
+    var ic = btn.querySelector('.btn-ic');
+    var icHtml = ic ? ic.innerHTML : null;
+    if (ic) ic.innerHTML = Icons.svg('loader', 14);
+    var done = function(){ btn.disabled = false; btn.classList.remove('loading'); if(ic && icHtml) ic.innerHTML = icHtml; else if(ic) ic.innerHTML = icHtml; };
+    try {
+      var r = fn();
+      if (r && typeof r.then === 'function') r.then(done, done);
+      else done();
+    } catch(e){ done(); throw e; }
+  }
+  function debounce(fn, ms){ var t; return function(){ var a=arguments, ctx=this; clearTimeout(t); t=setTimeout(function(){ fn.apply(ctx,a); }, ms); }; }
+
+
+  /* ---------------------------------------------------------------- */
+  /* Kivo Intelligence & Insights (backend features surfaced)          */
+  /* ---------------------------------------------------------------- */
+  var insightsTab = 'trends';
+  var intelTab = 'baseline';
+  var remTab = 'obs';
+
+  function setInsightsTab(tab){
+    insightsTab = tab;
+    document.querySelectorAll('#insights-tabs .intel-tab').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-insights-tab')===tab);
+    });
+    loadInsights(tab);
+  }
+  function setIntelTab(tab){
+    intelTab = tab;
+    document.querySelectorAll('#intel-tabs .intel-tab').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-intel-tab')===tab);
+    });
+    if(tab==='whatif'){
+      $('whatif-body').classList.remove('hidden');
+      loadIntel('baseline'); // keep baseline in background
+    } else {
+      $('whatif-body').classList.add('hidden');
+      loadIntel(tab);
+    }
+  }
+  function setRemTab(tab){
+    remTab = tab;
+    document.querySelectorAll('#rem-tabs .intel-tab').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-rem-tab')===tab);
+    });
+    $('obs-body').classList.toggle('hidden', tab!=='obs');
+    $('reminders-body').classList.toggle('hidden', tab!=='reminders');
+    $('storage-body').classList.toggle('hidden', tab!=='storage');
+    if(tab==='obs') loadObservations();
+    if(tab==='reminders') loadReminders();
+    if(tab==='storage') updateStorageInfo();
+  }
+
+  function showSkeleton(host, lines){
+    host.innerHTML='';
+    for(var i=0;i<lines;i++){
+      var s=el('div',{class:'skeleton skel '+(i===0?'w80':i===1?'w60':'w40')});
+      s.style.height='14px';
+      host.appendChild(s);
+    }
+  }
+
+  function loadInsights(tab){
+    if(!state.member) return;
+    var id=state.member.id;
+    var body=$('insights-body');
+    showSkeleton(body, 3);
+    var url;
+    if(tab==='trends') url='/members/'+id+'/trends';
+    else if(tab==='risk') url='/members/'+id+'/risk/diabetes';
+    else if(tab==='guidance') url='/members/'+id+'/guidance';
+    else if(tab==='meds') url='/members/'+id+'/medication-awareness';
+    else if(tab==='summary') url='/members/'+id+'/doctor-summary';
+    else return;
+
+    var method = tab==='risk' ? 'POST' : 'GET';
+    var opts = tab==='risk' ? {method:'POST', body:{}} : {};
+    api(url, opts).then(function(data){
+      body.innerHTML='';
+      if(tab==='trends') renderTrends(body, data);
+      else if(tab==='risk') renderRisk(body, data);
+      else if(tab==='guidance') renderGuidance(body, data);
+      else if(tab==='meds') renderMeds(body, data);
+      else if(tab==='summary') renderSummary(body, data);
+    }).catch(function(err){
+      body.innerHTML='';
+      body.appendChild(emptyState('info', err.message || 'Could not load '+tab));
+    });
+  }
+
+  function renderTrends(host, data){
+    if(!data || !data.trends){
+      host.appendChild(emptyState('trending-up','No trends yet — verify a couple of reports to see movement.'));
+      if(data && data.narrative) host.appendChild(disclaimerBox(data.narrative.disclaimer || data.narrative.text));
+      return;
+    }
+    var trends = data.trends;
+    if(Array.isArray(trends) && trends.length===0){
+      host.appendChild(emptyState('trending-up','No trends yet — add more verified reports.'));
+      return;
+    }
+    // trends may be array or object with by code
+    var list = Array.isArray(trends) ? trends : (trends.items || []);
+    // if still object, try to iterate keys
+    if(list.length===0 && trends && typeof trends==='object' && !Array.isArray(trends)){
+      // maybe trends is {code: analysis}
+      for(var k in trends){
+        if(k==='narrative' || k==='disclaimer') continue;
+        var v=trends[k];
+        if(v && v.code) list.push(v);
+      }
+    }
+    if(list.length===0){
+      host.appendChild(el('pre',{text: JSON.stringify(data,null,2), style:'font-size:11px; white-space:pre-wrap; background:#f6f8f9; padding:10px; border-radius:8px;'}));
+      return;
+    }
+    list.slice(0,8).forEach(function(t){
+      var card=el('div',{class:'intel-card'});
+      var title = t.markerName || t.code || 'Trend';
+      card.appendChild(el('h4',{text: title}));
+      if(t.direction) card.appendChild(el('span',{class:'chip '+(t.direction==='up'?'amber': t.direction==='down'?'green':'grey'), text: t.direction}));
+      if(t.change) card.appendChild(el('p',{class:'muted', text: t.change}));
+      if(t.series && t.series.length){
+        var last = t.series[t.series.length-1];
+        card.appendChild(el('p',{class:'muted', text: 'Latest: '+(last.value!=null? last.value+' '+(last.unit||'') : '—')+' on '+(last.date||'') }));
+      }
+      if(t.interpretation) card.appendChild(el('p',{class:'muted', text: t.interpretation}));
+      host.appendChild(card);
+    });
+    if(data.narrative) host.appendChild(disclaimerBox(data.narrative.text || data.narrative.disclaimer));
+  }
+
+  function renderRisk(host, data){
+    if(!data || data.error){
+      host.appendChild(emptyState('shield-check','Risk assessment needs more verified data.'));
+      return;
+    }
+    // data is result of risk assess: {risk, band, confidenceNote, topFactors, ...}
+    var r = data.result || data;
+    var card=el('div',{class:'intel-card'});
+    card.appendChild(el('h4',{text: 'Diabetes risk — prototype model'}));
+    var pct = (r.risk!=null? r.risk : r.percent);
+    if(pct!=null){
+      var bar=el('div',{class:'risk-bar '+(r.band==='high'?'danger': r.band==='medium'?'warn':'')});
+      bar.appendChild(el('i',{style:'width:'+Math.max(4,Math.min(100,pct))+'%'}));
+      card.appendChild(bar);
+      card.appendChild(el('div',{style:'display:flex; justify-content:space-between; font-size:13px;'},[el('b',{text: pct+'%'}), el('span',{class:'muted', text: r.band || ''})]));
+    }
+    if(r.topFactors && r.topFactors.length) card.appendChild(el('p',{class:'muted', text:'Top factors: '+r.topFactors.join(', ')}));
+    if(r.confidenceNote) card.appendChild(disclaimerBox(r.confidenceNote));
+    if(data.disclaimer) card.appendChild(disclaimerBox(data.disclaimer));
+    // prototype disclaimer
+    card.appendChild(el('p',{class:'muted', text:'Prototype only — not clinically validated.'}));
+    host.appendChild(card);
+  }
+
+  function renderGuidance(host, data){
+    if(!data){ host.appendChild(emptyState('info','No guidance yet.')); return; }
+    var g = data.guidance || data;
+    if(Array.isArray(g)){
+      g.forEach(function(item){
+        var c=el('div',{class:'intel-card'});
+        c.appendChild(el('h4',{text: item.title || item.area || 'Guidance'}));
+        c.appendChild(el('p',{class:'muted', text: item.text || item.message || JSON.stringify(item)}));
+        host.appendChild(c);
+      });
+    } else if(g.sections){
+      g.sections.forEach(function(s){
+        var c=el('div',{class:'intel-card'});
+        c.appendChild(el('h4',{text: s.title}));
+        c.appendChild(el('p',{class:'muted', text: s.body}));
+        host.appendChild(c);
+      });
+      if(g.disclaimer) host.appendChild(disclaimerBox(g.disclaimer));
+    } else {
+      host.appendChild(el('pre',{text: JSON.stringify(data,null,2), style:'font-size:11px; white-space:pre-wrap; background:#f6f8f9; padding:10px; border-radius:8px;'}));
+    }
+  }
+
+  function renderMeds(host, data){
+    if(!data){ host.appendChild(emptyState('pill','No medication awareness yet.')); return; }
+    var items = data.items || data.medications || data;
+    if(Array.isArray(items)){
+      if(items.length===0) host.appendChild(emptyState('pill','No medications recorded — add them in observations.'));
+      items.forEach(function(m){
+        var c=el('div',{class:'intel-card'});
+        c.appendChild(el('h4',{text: m.name || m.code || 'Medication'}));
+        c.appendChild(el('p',{class:'muted', text: m.note || m.text || m.awareness || ''}));
+        if(m.disclaimer) c.appendChild(disclaimerBox(m.disclaimer));
+        host.appendChild(c);
+      });
+    } else {
+      host.appendChild(el('pre',{text: JSON.stringify(data,null,2), style:'font-size:11px; white-space:pre-wrap; background:#f6f8f9; padding:10px; border-radius:8px;'}));
+    }
+    if(data.disclaimer) host.appendChild(disclaimerBox(data.disclaimer));
+  }
+
+  function renderSummary(host, data){
+    if(!data){ host.appendChild(emptyState('file-text','No summary yet — verify reports first.')); return; }
+    var card=el('div',{class:'intel-card'});
+    card.appendChild(el('h4',{text: data.title || 'Doctor summary'}));
+    if(data.summary) card.appendChild(el('p',{text: data.summary}));
+    if(data.sections){
+      data.sections.forEach(function(s){
+        card.appendChild(el('h4',{text: s.heading, style:'margin-top:10px; font-size:13px;'}));
+        card.appendChild(el('p',{class:'muted', text: s.body}));
+      });
+    }
+    if(data.observations) card.appendChild(el('p',{class:'muted', text: plural(data.observations.length,'observation','observations')+' included'}));
+    if(data.medications) card.appendChild(el('p',{class:'muted', text: plural(data.medications.length,'medication','medications')+' listed'}));
+    if(data.disclaimer) card.appendChild(disclaimerBox(data.disclaimer));
+    host.appendChild(card);
+  }
+
+  function loadIntel(tab){
+    if(!state.member) return;
+    var id=state.member.id;
+    var body=$('intel-body');
+    showSkeleton(body,3);
+    var url='/members/'+id+'/intelligence';
+    if(tab==='baseline') url='/members/'+id+'/intelligence/baseline';
+    else if(tab==='patterns') url='/members/'+id+'/intelligence/patterns';
+    else if(tab==='anomalies') url='/members/'+id+'/intelligence';
+    api(url).then(function(data){
+      body.innerHTML='';
+      if(tab==='baseline') renderBaseline(body, data);
+      else if(tab==='patterns') renderPatterns(body, data);
+      else if(tab==='anomalies') renderAnomalies(body, data);
+    }).catch(function(err){
+      body.innerHTML='';
+      body.appendChild(emptyState('cpu', err.message || 'Could not load intelligence'));
+    });
+  }
+
+  function renderBaseline(host, data){
+    var list = data.baselines || data || [];
+    if(Array.isArray(list) && list.length===0) { host.appendChild(emptyState('cpu','No baselines yet — add more verified reports.')); return; }
+    // data may be single baseline
+    if(!Array.isArray(list)) list=[list];
+    list.slice(0,12).forEach(function(b){
+      var c=el('div',{class:'intel-card'});
+      c.appendChild(el('h4',{text: b.signal || b.marker || b.code || 'Signal'}));
+      c.appendChild(el('p',{class:'muted', text: 'Mean: '+(b.mean!=null? b.mean : '—')+' · Range: '+(b.range || '—')}));
+      if(b.count) c.appendChild(el('p',{class:'muted', text: plural(b.count,'point','points')+' · last '+ (b.lastValue!=null? b.lastValue : '—')}));
+      host.appendChild(c);
+    });
+    if(data.disclaimer) host.appendChild(disclaimerBox(data.disclaimer));
+  }
+
+  function renderPatterns(host, data){
+    var edges = data.edges || data.graph && data.graph.edges || [];
+    if(edges.length===0){ host.appendChild(emptyState('cpu','No strong patterns yet — keep adding reports and observations.')); return; }
+    edges.slice(0,12).forEach(function(e){
+      var c=el('div',{class:'intel-card'});
+      c.appendChild(el('h4',{text: (e.from||e.source)+' → '+(e.to||e.target)}));
+      c.appendChild(el('span',{class:'chip '+(e.strength>0.6?'green': e.strength>0.3?'amber':'grey'), text: 'strength '+(e.strength!=null? (e.strength*100|0)+'%' : '—')}));
+      if(e.type) c.appendChild(el('p',{class:'muted', text: e.type}));
+      if(e.explanation) c.appendChild(el('p',{class:'muted', text: e.explanation}));
+      host.appendChild(c);
+    });
+    if(data.disclaimer) host.appendChild(disclaimerBox(data.disclaimer));
+  }
+
+  function renderAnomalies(host, data){
+    var findings = data.anomalies && data.anomalies.findings || data.findings || [];
+    if(findings.length===0){ host.appendChild(emptyState('activity','No anomalies detected — your kivo looks stable.')); return; }
+    findings.slice(0,10).forEach(function(f){
+      var c=el('div',{class:'intel-card'});
+      c.appendChild(el('h4',{text: f.type || f.kind || 'Anomaly'}));
+      c.appendChild(el('p',{class:'muted', text: f.message || f.detail || f.explanation || ''}));
+      if(f.signal) c.appendChild(el('p',{class:'muted', text:'Signal: '+f.signal+' · value '+(f.value!=null? f.value : '—')}));
+      host.appendChild(c);
+    });
+    if(data.disclaimer) host.appendChild(disclaimerBox(data.disclaimer));
+  }
+
+  /* What-If simulation */
+  function doSimulate(){
+    if(!state.member) return;
+    var id=state.member.id;
+    var changes={};
+    var w=$('sim-weight').value.trim(), a=$('sim-activity').value.trim(), h=$('sim-hba1c').value.trim(), s=$('sim-sbp').value.trim();
+    if(w) changes.weightKg=Number(w);
+    if(a) changes.activityMinutesPerWeek=Number(a);
+    if(h) changes.hba1c=Number(h);
+    if(s) changes.systolicBp=Number(s);
+    if(Object.keys(changes).length===0){ $('simulate-error').textContent='Enter at least one hypothetical value.'; $('simulate-error').classList.remove('hidden'); return; }
+    $('simulate-error').classList.add('hidden');
+    var btn=$('btn-simulate');
+    withLoading(btn, function(){
+      return api('/members/'+id+'/intelligence/simulate',{method:'POST', body:{changes:changes}}).then(function(res){
+        var host=$('simulate-result'); host.innerHTML='';
+        var card=el('div',{class:'intel-card'});
+        card.appendChild(el('h4',{text: res.label || 'Scenario result'}));
+        if(res.modelBefore && res.modelAfter){
+          var before=res.modelBefore.result && res.modelBefore.result.risk || res.modelBefore.result && res.modelBefore.result.percent || 0;
+          var after=res.modelAfter.result && res.modelAfter.result.risk || res.modelAfter.result && res.modelAfter.result.percent || 0;
+          var delta = (after - before).toFixed(1);
+          var dEl=el('div',{class:'scenario-delta '+(delta>0?'neg':'pos'), text: (delta>0?'+':'')+delta+' pts'});
+          card.appendChild(dEl);
+          card.appendChild(el('p',{class:'muted', text:'Model '+before+'% → '+after+'%'}));
+        }
+        if(res.contributionChanges) card.appendChild(el('pre',{text: JSON.stringify(res.contributionChanges,null,2), style:'font-size:11px; white-space:pre-wrap; background:#f6f8f9; padding:8px; border-radius:8px;'}));
+        if(res.disclaimer) card.appendChild(disclaimerBox(res.disclaimer));
+        card.appendChild(el('p',{class:'muted', text: (res.labels||[]).join(' · ')}));
+        host.appendChild(card);
+      }).catch(function(err){ $('simulate-error').textContent=err.message; $('simulate-error').classList.remove('hidden'); });
+    });
+  }
+
+  function doExplore(){
+    if(!state.member) return;
+    var id=state.member.id;
+    var host=$('scenarios-result');
+    host.innerHTML=''; showSkeleton(host,2);
+    api('/members/'+id+'/intelligence/scenarios',{method:'POST', body:{}}).then(function(res){
+      host.innerHTML='';
+      var list=res.scenarios || res || [];
+      if(Array.isArray(list) && list.length===0){ host.appendChild(emptyState('activity','No scenarios available — add weight or activity data.')); return; }
+      (Array.isArray(list)? list : list.scenarios || []).slice(0,6).forEach(function(sc){
+        var c=el('div',{class:'scenario-card'});
+        c.appendChild(el('h5',{text: sc.label || sc.id}));
+        if(sc.delta!=null) c.appendChild(el('div',{class:'scenario-delta '+(sc.delta>0?'neg':'pos'), text: (sc.delta>0?'+':'')+sc.delta}));
+        if(sc.modelAfter) c.appendChild(el('p',{class:'muted', text: JSON.stringify(sc.modelAfter.result||sc.modelAfter).slice(0,120)}));
+        host.appendChild(c);
+      });
+      if(res.disclaimer) host.appendChild(disclaimerBox(res.disclaimer));
+    }).catch(function(err){ host.innerHTML=''; host.appendChild(emptyState('info', err.message)); });
+  }
+
+  /* Ask kivo */
+  function loadAskSuggestions(){
+    if(!state.member) return;
+    var id=state.member.id;
+    api('/members/'+id+'/ask/suggestions').then(function(data){
+      var host=$('ask-suggestions'); host.innerHTML='';
+      var arr=data.suggestions || data || [];
+      (Array.isArray(arr)?arr:[]).slice(0,6).forEach(function(s){
+        var text = typeof s==='string'? s : (s.question || s.text || JSON.stringify(s));
+        var b=el('button',{type:'button', text: text});
+        b.addEventListener('click', function(){ $('ask-input').value=text; doAsk(); });
+        host.appendChild(b);
+      });
+    }).catch(function(){});
+  }
+  function renderChat(){
+    var host=$('ask-chat'); host.innerHTML='';
+    state.chat.forEach(function(m){
+      var d=el('div',{class:'chat-msg '+m.role});
+      d.textContent=m.text;
+      if(m.role==='bot' && m.disclaimer) d.appendChild(el('div',{class:'muted', text: m.disclaimer, style:'margin-top:6px; font-size:11px;'}));
+      host.appendChild(d);
+    });
+    host.scrollTop = host.scrollHeight;
+  }
+  function doAsk(){
+    var input=$('ask-input');
+    var text=(input.value||'').trim();
+    if(!text) return;
+    if(!state.member) return;
+    var id=state.member.id;
+    state.chat.push({role:'user', text:text});
+    renderChat();
+    input.value='';
+    $('ask-error').classList.add('hidden');
+    var btn=$('ask-send');
+    withLoading(btn, function(){
+      return api('/members/'+id+'/ask',{method:'POST', body:{question:text}}).then(function(res){
+        var ans = res.answer || res.text || res.narrative || JSON.stringify(res);
+        var disclaimer = res.disclaimer || (res.meta && res.meta.disclaimer) || '';
+        state.chat.push({role:'bot', text: ans, disclaimer: disclaimer});
+        renderChat();
+      }).catch(function(err){
+        $('ask-error').textContent=err.message;
+        $('ask-error').classList.remove('hidden');
+        state.chat.push({role:'sys', text: err.message});
+        renderChat();
+      });
+    });
+  }
+
+  /* Observations & Reminders */
+  function loadObservations(){
+    if(!state.member) return;
+    var id=state.member.id;
+    api('/members/'+id+'/observations').then(function(data){
+      var list=data.items || data.observations || data || [];
+      var host=$('obs-list'); host.innerHTML='';
+      if(list.length===0){ host.appendChild(emptyState('activity','No observations yet — use voice or add below.')); return; }
+      list.slice(0,20).forEach(function(o){
+        var row=el('div',{class:'obs-item'});
+        row.appendChild(el('span',{class:'obs-dot'}));
+        var body=el('div',{style:'flex:1; min-width:0;'});
+        body.appendChild(el('div',{style:'font-weight:600; font-size:13.5px;', text: o.kind}));
+        body.appendChild(el('div',{class:'muted', text: (o.data && o.data.note) || JSON.stringify(o.data || o.payload || '').slice(0,120)}));
+        body.appendChild(el('div',{class:'muted', style:'font-size:11px;', text: fmtDate(o.observedAt || o.createdAt)+' · '+ (o.source||'' )}));
+        row.appendChild(body);
+        var del=el('button',{class:'btn ghost sm', type:'button', text:'✕', title:'Delete'});
+        del.addEventListener('click', function(){ deleteObservation(o.id); });
+        row.appendChild(del);
+        host.appendChild(row);
+      });
+    }).catch(function(){});
+  }
+  function deleteObservation(oid){
+    if(!oid) return;
+    api('/observations/'+oid,{method:'DELETE'}).then(function(){ toast('Observation removed'); loadObservations(); }).catch(function(e){ toast(e.message); });
+  }
+  function createObservationManual(ev){
+    ev.preventDefault();
+    if(!state.member) return;
+    var kind=$('obs-kind').value;
+    var text=$('obs-text').value.trim();
+    if(!text) return;
+    var payload={note:text};
+    // try to parse number if weight/bp etc
+    var num = (text.match(/(\d+(?:\.\d+)?)/)||[])[1];
+    if(kind==='weight' && num) payload.weightKg=Number(num);
+    if(kind==='bp' && num) payload.systolic=Number(num);
+    if(kind==='activity' && num) payload.minutesPerWeek=Number(num);
+    api('/members/'+state.member.id+'/observations',{method:'POST', body:{kind:kind, payload:payload, source:'manual'}}).then(function(){
+      $('obs-text').value=''; toast('Observation saved'); loadObservations();
+    }).catch(function(e){ toast(e.message); });
+  }
+
+  function loadReminders(){
+    if(!state.member) return;
+    var id=state.member.id;
+    api('/members/'+id+'/reminders').then(function(data){
+      var list=data.items || data.reminders || data || [];
+      var host=$('reminders-list'); host.innerHTML='';
+      if(list.length===0){ host.appendChild(emptyState('bell','No reminders — create one below.')); return; }
+      list.forEach(function(r){
+        var row=el('div',{class:'reminder-item'});
+        var left=el('div',{style:'flex:1; min-width:0;'});
+        left.appendChild(el('div',{style:'font-weight:600; font-size:13.5px;', text: r.title || r.text || 'Reminder'}));
+        left.appendChild(el('div',{class:'when', text: (r.dueAt? fmtDate(r.dueAt) : 'No due date')+' · '+ (r.status||'')}));
+        row.appendChild(left);
+        var del=el('button',{class:'btn ghost sm', type:'button', text:'✕'});
+        del.addEventListener('click', function(){
+          api('/reminders/'+r.id,{method:'DELETE'}).then(function(){ toast('Reminder removed'); loadReminders(); }).catch(function(e){ toast(e.message); });
+        });
+        row.appendChild(del);
+        host.appendChild(row);
+      });
+    }).catch(function(){});
+  }
+  function createReminder(ev){
+    ev.preventDefault();
+    if(!state.member) return;
+    var title=$('rem-title').value.trim();
+    var due=$('rem-due').value;
+    if(!title) return;
+    var body={title:title};
+    if(due) body.dueAt = new Date(due).toISOString();
+    api('/members/'+state.member.id+'/reminders',{method:'POST', body:body}).then(function(){
+      $('rem-title').value=''; $('rem-due').value=''; toast('Reminder created'); loadReminders();
+    }).catch(function(e){ toast(e.message); });
+  }
+
+  function updateStorageInfo(){
+    var host=$('storage-info');
+    if(!host) return;
+    host.innerHTML='';
+    var c=el('div',{class:'intel-card'});
+    c.appendChild(el('h4',{text:'Health storage'}));
+    var reportsCount = state.reports && state.reports.items ? state.reports.items.length : 0;
+    var obsCount = 0; // will be updated after observations load
+    c.appendChild(el('div',{class:'kv-row'},[el('span',{text:'Reports'}), el('b',{text: String(reportsCount)})]));
+    c.appendChild(el('div',{class:'kv-row'},[el('span',{text:'Verified markers'}), el('b',{text: state.score && state.score.current ? String(state.score.current.markerCount) : '—'})]));
+    c.appendChild(el('p',{class:'muted', text:'All reports are stored encrypted and can be exported via Profile → Export. Images are kept under your member and never leave your kivo without your consent.'}));
+    var btn=el('button',{class:'btn ghost sm', type:'button', text:'Export my data'});
+    btn.addEventListener('click', function(){
+      api('/profile/export').then(function(blob){
+        toast('Export ready — check your downloads');
+      }).catch(function(e){ toast(e.message); });
+    });
+    c.appendChild(btn);
+    host.appendChild(c);
+  }
+
+
   /* ---------------------------------------------------------------- */
   /* shared bits                                                       */
   /* ---------------------------------------------------------------- */
@@ -940,7 +1449,9 @@
      ['member-icon', 'user', 18], ['refresh-icon', 'refresh-cw', 15], ['score-head-ic', 'activity', 19],
      ['mile-head-ic', 'trophy', 19], ['rep-head-ic', 'file-text', 19], ['upload-icon', 'upload', 15],
      ['scan-icon', 'camera', 18], ['voice-head-ic', 'mic', 19],
-    ].forEach(function (t) { Icons.set($(t[0]), t[1], t[2]); });
+     ['insights-head-ic', 'activity', 18], ['intel-head-ic', 'cpu', 18],
+     ['ask-head-ic', 'message-circle', 18], ['rem-head-ic', 'bell', 18],
+    ].forEach(function (t) { try{ Icons.set($(t[0]), t[1], t[2]); } catch(e){} });
     // bottom nav + scanner buttons
     Icons.set(document.querySelector('#nav-home .nav-ic'), 'home', 20);
     Icons.set(document.querySelector('#nav-reports .nav-ic'), 'file-text', 20);
@@ -971,7 +1482,7 @@
     $('tab-register').addEventListener('click', function () { setAuthMode('register'); });
     $('auth-form').addEventListener('submit', onAuthSubmit);
     $('btn-logout').addEventListener('click', onLogout);
-    $('btn-refresh').addEventListener('click', function () { refreshAll().then(function () { toast('Refreshed.'); }); });
+    // btn-refresh is wired below with debounced + withLoading for buttery smoothness
     $('upload-form').addEventListener('submit', onUpload);
     window.addEventListener('resize', onResize);
 
@@ -996,6 +1507,28 @@
       var r = document.querySelector('.widget-reports');
       if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+    // kivo intelligence & insights
+    document.querySelectorAll('#insights-tabs .intel-tab').forEach(function(b){
+      b.addEventListener('click', function(){ setInsightsTab(b.getAttribute('data-insights-tab')); });
+    });
+    document.querySelectorAll('#intel-tabs .intel-tab').forEach(function(b){
+      b.addEventListener('click', function(){ setIntelTab(b.getAttribute('data-intel-tab')); });
+    });
+    document.querySelectorAll('#rem-tabs .intel-tab').forEach(function(b){
+      b.addEventListener('click', function(){ setRemTab(b.getAttribute('data-rem-tab')); });
+    });
+    var obsForm=$('obs-form'); if(obsForm) obsForm.addEventListener('submit', createObservationManual);
+    var remForm=$('reminder-form'); if(remForm) remForm.addEventListener('submit', createReminder);
+    var askSend=$('ask-send'); if(askSend) askSend.addEventListener('click', doAsk);
+    var askInput=$('ask-input'); if(askInput) askInput.addEventListener('keydown', function(e){ if(e.key==='Enter') doAsk(); });
+    var simBtn=$('btn-simulate'); if(simBtn) simBtn.addEventListener('click', doSimulate);
+    var expBtn=$('btn-explore'); if(expBtn) expBtn.addEventListener('click', doExplore);
+    // buttery smooth: debounced refresh
+    var origRefresh = $('btn-refresh');
+    if(origRefresh){
+      origRefresh.addEventListener('click', debounce(function(){ withLoading(origRefresh, function(){ return refreshAll().then(function(){ toast('Refreshed.'); }); }); }, 200));
+      // remove earlier direct listener by cloning? We'll keep both but debounce
+    }
 
     readyDone = true;
 
