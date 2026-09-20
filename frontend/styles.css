@@ -483,3 +483,6 @@ textarea { resize: vertical; }
 .skel.w60 { width: 60%; }
 .skel.w40 { width: 40%; }
 .skel.w80 { width: 80%; }
+
+/* The installed app is not a download page. */
+.native-app .download-apk-btn { display: none; }

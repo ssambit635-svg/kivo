@@ -384,74 +384,14 @@ describe('landing page', () => {
   });
 });
 
-/**
- * The dedicated mobile frontend (`/m/`, frontend/m). Same class of guard as the
- * two dashboards above, and for the same reason: it is hand-written vanilla JS
- * with no build step, so a missing id or an inline handler only shows up on a
- * phone — in front of the judges.
- *
- * It gets its own block rather than joining APPS because it inlines its own SVG
- * instead of using the shared Icons registry.
- */
-describe('mobile app (/m/)', () => {
-  const html = read('m/index.html');
-  const js = read('m/mobile.js');
-  const css = read('m/mobile.css');
-  const folder = path.join(frontend, 'm');
-
-  it('has no inline event handlers (CSP: script-src-attr \'none\' drops them)', () => {
-    // Regression guard: the first cut wired "All Reports →" and the three "Back"
-    // links with inline onclick attributes. helmet serves script-src-attr
-    // 'none', so the browser silently threw every one of them away and the
-    // buttons did nothing. Handlers live in mobile.js, keyed off data-goto-tab.
-    expect(html).not.toMatch(/\son[a-z]+\s*=/i);
-    const jumps = [...html.matchAll(/data-goto-tab="([a-z]+)"/g)].map((m) => m[1]);
-    expect(jumps.length).toBeGreaterThanOrEqual(4);
-    for (const tab of new Set(jumps)) {
-      expect(html, `no nav tab for data-goto-tab="${tab}"`).toContain(`data-tab="${tab}"`);
-    }
-    expect(js, 'mobile.js never wires [data-goto-tab]').toContain('[data-goto-tab]');
-    expect(js).toContain('switchTab');
-  });
-
-  it('every element id mobile.js looks up exists in the html', () => {
-    const missing = [...referencedIds(js)].filter((id) => !html.includes(`id="${id}"`));
-    expect(missing).toEqual([]);
-  });
-
-  it('every class mobile.js selects exists in the html or the stylesheet', () => {
-    const classes = new Set([
-      ...[...js.matchAll(/querySelectorAll\('\.([A-Za-z0-9_-]+)'\)/g)].map((m) => m[1]),
-      ...[...js.matchAll(/querySelector\('\.([A-Za-z0-9_-]+)'\)/g)].map((m) => m[1]),
-    ]);
-    expect(classes.size).toBeGreaterThan(1);
-    const missing = [...classes].filter((cls) => !html.includes(cls) && !css.includes(`.${cls}`));
-    expect(missing).toEqual([]);
-  });
-
-  it('ships every asset the html references', async () => {
-    const relative = [...html.matchAll(/(?:href|src)="\.\.?\/([^"]+)"/g)].map((m) => m[1]);
-    expect(relative.length).toBeGreaterThan(0);
-    for (const ref of relative) {
-      expect(existsSync(path.join(folder, ref)), `m/${ref} is missing`).toBe(true);
-    }
-    // root-relative ones (/app/icons/…, /download/apk) are served, not shipped
-    const root = rootRelativeRefs(html);
-    expect(root.length).toBeGreaterThan(0);
-    for (const ref of root) {
-      await expectResolvable(ref, [folder, frontend]);
-    }
-  });
-
-  it('every apk button points at the download endpoint, never the raw file', () => {
-    // /download/apk is the route that sets the android package mime type and
-    // Content-Disposition: attachment; the bare file under /app/ downloads
-    // without them, which is what makes some Android browsers refuse it.
-    expect((html.match(/href="\/download\/apk"/g) || []).length).toBeGreaterThanOrEqual(3);
-    expect(html, 'a stale raw-file link came back').not.toContain('/app/kivo.apk');
-    expect(html).toContain('download="kivo.apk"');
-    // and every button is toast-wired, so a tap is never silent
-    expect((html.match(/apk-download-trigger/g) || []).length).toBeGreaterThanOrEqual(3);
-    expect(js, 'no download feedback toast').toContain('.apk-download-trigger');
+// /m is now a compatibility alias, not a second mock app.
+describe('mobile entry regression', () => {
+  it('forwards old bookmarks/APKs to the real login app without sample health data', () => {
+    expect(read('m/index.html')).toContain('url=/app/');
+    expect(read('m/mobile.js')).toContain("location.replace('/app/')");
+    expect(read('m/mobile.js')).not.toContain('mem-demo');
+    expect(read('m/index.html')).not.toContain('Optimal Health');
+    expect(read('index.html')).toContain('id="auth-form"');
+    expect(read('index.html')).toContain('id="dash-view" class="hidden"');
   });
 });

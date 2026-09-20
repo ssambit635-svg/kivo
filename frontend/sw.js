@@ -10,13 +10,14 @@
  * separate frontend for a separate role, and clinical screens should never be
  * served stale from a cache.
  */
-const VERSION = 'kivo-v1';
+const VERSION = 'kivo-v2-login';
 const SHELL = [
   '/app/',
   '/app/index.html',
   '/app/styles.css',
   '/app/care.css',
   '/app/app.js',
+  '/app/connection.js',
   '/app/care.js',
   '/app/icons.js',
   '/app/manifest.webmanifest',
@@ -38,7 +39,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('kivo-') && k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -51,18 +52,23 @@ self.addEventListener('fetch', (event) => {
   // Only handle same-origin GET navigation/asset requests.
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // App-shell: cache-first with network backfill (fast cold start, offline).
-  if (url.pathname.startsWith('/app')) {
-    event.respondWith(
-      caches.match(event.request).then(
-        (hit) =>
-          hit ||
-          fetch(event.request).then((res) => {
-            const copy = res.clone();
-            caches.open(VERSION).then((c) => c.put(event.request, copy));
-            return res;
-          }),
-      ),
-    );
+  // Network-first: deployed fixes must not stay hidden behind a stale shell.
+  // Cache only known public UI files, never exports, media or APKs.
+  if (SHELL.includes(url.pathname)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(VERSION);
+      try {
+        const response = await fetch(event.request);
+        if (response.ok) {
+          await cache.put(url.pathname, response.clone());
+          return response;
+        }
+        return (await cache.match(url.pathname)) || response;
+      } catch (err) {
+        const cached = await cache.match(url.pathname);
+        if (cached) return cached;
+        throw err;
+      }
+    })());
   }
 });

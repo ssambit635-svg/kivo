@@ -85,8 +85,8 @@ export function createApp(container) {
 
   // Direct APK auto-download endpoints
   app.get(['/download/apk', '/kivo.apk'], (req, res) => {
-    const apkFile = path.join(frontendDir, 'kivo.apk');
-    if (fs.existsSync(apkFile)) {
+    const apkFile = frontendDir && path.join(frontendDir, 'kivo.apk');
+    if (apkFile && fs.existsSync(apkFile)) {
       res.setHeader('Content-Disposition', 'attachment; filename="kivo.apk"');
       res.setHeader('Content-Type', 'application/vnd.android.package-archive');
       return res.sendFile(apkFile);
@@ -95,6 +95,9 @@ export function createApp(container) {
   });
 
   app.get('/', (req, res) => {
+    if (frontendDir && /kivo-android\//i.test(req.get('user-agent') || '')) {
+      return res.set('Cache-Control', 'no-store').redirect(302, '/app/');
+    }
     const meta = {
       // Deliberately product metadata only: no service name, no internal paths.
       name: 'kivo',
@@ -116,18 +119,19 @@ export function createApp(container) {
   if (frontendDir) {
     // Dedicated mobile frontend (/m/)
     if (mobileDir) {
-      app.use('/m', express.static(mobileDir, { index: 'index.html', maxAge: '5m' }));
+      app.get(['/m', '/m/', '/m/index.html'], (_req, res) => res.set('Cache-Control', 'no-store').redirect(302, '/app/'));
+      app.use('/m', express.static(mobileDir, { index: false, maxAge: 0 }));
     }
 
     // express.static redirects /app → /app/ itself (directory redirect).
-    app.use('/app', express.static(frontendDir, { index: 'index.html', maxAge: '5m' }));
+    app.use('/app', express.static(frontendDir, { index: 'index.html', maxAge: 0 }));
 
     // The doctor console is a SEPARATE frontend for a separate role. It lives
     // in frontend/doctor/ and reuses the patient app's design tokens/icons via
     // /app/… so the two consoles never drift apart visually.
     const doctorDir = path.join(frontendDir, 'doctor');
     if (fs.existsSync(path.join(doctorDir, 'index.html'))) {
-      app.use('/doctor', express.static(doctorDir, { index: 'index.html', maxAge: '5m' }));
+      app.use('/doctor', express.static(doctorDir, { index: 'index.html', maxAge: 0 }));
     }
   }
 
@@ -137,7 +141,7 @@ export function createApp(container) {
   // Landing assets at the root (/styles.css, /js/…, /vendor/…, /fonts/…,
   // /models/…). index:false — the root route above owns '/'.
   if (landingDir) {
-    app.use('/', express.static(landingDir, { index: false, maxAge: '5m' }));
+    app.use('/', express.static(landingDir, { index: false, maxAge: 0 }));
   }
 
   app.use(notFoundHandler());

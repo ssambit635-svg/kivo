@@ -1,5 +1,7 @@
 # kivo Android shell
 
+> **APK 1.2 startup fix:** login is bundled, old saved server settings no longer override the cloud on launch, and `/m/` now opens the real authenticated app. Install the rebuilt APK once; no laptop/backend command is needed for cloud use. Live features still require internet. See [STARTUP_FIX.md](STARTUP_FIX.md) for verification and deployment limits.
+
 The installable Android app. It is a **thin, dependency-free WebView shell** around
 the web product that already ships in [`/frontend`](../frontend) — no AndroidX, no
 Kotlin, no third-party SDK, ~1 file of Java.

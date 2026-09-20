@@ -23,16 +23,17 @@ describe('mobile frontend + apk download', () => {
   describe('GET /m/ (dedicated mobile app)', () => {
     it('serves the phone shell', async () => {
       const res = await request(app).get('/m/');
-      expect(res.status).toBe(200);
-      expect(res.headers['content-type']).toMatch(/text\/html/);
-      expect(res.text).toContain('app-viewport');
-      expect(res.text).toContain('kivo');
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe('/app/');
+      const login = await request(app).get(res.headers.location);
+      expect(login.text).toContain('id="auth-form"');
+      expect(login.text).not.toContain('Optimal Health');
     });
 
     it('redirects the bare /m to the directory index', async () => {
       const res = await request(app).get('/m');
       expect([301, 302]).toContain(res.status);
-      expect(res.headers.location).toBe('/m/');
+      expect(res.headers.location).toBe('/app/');
     });
 
     it('serves its stylesheet and script', async () => {
@@ -42,7 +43,7 @@ describe('mobile frontend + apk download', () => {
 
       const js = await request(app).get('/m/mobile.js');
       expect(js.status).toBe(200);
-      expect(js.text).toContain('[data-goto-tab]');
+      expect(js.text).toContain("location.replace('/app/')");
     });
 
     it('is covered by the CSP that forbids inline handlers', async () => {
@@ -53,6 +54,12 @@ describe('mobile frontend + apk download', () => {
       // markup side of that contract is asserted in the unit suite.
       expect(csp).toMatch(/script-src-attr\s+'none'/);
     });
+  });
+
+  it('legacy Android root requests never render backend metadata', async () => {
+    const res = await request(app).get('/').set('User-Agent', 'WebView kivo-android/1.1');
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('/app/');
   });
 
   describe('GET /download/apk (direct installer)', () => {
@@ -104,7 +111,7 @@ describe('mobile frontend + apk download', () => {
     });
 
     it('the phone shell points its APK pill at the download endpoint', async () => {
-      const res = await request(app).get('/m/');
+      const res = await request(app).get('/m/').redirects(1);
       expect(res.text).toContain('href="/download/apk"');
     });
   });

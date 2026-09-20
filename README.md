@@ -1,5 +1,7 @@
 # MedTwin AI — AI-Powered Digital Health Twin
 
+> **APK 1.2 startup fix:** login is bundled, old saved server settings no longer override the cloud on launch, and `/m/` now opens the real authenticated app. Install the rebuilt APK once; no laptop/backend command is needed for cloud use. Live features still require internet. See [android/STARTUP_FIX.md](android/STARTUP_FIX.md) for verification and deployment limits.
+
 > iQOO Hackathon 2026 · HealthTech track · Prototype (risk-awareness, **not** a diagnosis engine)
 
 Turns scattered health reports into a living, understandable health timeline:

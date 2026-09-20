@@ -36,7 +36,7 @@ if (keystorePropertiesFile.exists()) {
 // Version identity. CI passes both in (-PkivoVersionCode / -PkivoVersionName);
 // the defaults keep a plain local build working.
 def apkVersionCode = Integer.parseInt((project.findProperty('kivoVersionCode') ?: '1000').toString())
-def apkVersionName = (project.findProperty('kivoVersionName') ?: '1.1.0').toString()
+def apkVersionName = (project.findProperty('kivoVersionName') ?: '1.2.0').toString()
 
 // Baked-in default server (hackathon/cloud mode).
 //
@@ -144,3 +144,16 @@ tasks.register('icons', Exec) {
 dependencies {
     // Deliberately empty: the shell uses only the Android framework.
 }
+
+// Bundle the REAL patient/doctor UI, not the old sample-data /m mockup.
+// A separate /native/ URL avoids any legacy /app service-worker cache.
+def bundledWeb = layout.buildDirectory.dir('generated/kivoAssets')
+tasks.register('bundleWeb', Sync) {
+    from(rootProject.file('../frontend')) {
+        include '*.html', '*.css', '*.js', 'manifest.webmanifest', 'icons/**', 'doctor/**'
+        exclude 'sw.js'
+    }
+    into(bundledWeb.map { it.dir('web') })
+}
+android.sourceSets.main.assets.srcDir(bundledWeb)
+tasks.named('preBuild').configure { dependsOn('bundleWeb') }

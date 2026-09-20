@@ -41,3 +41,20 @@ jobs:
 
       - name: End-to-end endpoint smoke test
         run: npm run smoke
+
+  browser:
+    name: Mobile login and feature journeys
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser

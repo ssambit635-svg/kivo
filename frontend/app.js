@@ -224,15 +224,16 @@
     errBox.classList.add('hidden');
     $('auth-submit').disabled = true;
 
-    var promise;
-    if (authMode === 'login') {
-      promise = api('/auth/login', { method: 'POST', body: { email: email, password: password } }, false);
-    } else {
-      promise = api('/auth/register', {
-        method: 'POST',
-        body: { email: email, displayName: $('in-name').value.trim() || email.split('@')[0], password: password },
+    var mode = authMode;
+    var displayName = $('in-name').value.trim() || email.split('@')[0];
+    var promise = window.KivoConnection.ensureReady().then(function () {
+      if (mode === 'login') {
+        return api('/auth/login', { method: 'POST', body: { email: email, password: password } }, false);
+      }
+      return api('/auth/register', {
+        method: 'POST', body: { email: email, displayName: displayName, password: password },
       }, false);
-    }
+    });
 
     promise.then(function (session) {
       saveTokens({ accessToken: session.accessToken, refreshToken: session.refreshToken });
@@ -240,12 +241,14 @@
       notifySession();
       if (session.user && session.user.accountType === 'doctor') {
         // Two user categories, two frontends: doctors work in the console.
+        try { sessionStorage.setItem('kivo.role-handoff', JSON.stringify(state.tokens)); } catch (e) { /* doctor can sign in directly */ }
+        clearTokens();
         location.href = '/doctor/';
         return null;
       }
       return bootDashboard();
     }).catch(function (err) {
-      errBox.textContent = err.message || 'Something went wrong';
+      errBox.textContent = err instanceof TypeError ? 'Cannot connect right now. Check your internet and try again.' : (err.message || 'Please try again.');
       errBox.classList.remove('hidden');
     }).finally(function () {
       $('auth-submit').disabled = false;
@@ -926,6 +929,7 @@
   }
 
   function registerServiceWorker() {
+    if (window.KivoNative) return; // the APK already ships its UI
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('./sw.js').catch(function () { /* offline is optional */ });
     }
@@ -1533,13 +1537,24 @@
     readyDone = true;
 
     registerServiceWorker();
-    loadTokens();
+    if (window.KivoNative) {
+      document.body.classList.add('native-app');
+      window.KivoConnection.ensureReady().catch(function () { /* stays on login */ });
+    }
+    if (new URLSearchParams(location.search).get('login') === '1') {
+      clearTokens(); // explicit cold-launch login; ordinary reload keeps a session
+      history.replaceState(null, '', location.pathname);
+    } else {
+      loadTokens();
+    }
     if (state.tokens && state.tokens.accessToken) {
       api('/auth/me').then(function (me) {
         state.user = me.user;
         notifySession();
         if (me.user && me.user.accountType === 'doctor') {
-          location.href = '/doctor/';
+          try { sessionStorage.setItem('kivo.role-handoff', JSON.stringify(state.tokens)); } catch (e) { /* doctor can sign in directly */ }
+        clearTokens();
+        location.href = '/doctor/';
           return null;
         }
         return bootDashboard();
