@@ -39,6 +39,22 @@ node scripts/create-admin.js admin@clinic.dev 'Admin' 'Str0ng!Passw0rd#x'
 - **`ExperimentalWarning: SQLite is an experimental feature`** — harmless;
   the backend uses Node's built-in `node:sqlite`. The npm scripts already
   silence it; if you run `node src/server.js` directly you may still see it.
+- **`npm run apk:build` says "no local Android toolchain"** — expected on a
+  machine without the Android SDK. The script then drives GitHub Actions
+  through `gh` (the workflow has the SDK, JDK and gradle already), waits for
+  the run, downloads the artifact, verifies it and writes `frontend/kivo.apk`.
+  Pass `--fetch` to grab the newest published build without rebuilding.
+- **The phone says "There was a problem parsing the package"** — that message
+  means Android rejected the *package*, not your settings. The APK in this repo
+  is built by AAPT2/D8/apksig in CI and gated by `android/tools/verify_apk.py`,
+  so if you see it you are holding an old or truncated file: re-download from
+  the `apk-latest` release (or `/download/apk`) and check the sha256 in the
+  workflow summary. If you sideloaded a build from a *different* signing key,
+  uninstall the old app first — Android refuses to update across keys.
+- **The app installs but shows "Could not open kivo"** — that is the shell's own
+  error screen, and it says why (no such host / refused / timeout / TLS). Start
+  the backend (`npm start`), make sure the phone is on the same Wi-Fi, and type
+  the computer's LAN address — not `localhost`, which on a phone means the phone.
 
 ## Architecture (OOP, layered)
 

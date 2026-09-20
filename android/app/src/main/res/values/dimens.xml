@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="pad">16dp</dimen>
+    <dimen name="pad_lg">24dp</dimen>
+    <dimen name="native_bar_height">48dp</dimen>
+    <dimen name="field_radius">12dp</dimen>
+</resources>

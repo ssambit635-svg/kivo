@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_reload"
+        android:title="@string/action_reload" />
+    <item
+        android:id="@+id/action_surface_phone"
+        android:title="@string/action_surface_phone" />
+    <item
+        android:id="@+id/action_surface_dashboard"
+        android:title="@string/action_surface_dashboard" />
+    <item
+        android:id="@+id/action_surface_doctor"
+        android:title="@string/action_surface_doctor" />
+    <item
+        android:id="@+id/action_change_server"
+        android:title="@string/action_change_server" />
+    <item
+        android:id="@+id/action_open_browser"
+        android:title="@string/action_open_browser" />
+    <item
+        android:id="@+id/action_about"
+        android:title="@string/action_about" />
+</menu>

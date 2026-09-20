@@ -1,0 +1,109 @@
+/**
+ * kivo Android shell — application module.
+ *
+ * Builds a real, installable APK with the official Android toolchain:
+ *   - resources compiled by AAPT2, so `android:icon`, `@string/app_name` and
+ *     every other reference in the binary manifest actually resolves. (The APK
+ *     this project replaced was assembled by hand and pointed `android:icon` at
+ *     a resource id that did not exist in its hand-built resources.arsc — that
+ *     is precisely what makes Android say "There was a problem parsing the
+ *     package".)
+ *   - Java compiled by javac against android.jar, dexed by D8
+ *   - signed with apksig (v1 + v2 + v3) and zipaligned by AGP
+ *
+ * Signing keys come from `android/keystore.properties` when that file exists —
+ * CI writes it, either from repository secrets or by generating a throwaway key.
+ * Without it the release build falls back to the local debug keystore, so
+ * `gradle assembleRelease` still produces an installable APK.
+ */
+plugins {
+    id 'com.android.application'
+}
+
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+def keystoreProperties = new Properties()
+def hasReleaseKey = false
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+    def storePath = keystoreProperties.getProperty('storeFile')
+    hasReleaseKey = storePath != null && rootProject.file(storePath).exists()
+    if (hasReleaseKey) {
+        // storeFile may be absolute (CI writes it that way) or relative to android/
+        keystoreProperties.setProperty('storeFile', rootProject.file(storePath).absolutePath)
+    }
+}
+
+// Version identity. CI passes both in (-PkivoVersionCode / -PkivoVersionName);
+// the defaults keep a plain local build working.
+def apkVersionCode = Integer.parseInt((project.findProperty('kivoVersionCode') ?: '1000').toString())
+def apkVersionName = (project.findProperty('kivoVersionName') ?: '1.1.0').toString()
+
+android {
+    namespace 'ai.kivo.app'
+    compileSdk 34
+    buildToolsVersion '34.0.0'
+
+    defaultConfig {
+        applicationId 'ai.kivo.app'
+        minSdk 24          // Android 7.0
+        targetSdk 34       // Android 14
+        versionCode apkVersionCode
+        versionName apkVersionName
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile file(keystoreProperties.getProperty('storeFile'))
+                storePassword keystoreProperties.getProperty('storePassword')
+                keyAlias keystoreProperties.getProperty('keyAlias')
+                keyPassword keystoreProperties.getProperty('keyPassword')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // A WebView shell has nothing worth obfuscating, and skipping the
+            // shrink step is what keeps the CI job short and reproducible.
+            minifyEnabled false
+            shrinkResources false
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+        debug {
+            applicationIdSuffix '.dev'
+            versionNameSuffix '-dev'
+        }
+    }
+
+    buildFeatures {
+        // AGP 8 does not generate BuildConfig by default; MainActivity reads
+        // BuildConfig.VERSION_NAME / VERSION_CODE as a fallback.
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+/**
+ * Regenerates the launcher icons in every density bucket from the PWA icons in
+ * /frontend/icons (pure standard library, no PIL, no SDK). Run it after the
+ * brand art changes:  cd android && gradle icons
+ */
+tasks.register('icons', Exec) {
+    group = 'kivo'
+    description = 'Regenerates res/mipmap-*/ launcher icons from frontend/icons.'
+    commandLine 'python3', rootProject.file('tools/make_icons.py').absolutePath
+}
+
+dependencies {
+    // Deliberately empty: the shell uses only the Android framework.
+}

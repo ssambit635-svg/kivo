@@ -1,0 +1,312 @@
+name: Android APK
+
+# Why this workflow exists
+# ------------------------
+# The APK that used to be committed to this repo was assembled by a hand-written
+# Python script (binary manifest, hand-built resources.arsc, hand-emitted DEX,
+# hand-rolled v1+v2 signing). It looked plausible to a zip listing and even to a
+# lenient parser, but its resource table had ZERO entries, so the manifest's
+# android:icon reference (0x7f020000) resolved to nothing — and Android's
+# PackageInstaller rejects that with "There was a problem parsing the package".
+#
+# There is no way to hand-build a package that survives a modern PackageManager.
+# So the APK is now built by the real toolchain (AAPT2 + javac + D8 + apksig) on
+# a GitHub-hosted runner, verified twice, published as an artifact + a rolling
+# release, and committed back to frontend/kivo.apk so the in-app
+# "Download App (APK)" button serves a package that actually installs.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Attach the APK to the rolling "apk-latest" release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # publish the release + commit the rebuilt APK back to main
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keystore from repository secrets when they exist; otherwise a throwaway key
+  # is generated (and cached, so an update still installs over the old build).
+  HAS_KEYSTORE_SECRET: ${{ secrets.KIVO_KEYSTORE_BASE64 != '' }}
+
+jobs:
+  build:
+    name: Build, sign and verify kivo.apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preflight — every resource reference resolves
+        run: |
+          set -euo pipefail
+          python3 android/tools/verify_resources.py
+
+      - name: Install the Android SDK packages this build needs
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$SDK_ROOT" ]; then
+            SDK_ROOT="$HOME/android-sdk"
+            mkdir -p "$SDK_ROOT"
+          fi
+
+          SDKMANAGER=""
+          for candidate in "$SDK_ROOT"/cmdline-tools/*/bin/sdkmanager "$SDK_ROOT"/tools/bin/sdkmanager; do
+            if [ -x "$candidate" ]; then SDKMANAGER="$candidate"; break; fi
+          done
+          if [ -z "$SDKMANAGER" ] && command -v sdkmanager >/dev/null 2>&1; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          fi
+          if [ -z "$SDKMANAGER" ]; then
+            echo "No sdkmanager on this runner — installing the command-line tools."
+            curl -fsSL -o /tmp/cmdline-tools.zip \
+              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            mkdir -p "$SDK_ROOT/cmdline-tools"
+            unzip -q /tmp/cmdline-tools.zip -d "$SDK_ROOT/cmdline-tools"
+            mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+            SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          fi
+
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          "$SDKMANAGER" --list_installed | sed -n '1,40p' || true
+
+      - name: Restore the CI signing key
+        if: env.HAS_KEYSTORE_SECRET != 'true'
+        uses: actions/cache@v4
+        with:
+          path: android/ci-signing
+          key: kivo-ci-signing-key-v1
+
+      - name: Prepare the signing key
+        run: |
+          set -euo pipefail
+          KEYDIR="$GITHUB_WORKSPACE/android/ci-signing"
+          PROPS="$GITHUB_WORKSPACE/android/keystore.properties"
+          mkdir -p "$KEYDIR"
+
+          if [ "${HAS_KEYSTORE_SECRET:-false}" = "true" ]; then
+            echo "Using the release keystore from repository secrets."
+            printf '%s' "$KIVO_KEYSTORE_BASE64" | base64 --decode > "$KEYDIR/release.keystore"
+            STORE_FILE="$KEYDIR/release.keystore"
+            STORE_PASS="$KIVO_KEYSTORE_PASSWORD"
+            KEY_ALIAS="${KIVO_KEY_ALIAS:-kivo}"
+            KEY_PASS="${KIVO_KEY_PASSWORD:-$KIVO_KEYSTORE_PASSWORD}"
+          elif [ -f "$KEYDIR/ci.keystore" ]; then
+            echo "Reusing the cached CI keystore so an update installs over the previous build."
+            STORE_FILE="$KEYDIR/ci.keystore"
+            STORE_PASS="kivo-ci-only"
+            KEY_ALIAS="kivo"
+            KEY_PASS="kivo-ci-only"
+          else
+            echo "Generating a throwaway CI keystore (no secrets configured)."
+            STORE_FILE="$KEYDIR/ci.keystore"
+            STORE_PASS="kivo-ci-only"
+            KEY_ALIAS="kivo"
+            KEY_PASS="kivo-ci-only"
+            keytool -genkeypair \
+              -keystore "$STORE_FILE" -storetype PKCS12 \
+              -storepass "$STORE_PASS" -keypass "$KEY_PASS" -alias "$KEY_ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10950 \
+              -dname "CN=kivo CI build, OU=kivo, O=kivo, C=IN" > /dev/null
+          fi
+
+          cat > "$PROPS" <<EOF
+          storeFile=$STORE_FILE
+          storePassword=$STORE_PASS
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASS
+          EOF
+
+          echo "Signing key fingerprint:"
+          keytool -list -v -keystore "$STORE_FILE" -storepass "$STORE_PASS" 2>/dev/null \
+            | grep -E "Alias name|SHA256:" || true
+        env:
+          KIVO_KEYSTORE_BASE64: ${{ secrets.KIVO_KEYSTORE_BASE64 }}
+          KIVO_KEYSTORE_PASSWORD: ${{ secrets.KIVO_KEYSTORE_PASSWORD }}
+          KIVO_KEY_ALIAS: ${{ secrets.KIVO_KEY_ALIAS }}
+          KIVO_KEY_PASSWORD: ${{ secrets.KIVO_KEY_PASSWORD }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build the release APK
+        working-directory: android
+        run: |
+          set -euo pipefail
+          # versionCode grows with the clock, so a new build always installs over
+          # the previous one instead of being rejected as a downgrade.
+          VERSION_CODE="$(date -u +%y%m%d%H)"
+          VERSION_NAME="1.1.$(date -u +%y%m%d)"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+
+          gradle --stacktrace --no-parallel \
+            -PkivoVersionCode="$VERSION_CODE" \
+            -PkivoVersionName="$VERSION_NAME" \
+            :app:assembleRelease
+
+      - name: Verify the package with the official tools
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          mkdir -p dist
+          cp "$APK" dist/kivo.apk
+
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          echo "Using build-tools: $BUILD_TOOLS"
+
+          echo "----- apksigner verify -----"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs dist/kivo.apk | tee dist/apksigner.txt
+
+          echo "----- aapt2 dump badging -----"
+          "$BUILD_TOOLS/aapt2" dump badging dist/kivo.apk | tee dist/badging.txt
+
+          echo "----- hard assertions -----"
+          grep -Eq "Verified using v1 scheme.*: true" dist/apksigner.txt
+          grep -Eq "Verified using v2 scheme.*: true" dist/apksigner.txt
+          grep -q "Number of signers: 1" dist/apksigner.txt
+          grep -q "package: name='ai.kivo.app'" dist/badging.txt
+          grep -q "sdkVersion:'24'" dist/badging.txt
+          grep -q "targetSdkVersion:'34'" dist/badging.txt
+          grep -q "launchable-activity: name='ai.kivo.app.MainActivity'" dist/badging.txt
+          grep -q "application-icon-" dist/badging.txt
+          grep -q "uses-permission: name='android.permission.INTERNET'" dist/badging.txt
+          grep -q "uses-permission: name='android.permission.CAMERA'" dist/badging.txt
+          echo "apksigner + aapt2 assertions passed."
+
+      - name: Verify the package independently (androguard)
+        run: |
+          set -uo pipefail
+          # Second opinion from a different implementation than apksigner: this
+          # is the check that catches an unresolvable android:icon, the exact
+          # failure that produced "There was a problem parsing the package".
+          if python3 -m venv /tmp/apkverify >/dev/null 2>&1; then
+            /tmp/apkverify/bin/pip install --quiet --disable-pip-version-check androguard \
+              || echo "::warning::androguard could not be installed — structural checks only"
+          fi
+          PY=python3
+          if [ -x /tmp/apkverify/bin/python ]; then PY=/tmp/apkverify/bin/python; fi
+          "$PY" android/tools/verify_apk.py dist/kivo.apk
+
+      - name: Build summary
+        run: |
+          {
+            echo "### kivo.apk — built, signed and verified"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| package | \`ai.kivo.app\` |"
+            echo "| versionName | \`${VERSION_NAME:-1.1.x}\` |"
+            echo "| versionCode | \`${VERSION_CODE:-1000}\` |"
+            echo "| minSdk / targetSdk | 24 (Android 7.0) / 34 (Android 14) |"
+            echo "| size | $(du -h dist/kivo.apk | cut -f1) |"
+            echo "| sha256 | \`$(sha256sum dist/kivo.apk | cut -d' ' -f1)\` |"
+            echo
+            echo "**Install:** download the \`kivo-apk\` artifact below, unzip it, copy"
+            echo "\`kivo.apk\` to the phone and open it (allow \"install unknown apps\" for"
+            echo "your browser/files app). On first launch the app asks for the server"
+            echo "address — start the backend (\`cd backend && npm start\`) and type the"
+            echo "computer's LAN address, e.g. \`http://192.168.1.7:8080\`."
+            echo
+            echo "<details><summary>apksigner verification</summary>"
+            echo
+            echo '```'
+            cat dist/apksigner.txt
+            echo '```'
+            echo "</details>"
+            echo
+            echo "<details><summary>aapt2 badging</summary>"
+            echo
+            echo '```'
+            head -40 dist/badging.txt
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kivo-apk
+          path: |
+            dist/kivo.apk
+            dist/apksigner.txt
+            dist/badging.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish to the rolling "apk-latest" release
+        if: >-
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' ||
+           startsWith(github.ref, 'refs/tags/v') ||
+           (github.event_name == 'workflow_dispatch' && inputs.publish_release))
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="apk-latest"
+          NOTES="kivo Android APK — built by GitHub Actions from commit ${GITHUB_SHA::7}.
+
+          package: ai.kivo.app · versionName ${VERSION_NAME:-1.1.x} · versionCode ${VERSION_CODE:-1000}
+          minSdk 24 (Android 7.0) · targetSdk 34 (Android 14) · signed v1+v2
+
+          Install: download kivo.apk, open it on the phone, allow \"install unknown apps\".
+          First launch asks for the server address (cd backend && npm start, then type the
+          computer's LAN address, e.g. http://192.168.1.7:8080)."
+
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "kivo.apk (latest build)" --notes "$NOTES" --target "$GITHUB_SHA"
+          fi
+          gh release upload "$TAG" dist/kivo.apk --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes "$NOTES"
+          echo "Published: https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
+
+      - name: Commit the verified APK back to the repo
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          cp dist/kivo.apk frontend/kivo.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/kivo.apk
+          if git diff --cached --quiet; then
+            echo "frontend/kivo.apk is already this exact build."
+          else
+            git commit -m "chore(android): publish the CI-built, verified kivo.apk [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "frontend/kivo.apk updated on main — /download/apk now serves a package that installs."
+          fi
