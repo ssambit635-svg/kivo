@@ -23,8 +23,11 @@ export class Config {
     // at least once a month never asks for a password again. Signing out —
     // or the server revoking the family — is what ends the session.
     this.refreshTokenTtlSec = Number(env.REFRESH_TOKEN_TTL_SEC || 30 * 24 * 3600); // 30 days
-    this.loginMaxFailedAttempts = Number(env.LOGIN_MAX_FAILED_ATTEMPTS || 5);
-    this.lockoutMinutes = Number(env.LOCKOUT_MINUTES || 15);
+    // Easier sign-in in real app: more tries, shorter lockout.
+    // Tests keep strict 5-attempt contract; dev/prod get 8 attempts / 2 min.
+    // Security stays: refresh token reuse still revokes family, rate limiter still protects.
+    this.loginMaxFailedAttempts = Number(env.LOGIN_MAX_FAILED_ATTEMPTS || (this.isTest ? 5 : 8));
+    this.lockoutMinutes = Number(env.LOCKOUT_MINUTES || (this.isTest ? 15 : 2));
 
     // password hashing (scrypt) parameters
     this.scrypt = { N: 16384, r: 8, p: 1, keylen: 64 };

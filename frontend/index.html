@@ -1,372 +1,397 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#0F766E" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-    <title>kivo — your health companion</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="stylesheet" href="./care.css" />
-  </head>
-  <body>
-    <header class="topbar">
-      <div class="brand">
-        <span id="brand-logo" class="brand-logo" aria-hidden="true"></span>
-        <div class="brand-text">
-          <h1>kivo</h1>
-          <p>Your personal health companion</p>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#0F766E" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+  <title>kivo — your health companion</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./care.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span id="brand-logo" class="brand-logo" aria-hidden="true">k</span>
+      <div class="brand-text">
+        <h1>kivo</h1>
+        <p>health companion</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a href="/download/apk" download="kivo.apk" class="btn ghost sm download-apk-btn" title="Download kivo Android APK">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>App</span>
+      </a>
+    </div>
+    <div id="userbox" class="userbox hidden">
+      <span id="user-icon" class="user-icon" aria-hidden="true"></span>
+      <span id="user-email" class="user-email"></span>
+      <button id="btn-logout" class="btn ghost sm" type="button">
+        <span id="logout-icon" class="btn-ic" aria-hidden="true"></span>Out
+      </button>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- ================= AUTH ================= -->
+    <section id="auth-view" class="card auth-card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+        <span class="brand-logo" style="width:48px;height:48px;border-radius:14px;font-size:22px">k</span>
+        <div>
+          <h2 id="auth-heading" style="margin:0">Welcome back</h2>
+          <p id="auth-subtitle" class="muted" style="margin:2px 0 0">Sign in to see your kivo come alive.</p>
         </div>
       </div>
-      <div class="topbar-actions">
-        <a href="/download/apk" download="kivo.apk" class="btn ghost sm download-apk-btn" title="Download kivo Android APK">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Download App (APK)</span>
-        </a>
+
+      <div id="role-tabs" class="tabs role-tabs" role="tablist" aria-label="Sign in as">
+        <button id="role-patient" class="tab active" type="button" role="tab" aria-selected="true">Patient</button>
+        <button id="role-doctor" class="tab" type="button" role="tab" aria-selected="false">Doctor</button>
       </div>
-      <div id="userbox" class="userbox hidden">
-        <span id="user-icon" class="user-icon" aria-hidden="true"></span>
-        <span id="user-email" class="user-email"></span>
-        <button id="btn-logout" class="btn ghost sm" type="button">
-          <span id="logout-icon" class="btn-ic" aria-hidden="true"></span>Sign out
+
+      <div id="auth-mode-tabs" class="tabs" role="tablist">
+        <button id="tab-login" class="tab active" type="button" role="tab">Sign in</button>
+        <button id="tab-register" class="tab" type="button" role="tab">Create account</button>
+      </div>
+
+      <p id="connection-status" class="hint" role="status" aria-live="polite"></p>
+
+      <form id="auth-form" novalidate>
+        <label id="row-name" class="field hidden">
+          <span>Display name</span>
+          <input id="in-name" type="text" autocomplete="name" placeholder="Ada" />
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <div class="field-with-icon">
+            <input id="in-email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <div class="field-with-icon">
+            <input id="in-password" type="password" autocomplete="current-password" placeholder="••••••••••••" required />
+            <button type="button" class="pw-toggle" id="toggle-pw" aria-label="Show password">👁</button>
+          </div>
+        </label>
+
+        <label id="row-regno" class="field hidden">
+          <span>Medical registration no.</span>
+          <input id="in-regno" type="text" autocomplete="off" placeholder="MCI-123456" />
+        </label>
+
+        <!-- Doctor extra fields for create account -->
+        <div id="doctor-extra-fields" class="doctor-extra">
+          <div class="doc-grid-2">
+            <label class="field"><span>Specialty</span>
+              <select id="in-specialty">
+                <option value="general_physician">General Physician</option>
+                <option value="cardiology">Cardiology</option>
+                <option value="endocrinology">Endocrinology</option>
+                <option value="dermatology">Dermatology</option>
+                <option value="orthopedics">Orthopedics</option>
+                <option value="paediatrics">Paediatrics</option>
+                <option value="psychiatry">Psychiatry</option>
+                <option value="nutrition">Nutrition</option>
+              </select>
+            </label>
+            <label class="field"><span>City</span><input id="in-city" type="text" placeholder="Pune" /></label>
+          </div>
+          <div class="doc-grid-2">
+            <label class="field"><span>Experience (yrs)</span><input id="in-years" type="number" min="0" max="70" value="5" /></label>
+            <label class="field"><span>Consult fee ₹</span><input id="in-fee" type="number" min="0" value="300" /></label>
+          </div>
+          <label class="field"><span>Headline</span><input id="in-headline" type="text" placeholder="Bone & joint specialist" /></label>
+          <label class="field"><span>Certificate (PDF/JPG)</span><input id="in-cert" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" /></label>
+        </div>
+
+        <p id="auth-note" class="hint hidden">We check this number against the medical council certificate on your account before the doctor console opens.</p>
+
+        <div class="remember-row">
+          <label class="check"><input id="remember-me" type="checkbox" checked /> Keep me signed in</label>
+          <a href="#" id="forgot-link" class="muted" style="text-decoration:none;font-weight:600">Need help?</a>
+        </div>
+
+        <p id="auth-error" class="error hidden" role="alert"></p>
+        <button class="btn primary block" type="submit" id="auth-submit">Sign in</button>
+
+        <div class="demo-row">
+          <button type="button" class="demo-btn" id="demo-patient"><b>Demo Patient</b><span>demo@kivo.dev • one tap</span></button>
+          <button type="button" class="demo-btn" id="demo-doctor"><b>Demo Doctor</b><span>dr.mohan@kivo.dev • one tap</span></button>
+        </div>
+      </form>
+
+      <p id="auth-apply-hint" class="hint hidden">New to kivo as a doctor? Create account above — upload certificate and it is checked before console opens.</p>
+      <p id="auth-demo-hint" class="hint">Preview: <code>demo@kivo.dev</code> · <code>Kivo!Demo#2026</code> — or create your profile.</p>
+    </section>
+
+    <!-- ================= DASHBOARD ================= -->
+    <section id="dash-view" class="hidden">
+      <div class="member-strip card">
+        <span class="avatar" id="member-icon" aria-hidden="true">A</span>
+        <div class="member-info">
+          <strong id="member-name">—</strong>
+          <span class="muted" id="member-sub">kivo health</span>
+        </div>
+        <button id="btn-refresh" class="btn ghost sm icon-btn" type="button" title="Refresh data" aria-label="Refresh data">
+          <span id="refresh-icon" class="btn-ic" aria-hidden="true">↻</span>
         </button>
       </div>
-    </header>
 
-    <main class="main">
-      <!-- ================= AUTH ================= -->
-      <section id="auth-view" class="card auth-card">
-        <h2 id="auth-heading">Welcome back</h2>
-        <p id="auth-subtitle" class="muted">Sign in to see your kivo come alive.</p>
+      <div id="care-teaser"></div>
 
-        <!-- Two toggles: one account system, two frontends. Patients land in the
-             health twin; doctors land in the console, and their sign-in carries
-             the medical council registration number that gets checked against
-             the certificate on file. -->
-        <div id="role-tabs" class="tabs role-tabs" role="tablist" aria-label="Sign in as">
-          <button id="role-patient" class="tab active" type="button" role="tab" aria-selected="true">Patient</button>
-          <button id="role-doctor" class="tab" type="button" role="tab" aria-selected="false">Doctor</button>
-        </div>
-
-        <div id="auth-mode-tabs" class="tabs" role="tablist">
-          <button id="tab-login" class="tab active" type="button" role="tab">Sign in</button>
-          <button id="tab-register" class="tab" type="button" role="tab">Create account</button>
-        </div>
-
-        <p id="connection-status" class="hint" role="status" aria-live="polite"></p>
-        <form id="auth-form" novalidate>
-          <label id="row-name" class="field hidden">
-            <span>Display name</span>
-            <input id="in-name" type="text" autocomplete="name" placeholder="Ada" />
-          </label>
-          <label class="field">
-            <span>Email</span>
-            <input id="in-email" type="email" autocomplete="email" placeholder="you@example.com" required />
-          </label>
-          <label class="field">
-            <span>Password</span>
-            <input id="in-password" type="password" autocomplete="current-password" placeholder="••••••••••••" required />
-          </label>
-          <label id="row-regno" class="field hidden">
-            <span>Medical registration no.</span>
-            <input id="in-regno" type="text" autocomplete="off" placeholder="MCI-123456" />
-          </label>
-          <p id="auth-note" class="hint hidden">
-            We check this number against the medical council certificate on your account before the doctor console opens.
-          </p>
-          <p id="auth-error" class="error hidden" role="alert"></p>
-          <button class="btn primary block" type="submit" id="auth-submit">Sign in</button>
-        </form>
-        <p id="auth-apply-hint" class="hint hidden">
-          New to kivo as a doctor? <a href="/doctor/#apply">Join the doctor network</a> — upload your certificate and it is
-          checked before the console opens.
-        </p>
-        <p id="auth-demo-hint" class="hint">
-          Preview account: <code>demo@kivo.dev</code> · <code>Kivo!Demo#2026</code> — or create your kivo profile above.
-        </p>
-      </section>
-
-      <!-- ================= DASHBOARD ================= -->
-      <section id="dash-view" class="hidden">
-        <div class="member-strip card">
-          <span class="avatar" id="member-icon" aria-hidden="true"></span>
-          <div class="member-info">
-            <strong id="member-name">—</strong>
-            <span class="muted" id="member-sub">kivo health</span>
+      <div class="grid">
+        <section class="card widget widget-score" aria-labelledby="score-h">
+          <div class="widget-head">
+            <span id="score-head-ic" class="widget-ic ic-teal" aria-hidden="true">◍</span>
+            <div>
+              <h2 id="score-h">Health Score Timeline</h2>
+              <p class="muted">How verified markers move over time</p>
+            </div>
           </div>
-          <button id="btn-refresh" class="btn ghost sm icon-btn" type="button" title="Refresh data" aria-label="Refresh data">
-            <span id="refresh-icon" class="btn-ic" aria-hidden="true"></span>
-          </button>
-        </div>
+          <div id="score-body"></div>
+        </section>
 
-        <!-- Care+ teaser (plans, doctors, shorts) — filled by care.js -->
-        <div id="care-teaser"></div>
-
-        <div class="grid">
-          <!-- ============ 1. HEALTH SCORE TIMELINE ============ -->
-          <section class="card widget widget-score" aria-labelledby="score-h">
-            <div class="widget-head">
-              <span id="score-head-ic" class="widget-ic ic-teal" aria-hidden="true"></span>
-              <div>
-                <h2 id="score-h">Health Score Timeline</h2>
-                <p class="muted">How verified markers move over time</p>
-              </div>
+        <section class="card widget widget-miles" aria-labelledby="mile-h">
+          <div class="widget-head">
+            <span id="mile-head-ic" class="widget-ic ic-gold" aria-hidden="true">★</span>
+            <div>
+              <h2 id="mile-h">Health Milestones</h2>
+              <p class="muted" id="mile-sub">Your journey so far</p>
             </div>
-            <div id="score-body"></div>
-          </section>
+          </div>
+          <div id="miles-body"></div>
+        </section>
 
-          <!-- ============ 2. HEALTH MILESTONES ============ -->
-          <section class="card widget widget-miles" aria-labelledby="mile-h">
-            <div class="widget-head">
-              <span id="mile-head-ic" class="widget-ic ic-gold" aria-hidden="true"></span>
-              <div>
-                <h2 id="mile-h">Health Milestones</h2>
-                <p class="muted" id="mile-sub">Your journey so far</p>
-              </div>
+        <section class="card widget widget-reports" aria-labelledby="rep-h">
+          <div class="widget-head">
+            <span id="rep-head-ic" class="widget-ic ic-indigo" aria-hidden="true">≡</span>
+            <div>
+              <h2 id="rep-h">Reports</h2>
+              <p class="muted">Every report shows its confidence badge</p>
             </div>
-            <div id="miles-body"></div>
-          </section>
+          </div>
 
-          <!-- ============ 3. REPORTS + CONFIDENCE BADGE ============ -->
-          <section class="card widget widget-reports" aria-labelledby="rep-h">
-            <div class="widget-head">
-              <span id="rep-head-ic" class="widget-ic ic-indigo" aria-hidden="true"></span>
-              <div>
-                <h2 id="rep-h">Reports</h2>
-                <p class="muted">Every report shows its confidence badge</p>
-              </div>
-            </div>
-
-            <!-- Phone-first capture: camera is primary, paste text is the fallback -->
-            <div class="capture">
-              <button id="btn-scan" class="btn primary block" type="button">
-                <span id="scan-icon" class="btn-ic" aria-hidden="true"></span>Scan a report with your camera
-              </button>
-              <details id="manual-entry" class="manual">
-                <summary>No camera? Paste the report text</summary>
-                <form id="upload-form" novalidate>
-                  <label class="field">
-                    <span>Report text</span>
-                    <textarea id="in-report-text" rows="3" placeholder="HbA1c 5.9 % (4.0 - 5.6)&#10;Fasting Blood Sugar 108 mg/dL 70 - 100"></textarea>
+          <div class="capture">
+            <button id="btn-scan" class="btn primary block" type="button">
+              <span id="scan-icon" class="btn-ic" aria-hidden="true">◎</span>Scan a report with your camera
+            </button>
+            <details id="manual-entry" class="manual">
+              <summary>No camera? Paste the report text</summary>
+              <form id="upload-form" novalidate>
+                <label class="field">
+                  <span>Report text</span>
+                  <textarea id="in-report-text" rows="3" placeholder="HbA1c 5.9 % (4.0 - 5.6)
+Fasting Blood Sugar 108 mg/dL 70 - 100"></textarea>
+                </label>
+                <div class="upload-row">
+                  <label class="field-inline">
+                    <span>Report date</span>
+                    <input id="in-report-date" type="date" />
                   </label>
-                  <div class="upload-row">
-                    <label class="field-inline">
-                      <span>Report date</span>
-                      <input id="in-report-date" type="date" />
-                    </label>
-                    <button class="btn secondary" type="submit" id="btn-upload">
-                      <span id="upload-icon" class="btn-ic" aria-hidden="true"></span>Add
-                    </button>
-                  </div>
-                  <p id="upload-error" class="error hidden" role="alert"></p>
-                </form>
-              </details>
-            </div>
-
-            <!-- ============ VOICE JOURNAL ============ -->
-            <section class="voice card" aria-labelledby="voice-h">
-              <div class="widget-head">
-                <span id="voice-head-ic" class="widget-ic ic-rose" aria-hidden="true"></span>
-                <div>
-                  <h2 id="voice-h">Voice Journal</h2>
-                  <p class="muted">Say how you feel — we turn it into a structured note</p>
+                  <button class="btn secondary" type="submit" id="btn-upload">
+                    <span id="upload-icon" class="btn-ic" aria-hidden="true">↑</span>Add
+                  </button>
                 </div>
-              </div>
-              <button id="btn-voice" class="btn secondary block" type="button">
-                <span id="voice-icon" class="btn-ic" aria-hidden="true"></span><span id="voice-label">Start voice journal</span>
-              </button>
-              <p id="voice-transcript" class="voice-transcript muted hidden"></p>
-              <p id="voice-error" class="error hidden" role="alert"></p>
-            </section>
-
-            <div id="reports-body"></div>
-          </section>
-
-          <!-- ============ 4. HEALTH INSIGHTS (Trends • Risk • Guidance) ============ -->
-          <section class="card widget widget-intel" aria-labelledby="insights-h">
-            <div class="widget-head">
-              <span id="insights-head-ic" class="widget-ic ic-teal" aria-hidden="true"></span>
-              <div>
-                <h2 id="insights-h">Health Insights</h2>
-                <p class="muted">Trends, risk, guidance and medication awareness — from verified data</p>
-              </div>
-            </div>
-            <div class="intel-tabs" role="tablist" id="insights-tabs">
-              <button class="intel-tab active" type="button" data-insights-tab="trends">Trends</button>
-              <button class="intel-tab" type="button" data-insights-tab="risk">Risk</button>
-              <button class="intel-tab" type="button" data-insights-tab="guidance">Guidance</button>
-              <button class="intel-tab" type="button" data-insights-tab="meds">Meds</button>
-              <button class="intel-tab" type="button" data-insights-tab="summary">Doctor Summary</button>
-            </div>
-            <div id="insights-body"><p class="muted">Select a tab to load insights.</p></div>
-          </section>
-
-          <!-- ============ 5. KIVO INTELLIGENCE (Baseline • Patterns • What-If) ============ -->
-          <section class="card widget widget-intel" aria-labelledby="intel-h">
-            <div class="widget-head">
-              <span id="intel-head-ic" class="widget-ic ic-indigo" aria-hidden="true"></span>
-              <div>
-                <h2 id="intel-h">kivo Intelligence</h2>
-                <p class="muted">Baselines, patterns and what-if scenarios — model-based, not predictions</p>
-              </div>
-            </div>
-            <div class="intel-tabs" role="tablist" id="intel-tabs">
-              <button class="intel-tab active" type="button" data-intel-tab="baseline">Baselines</button>
-              <button class="intel-tab" type="button" data-intel-tab="patterns">Patterns</button>
-              <button class="intel-tab" type="button" data-intel-tab="anomalies">Anomalies</button>
-              <button class="intel-tab" type="button" data-intel-tab="whatif">What-If</button>
-            </div>
-            <div id="intel-body"><p class="muted">Loading intelligence…</p></div>
-            <div id="whatif-body" class="hidden" style="margin-top:12px;">
-              <h4 style="margin:12px 0 8px; font-size:14px;">Run a what-if scenario</h4>
-              <p class="muted" style="margin:0 0 10px;">Model-based projection only — not a prediction or recommendation.</p>
-              <div class="simulate-row">
-                <label class="field"><span>Weight (kg)</span><input id="sim-weight" type="number" step="0.1" placeholder="e.g. 72" /></label>
-                <label class="field"><span>Activity min/week</span><input id="sim-activity" type="number" placeholder="e.g. 150" /></label>
-              </div>
-              <div class="simulate-row">
-                <label class="field"><span>HbA1c %</span><input id="sim-hba1c" type="number" step="0.1" placeholder="e.g. 5.6" /></label>
-                <label class="field"><span>Systolic BP</span><input id="sim-sbp" type="number" placeholder="e.g. 120" /></label>
-              </div>
-              <div style="display:flex; gap:8px; margin-top:8px;">
-                <button id="btn-simulate" class="btn primary" type="button">Simulate</button>
-                <button id="btn-explore" class="btn ghost" type="button">Explore presets</button>
-              </div>
-              <p id="simulate-error" class="error hidden" role="alert"></p>
-              <div id="simulate-result" style="margin-top:10px;"></div>
-              <div id="scenarios-result" style="margin-top:10px;"></div>
-            </div>
-          </section>
-
-          <!-- ============ 6. ASK KIVO ============ -->
-          <section class="card widget widget-ask" aria-labelledby="ask-h">
-            <div class="widget-head">
-              <span id="ask-head-ic" class="widget-ic ic-gold" aria-hidden="true"></span>
-              <div>
-                <h2 id="ask-h">Ask kivo</h2>
-                <p class="muted">Grounded answers from your verified health data</p>
-              </div>
-            </div>
-            <div id="ask-suggestions" class="suggestion-chips" style="margin-bottom:10px;"></div>
-            <div id="ask-chat" class="chat"></div>
-            <div class="ask-box">
-              <div class="ask-input-row">
-                <input id="ask-input" type="text" placeholder="Ask about your trends, e.g. Why did my LDL rise?" maxlength="300" />
-                <button id="ask-send" class="btn primary" type="button">Ask</button>
-              </div>
-              <p id="ask-error" class="error hidden" role="alert"></p>
-              <p class="muted" style="font-size:11.5px;">Answers are grounded in verified data and carry the model's disclaimer.</p>
-            </div>
-          </section>
-
-          <!-- ============ 7. REMINDERS & OBSERVATIONS ============ -->
-          <section class="card widget widget-reminders" aria-labelledby="rem-h">
-            <div class="widget-head">
-              <span id="rem-head-ic" class="widget-ic ic-rose" aria-hidden="true"></span>
-              <div>
-                <h2 id="rem-h">Reminders & Journal</h2>
-                <p class="muted">Stay on track — observations, reminders and storage</p>
-              </div>
-            </div>
-            <div class="intel-tabs" role="tablist" id="rem-tabs">
-              <button class="intel-tab active" type="button" data-rem-tab="obs">Observations</button>
-              <button class="intel-tab" type="button" data-rem-tab="reminders">Reminders</button>
-              <button class="intel-tab" type="button" data-rem-tab="storage">Storage</button>
-            </div>
-            <div id="rem-body"></div>
-            <div id="obs-body" style="margin-top:12px;">
-              <form id="obs-form" style="display:flex; gap:8px; margin-bottom:10px;">
-                <select id="obs-kind" style="max-width:140px;">
-                  <option value="note">Note</option>
-                  <option value="weight">Weight</option>
-                  <option value="bp">BP</option>
-                  <option value="activity">Activity</option>
-                  <option value="sleep">Sleep</option>
-                  <option value="symptom">Symptom</option>
-                  <option value="medication">Medication</option>
-                </select>
-                <input id="obs-text" type="text" placeholder="Add observation (e.g. 72kg, slept poorly)" style="flex:1;" />
-                <button class="btn secondary" type="submit">Add</button>
+                <p id="upload-error" class="error hidden" role="alert"></p>
               </form>
-              <div id="obs-list" class="obs-timeline"></div>
+            </details>
+          </div>
+
+          <section class="voice card" aria-labelledby="voice-h">
+            <div class="widget-head">
+              <span id="voice-head-ic" class="widget-ic ic-rose" aria-hidden="true">♪</span>
+              <div>
+                <h2 id="voice-h">Voice Journal</h2>
+                <p class="muted">Say how you feel — we turn it into a structured note</p>
+              </div>
             </div>
-            <div id="reminders-body" class="hidden" style="margin-top:12px;">
-              <form id="reminder-form" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-                <input id="rem-title" type="text" placeholder="Reminder title" style="flex:1; min-width:140px;" required />
-                <input id="rem-due" type="datetime-local" style="max-width:190px;" />
-                <button class="btn secondary" type="submit">Create</button>
-              </form>
-              <div id="reminders-list"></div>
-            </div>
-            <div id="storage-body" class="hidden" style="margin-top:12px;">
-              <div id="storage-info"></div>
-            </div>
+            <button id="btn-voice" class="btn secondary block" type="button">
+              <span id="voice-icon" class="btn-ic" aria-hidden="true">●</span><span id="voice-label">Start voice journal</span>
+            </button>
+            <p id="voice-transcript" class="voice-transcript muted hidden"></p>
+            <p id="voice-error" class="error hidden" role="alert"></p>
           </section>
-        </div>
 
-        <footer class="foot">
-          <p>
-            kivo is for risk awareness and understanding — not a medical device, not a diagnosis. Always discuss your
-            results with a qualified healthcare professional.
-          </p>
-          <p class="foot-doctor">
-            Are you a doctor? <a href="/doctor/">Open the doctor console</a>.
-          </p>
-        </footer>
+          <div id="reports-body"></div>
+        </section>
 
-        <!-- Mobile bottom navigation -->
-        <nav id="bottom-nav" class="bottom-nav" aria-label="Primary">
-          <button class="nav-item active" type="button" data-tab="home" id="nav-home">
-            <span class="nav-ic" aria-hidden="true"></span>
-            <span class="nav-label">Kivo</span>
-          </button>
-          <button class="nav-fab" type="button" id="nav-scan" aria-label="Scan a report">
-            <span class="nav-ic" aria-hidden="true"></span>
-          </button>
-          <button class="nav-item" type="button" data-tab="reports" id="nav-reports">
-            <span class="nav-ic" aria-hidden="true"></span>
-            <span class="nav-label">Reports</span>
-          </button>
-          <button class="nav-item" type="button" data-tab="care" id="nav-care">
-            <span class="nav-ic" aria-hidden="true"></span>
-            <span class="nav-label">Care</span>
-          </button>
-        </nav>
-      </section>
+        <section class="card widget widget-intel" aria-labelledby="insights-h">
+          <div class="widget-head">
+            <span id="insights-head-ic" class="widget-ic ic-teal" aria-hidden="true">◐</span>
+            <div>
+              <h2 id="insights-h">Health Insights</h2>
+              <p class="muted">Trends, risk, guidance and medication awareness</p>
+            </div>
+          </div>
+          <div class="intel-tabs" role="tablist" id="insights-tabs">
+            <button class="intel-tab active" type="button" data-insights-tab="trends">Trends</button>
+            <button class="intel-tab" type="button" data-insights-tab="risk">Risk</button>
+            <button class="intel-tab" type="button" data-insights-tab="guidance">Guidance</button>
+            <button class="intel-tab" type="button" data-insights-tab="meds">Meds</button>
+            <button class="intel-tab" type="button" data-insights-tab="summary">Summary</button>
+          </div>
+          <div id="insights-body"><p class="muted">Select a tab to load insights.</p></div>
+        </section>
 
-      <!-- ================= CARE (subscription + doctors + shorts) ================= -->
-      <section id="care-view" class="hidden" aria-labelledby="care-h"></section>
+        <section class="card widget widget-intel" aria-labelledby="intel-h">
+          <div class="widget-head">
+            <span id="intel-head-ic" class="widget-ic ic-indigo" aria-hidden="true">◎</span>
+            <div>
+              <h2 id="intel-h">kivo Intelligence</h2>
+              <p class="muted">Baselines, patterns and what-if scenarios</p>
+            </div>
+          </div>
+          <div class="intel-tabs" role="tablist" id="intel-tabs">
+            <button class="intel-tab active" type="button" data-intel-tab="baseline">Baselines</button>
+            <button class="intel-tab" type="button" data-intel-tab="patterns">Patterns</button>
+            <button class="intel-tab" type="button" data-intel-tab="anomalies">Anomalies</button>
+            <button class="intel-tab" type="button" data-intel-tab="whatif">What-If</button>
+          </div>
+          <div id="intel-body"><p class="muted">Loading intelligence…</p></div>
+          <div id="whatif-body" class="hidden" style="margin-top:12px;">
+            <h4 style="margin:12px 0 8px; font-size:14px;">Run a what-if scenario</h4>
+            <p class="muted" style="margin:0 0 10px;">Model-based projection only — not a prediction.</p>
+            <div class="simulate-row">
+              <label class="field"><span>Weight (kg)</span><input id="sim-weight" type="number" step="0.1" placeholder="e.g. 72" /></label>
+              <label class="field"><span>Activity min/week</span><input id="sim-activity" type="number" placeholder="e.g. 150" /></label>
+            </div>
+            <div class="simulate-row">
+              <label class="field"><span>HbA1c %</span><input id="sim-hba1c" type="number" step="0.1" placeholder="e.g. 5.6" /></label>
+              <label class="field"><span>Systolic BP</span><input id="sim-sbp" type="number" placeholder="e.g. 120" /></label>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button id="btn-simulate" class="btn primary" type="button">Simulate</button>
+              <button id="btn-explore" class="btn ghost" type="button">Explore presets</button>
+            </div>
+            <p id="simulate-error" class="error hidden" role="alert"></p>
+            <div id="simulate-result" style="margin-top:10px;"></div>
+            <div id="scenarios-result" style="margin-top:10px;"></div>
+          </div>
+        </section>
 
-      <!-- ============ CAMERA SCANNER OVERLAY ============ -->
-      <section id="scanner-view" class="scanner hidden" role="dialog" aria-modal="true" aria-label="Scan a lab report">
-        <video id="scan-video" playsinline autoplay muted></video>
-        <div class="scan-frame" aria-hidden="true">
-          <div class="scan-corners"></div>
-          <p class="scan-hint">Fit the lab report inside the frame</p>
-        </div>
-        <div class="scan-controls">
-          <button id="scan-close" class="btn ghost sm" type="button"><span class="btn-ic" aria-hidden="true"></span>Close</button>
-          <button id="scan-capture" class="btn primary big" type="button"><span class="btn-ic" aria-hidden="true"></span>Capture</button>
-          <label class="btn ghost sm" id="scan-gallery">
-            <span class="btn-ic" aria-hidden="true"></span>Gallery
-            <input id="scan-file" type="file" accept="image/*" capture="environment" hidden />
-          </label>
-        </div>
-        <p id="scan-error" class="error" role="alert" hidden></p>
-      </section>
-    </main>
+        <section class="card widget widget-ask" aria-labelledby="ask-h">
+          <div class="widget-head">
+            <span id="ask-head-ic" class="widget-ic ic-gold" aria-hidden="true">✦</span>
+            <div>
+              <h2 id="ask-h">Ask kivo</h2>
+              <p class="muted">Grounded answers from your verified health data</p>
+            </div>
+          </div>
+          <div id="ask-suggestions" class="suggestion-chips" style="margin-bottom:10px;"></div>
+          <div id="ask-chat" class="chat"></div>
+          <div class="ask-box">
+            <div class="ask-input-row">
+              <input id="ask-input" type="text" placeholder="Ask about your trends, e.g. Why did my LDL rise?" maxlength="300" />
+              <button id="ask-send" class="btn primary" type="button">Ask</button>
+            </div>
+            <p id="ask-error" class="error hidden" role="alert"></p>
+            <p class="muted" style="font-size:11.5px;">Answers are grounded in verified data and carry the model's disclaimer.</p>
+          </div>
+        </section>
 
-    <div id="toast" class="toast hidden" role="status"></div>
+        <section class="card widget widget-reminders" aria-labelledby="rem-h">
+          <div class="widget-head">
+            <span id="rem-head-ic" class="widget-ic ic-rose" aria-hidden="true">◑</span>
+            <div>
+              <h2 id="rem-h">Reminders & Journal</h2>
+              <p class="muted">Stay on track — observations, reminders and storage</p>
+            </div>
+          </div>
+          <div class="intel-tabs" role="tablist" id="rem-tabs">
+            <button class="intel-tab active" type="button" data-rem-tab="obs">Observations</button>
+            <button class="intel-tab" type="button" data-rem-tab="reminders">Reminders</button>
+            <button class="intel-tab" type="button" data-rem-tab="storage">Storage</button>
+          </div>
+          <div id="rem-body"></div>
+          <div id="obs-body" style="margin-top:12px;">
+            <form id="obs-form" style="display:flex; gap:8px; margin-bottom:10px;">
+              <select id="obs-kind" style="max-width:120px;">
+                <option value="note">Note</option>
+                <option value="weight">Weight</option>
+                <option value="bp">BP</option>
+                <option value="activity">Activity</option>
+                <option value="sleep">Sleep</option>
+                <option value="symptom">Symptom</option>
+                <option value="medication">Medication</option>
+              </select>
+              <input id="obs-text" type="text" placeholder="Add observation (e.g. 72kg, slept poorly)" style="flex:1;" />
+              <button class="btn secondary" type="submit">Add</button>
+            </form>
+            <div id="obs-list" class="obs-timeline"></div>
+          </div>
+          <div id="reminders-body" class="hidden" style="margin-top:12px;">
+            <form id="reminder-form" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+              <input id="rem-title" type="text" placeholder="Reminder title" style="flex:1; min-width:140px;" required />
+              <input id="rem-due" type="datetime-local" style="max-width:190px;" />
+              <button class="btn secondary" type="submit">Create</button>
+            </form>
+            <div id="reminders-list"></div>
+          </div>
+          <div id="storage-body" class="hidden" style="margin-top:12px;">
+            <div id="storage-info"></div>
+          </div>
+        </section>
+      </div>
 
-    <script src="./icons.js"></script>
-    <script src="./connection.js"></script>
-    <script src="./app.js"></script>
-    <script src="./care.js"></script>
-  </body>
+      <footer class="foot">
+        <p>kivo is for risk awareness — not a medical device, not a diagnosis. Always discuss with a qualified professional.</p>
+        <p class="foot-doctor">Are you a doctor? <a href="/doctor/">Open the doctor console</a>.</p>
+      </footer>
+
+      <nav id="bottom-nav" class="bottom-nav" aria-label="Primary">
+        <button class="nav-item active" type="button" data-tab="home" id="nav-home">
+          <span class="nav-ic" aria-hidden="true">⌂</span>
+          <span class="nav-label">Kivo</span>
+        </button>
+        <button class="nav-fab" type="button" id="nav-scan" aria-label="Scan a report">
+          <span class="nav-ic" aria-hidden="true">◍</span>
+        </button>
+        <button class="nav-item" type="button" data-tab="reports" id="nav-reports">
+          <span class="nav-ic" aria-hidden="true">≡</span>
+          <span class="nav-label">Reports</span>
+        </button>
+        <button class="nav-item" type="button" data-tab="care" id="nav-care">
+          <span class="nav-ic" aria-hidden="true">♡</span>
+          <span class="nav-label">Care</span>
+        </button>
+      </nav>
+    </section>
+
+    <section id="care-view" class="hidden" aria-labelledby="care-h"></section>
+
+    <section id="scanner-view" class="scanner hidden" role="dialog" aria-modal="true" aria-label="Scan a lab report">
+      <video id="scan-video" playsinline autoplay muted></video>
+      <div class="scan-frame" aria-hidden="true">
+        <div class="scan-corners"></div>
+        <p class="scan-hint">Fit the lab report inside the frame</p>
+      </div>
+      <div class="scan-controls">
+        <button id="scan-close" class="btn ghost sm" type="button"><span class="btn-ic" aria-hidden="true">✕</span>Close</button>
+        <button id="scan-capture" class="btn primary big" type="button"><span class="btn-ic" aria-hidden="true">◎</span>Capture</button>
+        <label class="btn ghost sm" id="scan-gallery">
+          <span class="btn-ic" aria-hidden="true">↑</span>Gallery
+          <input id="scan-file" type="file" accept="image/*" capture="environment" hidden />
+        </label>
+      </div>
+      <p id="scan-error" class="error" role="alert" hidden></p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <script src="./icons.js"></script>
+  <script src="./connection.js"></script>
+  <script src="./motion.js"></script>
+  <script src="./app.js"></script>
+  <script src="./care.js"></script>
+</body>
 </html>
