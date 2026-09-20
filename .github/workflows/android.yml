@@ -2,18 +2,21 @@ name: Android APK
 
 # Why this workflow exists
 # ------------------------
-# The APK that used to be committed to this repo was assembled by a hand-written
-# Python script (binary manifest, hand-built resources.arsc, hand-emitted DEX,
-# hand-rolled v1+v2 signing). It looked plausible to a zip listing and even to a
-# lenient parser, but its resource table had ZERO entries, so the manifest's
-# android:icon reference (0x7f020000) resolved to nothing — and Android's
-# PackageInstaller rejects that with "There was a problem parsing the package".
+# frontend/kivo.apk used to be assembled by a hand-written Python script (binary
+# manifest, hand-built resources.arsc, hand-emitted DEX, hand-rolled v1+v2
+# signing). It unzipped cleanly and passed a lenient parser, but its resource
+# table had ZERO entries, so the manifest's android:icon reference (0x7f020000)
+# resolved to nothing and Android rejected the package with "There was a problem
+# parsing the package". You cannot hand-build a package that survives a modern
+# PackageInstaller, so the APK is now built by the real toolchain
+# (AAPT2 + javac + D8 + apksig) here, verified twice, and published three ways:
 #
-# There is no way to hand-build a package that survives a modern PackageManager.
-# So the APK is now built by the real toolchain (AAPT2 + javac + D8 + apksig) on
-# a GitHub-hosted runner, verified twice, published as an artifact + a rolling
-# release, and committed back to frontend/kivo.apk so the in-app
-# "Download App (APK)" button serves a package that actually installs.
+#   1. workflow artifact `kivo-apk`
+#   2. the rolling `apk-latest` GitHub release
+#   3. committed straight back into the branch as frontend/kivo.apk, so the
+#      in-app "Download App (APK)" button (/download/apk) serves a package that
+#      installs — and so a failed build leaves android/BUILD_REPORT.md behind
+#      with the compiler output instead of a red X nobody can read.
 
 on:
   push:
@@ -33,15 +36,13 @@ on:
         default: true
 
 permissions:
-  contents: write   # publish the release + commit the rebuilt APK back to main
+  contents: write   # publish the release + push the APK and the build report back
 
 concurrency:
   group: android-apk-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  # Keystore from repository secrets when they exist; otherwise a throwaway key
-  # is generated (and cached, so an update still installs over the old build).
   HAS_KEYSTORE_SECRET: ${{ secrets.KIVO_KEYSTORE_BASE64 != '' }}
 
 jobs:
@@ -65,7 +66,8 @@ jobs:
       - name: Preflight — every resource reference resolves
         run: |
           set -euo pipefail
-          python3 android/tools/verify_resources.py
+          mkdir -p dist
+          python3 android/tools/verify_resources.py 2>&1 | tee dist/preflight.log
 
       - name: Install the Android SDK packages this build needs
         run: |
@@ -94,11 +96,8 @@ jobs:
           fi
 
           echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
-          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
-
           yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
           "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-          "$SDKMANAGER" --list_installed | sed -n '1,40p' || true
 
       - name: Restore the CI signing key
         if: env.HAS_KEYSTORE_SECRET != 'true'
@@ -128,7 +127,7 @@ jobs:
             KEY_ALIAS="kivo"
             KEY_PASS="kivo-ci-only"
           else
-            echo "Generating a throwaway CI keystore (no secrets configured)."
+            echo "Generating a throwaway CI keystore (no signing secrets configured)."
             STORE_FILE="$KEYDIR/ci.keystore"
             STORE_PASS="kivo-ci-only"
             KEY_ALIAS="kivo"
@@ -140,16 +139,16 @@ jobs:
               -dname "CN=kivo CI build, OU=kivo, O=kivo, C=IN" > /dev/null
           fi
 
-          cat > "$PROPS" <<EOF
-          storeFile=$STORE_FILE
-          storePassword=$STORE_PASS
-          keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASS
-          EOF
+          {
+            echo "storeFile=$STORE_FILE"
+            echo "storePassword=$STORE_PASS"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASS"
+          } > "$PROPS"
 
           echo "Signing key fingerprint:"
           keytool -list -v -keystore "$STORE_FILE" -storepass "$STORE_PASS" 2>/dev/null \
-            | grep -E "Alias name|SHA256:" || true
+            | grep -E "Alias name|SHA256:" | tee dist/key.log || true
         env:
           KIVO_KEYSTORE_BASE64: ${{ secrets.KIVO_KEYSTORE_BASE64 }}
           KIVO_KEYSTORE_PASSWORD: ${{ secrets.KIVO_KEYSTORE_PASSWORD }}
@@ -165,23 +164,23 @@ jobs:
         working-directory: android
         run: |
           set -euo pipefail
-          # versionCode grows with the clock, so a new build always installs over
+          # versionCode grows with the clock so a new build always installs over
           # the previous one instead of being rejected as a downgrade.
           VERSION_CODE="$(date -u +%y%m%d%H)"
           VERSION_NAME="1.1.$(date -u +%y%m%d)"
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
 
-          gradle --stacktrace --no-parallel \
+          gradle --stacktrace \
             -PkivoVersionCode="$VERSION_CODE" \
             -PkivoVersionName="$VERSION_NAME" \
-            :app:assembleRelease
+            :app:assembleRelease 2>&1 | tee ../dist/build.log
 
       - name: Verify the package with the official tools
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
-          mkdir -p dist
+          test -f "$APK"
           cp "$APK" dist/kivo.apk
 
           BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
@@ -209,7 +208,7 @@ jobs:
       - name: Verify the package independently (androguard)
         run: |
           set -uo pipefail
-          # Second opinion from a different implementation than apksigner: this
+          # A second opinion from a different implementation than apksigner: this
           # is the check that catches an unresolvable android:icon, the exact
           # failure that produced "There was a problem parsing the package".
           if python3 -m venv /tmp/apkverify >/dev/null 2>&1; then
@@ -218,9 +217,10 @@ jobs:
           fi
           PY=python3
           if [ -x /tmp/apkverify/bin/python ]; then PY=/tmp/apkverify/bin/python; fi
-          "$PY" android/tools/verify_apk.py dist/kivo.apk
+          "$PY" android/tools/verify_apk.py dist/kivo.apk 2>&1 | tee dist/verify.log
 
       - name: Build summary
+        if: always()
         run: |
           {
             echo "### kivo.apk — built, signed and verified"
@@ -228,34 +228,37 @@ jobs:
             echo "| | |"
             echo "|---|---|"
             echo "| package | \`ai.kivo.app\` |"
-            echo "| versionName | \`${VERSION_NAME:-1.1.x}\` |"
-            echo "| versionCode | \`${VERSION_CODE:-1000}\` |"
+            echo "| versionName | \`${VERSION_NAME:-unknown}\` |"
+            echo "| versionCode | \`${VERSION_CODE:-0}\` |"
             echo "| minSdk / targetSdk | 24 (Android 7.0) / 34 (Android 14) |"
-            echo "| size | $(du -h dist/kivo.apk | cut -f1) |"
-            echo "| sha256 | \`$(sha256sum dist/kivo.apk | cut -d' ' -f1)\` |"
+            APK_SIZE="$(du -h dist/kivo.apk 2>/dev/null | cut -f1)"
+            APK_SHA="$(sha256sum dist/kivo.apk 2>/dev/null | cut -d' ' -f1)"
+            echo "| size | ${APK_SIZE:-not built} |"
+            echo "| sha256 | \`${APK_SHA:-not built}\` |"
             echo
-            echo "**Install:** download the \`kivo-apk\` artifact below, unzip it, copy"
-            echo "\`kivo.apk\` to the phone and open it (allow \"install unknown apps\" for"
-            echo "your browser/files app). On first launch the app asks for the server"
-            echo "address — start the backend (\`cd backend && npm start\`) and type the"
-            echo "computer's LAN address, e.g. \`http://192.168.1.7:8080\`."
+            echo "**Install:** download the \`kivo-apk\` artifact below (or take"
+            echo "\`frontend/kivo.apk\`, which this workflow pushes back to the branch)."
+            echo "On first launch the app asks for the server address — start the backend"
+            echo "(\`cd backend && npm start\`) and type the computer's LAN address, e.g."
+            echo "\`http://192.168.1.7:8080\`."
             echo
             echo "<details><summary>apksigner verification</summary>"
             echo
             echo '```'
-            cat dist/apksigner.txt
+            cat dist/apksigner.txt 2>/dev/null || echo '(not produced)'
             echo '```'
             echo "</details>"
             echo
             echo "<details><summary>aapt2 badging</summary>"
             echo
             echo '```'
-            head -40 dist/badging.txt
+            head -40 dist/badging.txt 2>/dev/null || echo '(not produced)'
             echo '```'
             echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kivo-apk
@@ -263,7 +266,9 @@ jobs:
             dist/kivo.apk
             dist/apksigner.txt
             dist/badging.txt
-          if-no-files-found: error
+            dist/verify.log
+            dist/build.log
+          if-no-files-found: warn
           retention-days: 30
 
       - name: Publish to the rolling "apk-latest" release
@@ -279,7 +284,7 @@ jobs:
           TAG="apk-latest"
           NOTES="kivo Android APK — built by GitHub Actions from commit ${GITHUB_SHA::7}.
 
-          package: ai.kivo.app · versionName ${VERSION_NAME:-1.1.x} · versionCode ${VERSION_CODE:-1000}
+          package: ai.kivo.app · versionName ${VERSION_NAME:-1.1.x} · versionCode ${VERSION_CODE:-0}
           minSdk 24 (Android 7.0) · targetSdk 34 (Android 14) · signed v1+v2
 
           Install: download kivo.apk, open it on the phone, allow \"install unknown apps\".
@@ -294,19 +299,121 @@ jobs:
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes "$NOTES"
           echo "Published: https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
 
-      - name: Commit the verified APK back to the repo
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      # ------------------------------------------------------------------
+      # Push the result back into git. Artifacts are the normal channel, but a
+      # build report in the repo is what makes a failure debuggable from
+      # anywhere, and frontend/kivo.apk is what the backend actually serves at
+      # /download/apk. Committed with [skip ci] so this never loops.
+      # ------------------------------------------------------------------
+      - name: Collect the build report
+        if: always()
         run: |
-          set -euo pipefail
-          cp dist/kivo.apk frontend/kivo.apk
+          set -uo pipefail
+          {
+            echo "# Android build report"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| run | $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID |"
+            echo "| event | $GITHUB_EVENT_NAME |"
+            echo "| ref | $GITHUB_REF |"
+            echo "| commit | ${GITHUB_SHA} |"
+            echo "| versionName | ${VERSION_NAME:-unknown} |"
+            echo "| versionCode | ${VERSION_CODE:-0} |"
+            echo "| APK sha256 | $(sha256sum dist/kivo.apk 2>/dev/null | cut -d' ' -f1 || echo 'not built') |"
+            echo "| APK size | $(stat -c %s dist/kivo.apk 2>/dev/null || echo 'not built') bytes |"
+            echo
+            echo "Generated by \`.github/workflows/android.yml\`. Do not edit by hand."
+            echo
+            if [ -f dist/key.log ]; then
+              echo "## Signing key"
+              echo
+              echo '```'
+              cat dist/key.log
+              echo '```'
+              echo
+            fi
+            if [ -f dist/apksigner.txt ]; then
+              echo "## apksigner verify"
+              echo
+              echo '```'
+              cat dist/apksigner.txt
+              echo '```'
+              echo
+            fi
+            if [ -f dist/badging.txt ]; then
+              echo "## aapt2 dump badging"
+              echo
+              echo '```'
+              cat dist/badging.txt
+              echo '```'
+              echo
+            fi
+            if [ -f dist/verify.log ]; then
+              echo "## verify_apk.py (independent check)"
+              echo
+              echo '```'
+              cat dist/verify.log
+              echo '```'
+              echo
+            fi
+            if [ -f dist/build.log ]; then
+              echo "## gradle output (tail)"
+              echo
+              echo '```'
+              grep -Ei "error|warning: |FAILURE|Caused by|What went wrong|> Task|BUILD " dist/build.log \
+                | tail -120 || tail -120 dist/build.log
+              echo '```'
+            else
+              echo "## gradle output"
+              echo
+              echo "The build step never produced output — an earlier step failed."
+            fi
+          } > dist/BUILD_REPORT.md
+          echo "report written: $(wc -l < dist/BUILD_REPORT.md) lines"
+
+      - name: Push the APK and the build report back to the branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-}}"
+          if [ -z "$BRANCH" ]; then
+            echo "No branch to push to (detached ref) — skipping."
+            exit 0
+          fi
+          WORK="$(mktemp -d)"
+          if ! git clone --quiet --depth 1 --branch "$BRANCH" \
+              "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$WORK"; then
+            echo "::warning::could not clone $BRANCH to publish the build"
+            exit 0
+          fi
+
+          cp dist/BUILD_REPORT.md "$WORK/android/BUILD_REPORT.md"
+          if [ -f dist/kivo.apk ] && [ -s dist/kivo.apk ] \
+             && grep -q "\[verify\] PASSED" dist/verify.log 2>/dev/null; then
+            cp dist/kivo.apk "$WORK/frontend/kivo.apk"
+            echo "Including the verified APK in the commit."
+          else
+            echo "Not committing an APK (build failed or verification did not pass)."
+          fi
+
+          cd "$WORK"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add frontend/kivo.apk
+          git add android/BUILD_REPORT.md frontend/kivo.apk
           if git diff --cached --quiet; then
-            echo "frontend/kivo.apk is already this exact build."
+            echo "Nothing changed — the branch already has this build."
+            exit 0
+          fi
+          STATUS="failed"
+          if [ -f dist/kivo.apk ] && grep -q "\[verify\] PASSED" dist/verify.log 2>/dev/null; then
+            STATUS="verified"
+          fi
+          git commit --quiet -m "chore(android): ${STATUS} APK build report from CI [skip ci]"
+          if git push --quiet origin "HEAD:${BRANCH}"; then
+            echo "Pushed to ${BRANCH}."
           else
-            git commit -m "chore(android): publish the CI-built, verified kivo.apk [skip ci]"
-            git pull --rebase origin main
-            git push origin HEAD:main
-            echo "frontend/kivo.apk updated on main — /download/apk now serves a package that installs."
+            echo "::warning::could not push the build report to ${BRANCH}"
           fi

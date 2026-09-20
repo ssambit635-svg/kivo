@@ -41,7 +41,6 @@ def apkVersionName = (project.findProperty('kivoVersionName') ?: '1.1.0').toStri
 android {
     namespace 'ai.kivo.app'
     compileSdk 34
-    buildToolsVersion '34.0.0'
 
     defaultConfig {
         applicationId 'ai.kivo.app'
