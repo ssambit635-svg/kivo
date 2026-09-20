@@ -33,6 +33,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -86,6 +87,7 @@ public class MainActivity extends Activity {
     private ProgressBar progressBar;
     private EditText serverInput;
     private TextView barTitle;
+    private LinearLayout nativeBar;
     private TextView barServer;
     private TextView errorDetail;
     private TextView setupHint;
@@ -120,6 +122,7 @@ public class MainActivity extends Activity {
 
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
 
+        nativeBar = findViewById(R.id.native_bar);
         barTitle = findViewById(R.id.bar_title);
         barServer = findViewById(R.id.bar_server);
         progressBar = findViewById(R.id.progress);
@@ -216,7 +219,7 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new KivoBridge(), "KivoNative");
         webView.setWebViewClient(new KivoWebViewClient());
         webView.setWebChromeClient(new KivoChromeClient());
-        webView.setBackgroundColor(0xFFF6F7F7);
+        webView.setBackgroundColor(0xFF04070C);
 
         // Anything the web app hands to the browser (an APK download, an export)
         // goes to the real browser instead of vanishing.
@@ -267,6 +270,7 @@ public class MainActivity extends Activity {
         errorPanel.setVisibility(View.GONE);
         setupPanel.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
+        if (nativeBar != null) nativeBar.setVisibility(View.GONE); // web UI owns the screen — no bezel
         updateBar();
         // No `?login=1` here: the web app keeps the user signed in on this
         // device until they tap Sign out, so a cold launch restores the stored
@@ -283,6 +287,7 @@ public class MainActivity extends Activity {
         wakeRetries = 0;
         loadHadError = false;
         errorPanel.setVisibility(View.GONE);
+        if (nativeBar != null) nativeBar.setVisibility(View.GONE);
         webView.reload();
     }
 
@@ -290,6 +295,7 @@ public class MainActivity extends Activity {
         setupPanel.setVisibility(View.VISIBLE);
         errorPanel.setVisibility(View.GONE);
         webView.setVisibility(View.GONE);
+        if (nativeBar != null) nativeBar.setVisibility(View.VISIBLE);
         showLanHint();
         if (serverInput != null) {
             String saved = prefs == null ? "" : prefs.getString(KEY_SERVER, "");
@@ -305,6 +311,7 @@ public class MainActivity extends Activity {
             }
             errorPanel.setVisibility(View.VISIBLE);
             setupPanel.setVisibility(View.GONE);
+            if (nativeBar != null) nativeBar.setVisibility(View.VISIBLE);
         });
     }
 
