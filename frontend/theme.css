@@ -1244,3 +1244,13 @@ body.in-app #topbar-avatar{display:block}
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
 body:not(.at-auth) .auth-hero{display:none}
+
+/* topbar APK pill — the installer is one tap away, but quiet */
+#topbar-apk{
+  width:40px;height:40px;border-radius:50%;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.05);border:1px solid var(--glass-brd);
+  color:var(--muted);transition:all .2s ease;
+}
+#topbar-apk:hover{color:var(--mint);border-color:var(--mint-line)}
+#topbar-apk svg{display:block}
