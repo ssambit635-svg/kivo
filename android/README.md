@@ -71,10 +71,20 @@ platform 34 and build-tools 34.0.0.
 ```bash
 cd android
 gradle :app:assembleRelease            # → app/build/outputs/apk/release/app-release.apk
-gradle icons                           # regenerate launcher icons after a brand change
+gradle icons                            # regenerate launcher icons after a brand change
 python3 tools/verify_resources.py      # preflight: every @string/@mipmap/R.* reference resolves
+python3 tools/compile_check.py         # preflight: the Java compiles (no Gradle, no SDK download)
 python3 tools/verify_apk.py app/build/outputs/apk/release/app-release.apk
 ```
+
+`tools/compile_check.py` is the fast answer to "did I just break the build?".
+It generates throwaway `R.java` / `BuildConfig.java` stubs from `res/` and runs
+`javac` over the module's sources against an `android.jar` — so a missing
+symbol or an unhandled checked exception surfaces in about a second instead of
+after a full Gradle/AGP round trip. It picks the compiler up from `--javac`,
+`$JAVA_HOME/bin/javac`, or `PATH`, and the platform from `--android-jar` or
+`$ANDROID_HOME/platforms/android-34/android.jar`; with no toolchain present it
+prints `SKIPPED` and exits 0, because a missing local JDK is not a code defect.
 
 Signing keys are read from `android/keystore.properties` (git-ignored) when present;
 otherwise AGP signs with your local debug key, which still installs.
@@ -110,15 +120,23 @@ installer's expectations is not a realistic thing to maintain, so the fake build
 (`backend/scripts/apk/build-apk.py`) is gone and the package is built by AAPT2 + javac + D8 +
 apksig instead.
 
-Two guards keep it that way:
+Three guards keep it that way:
 
 - **`tools/verify_resources.py`** — runs *before* Gradle in CI: every `@kind/name` in the
   manifest/layouts/values and every `R.kind.name` in Java must resolve to something that
   exists, and `getString(...)` arity must match the `%1$s` placeholders in the strings.
+- **`tools/compile_check.py`** — compiles the module's Java against an `android.jar` with
+  generated `R`/`BuildConfig` stubs, so a symbol error costs a second instead of a Gradle run.
 - **`tools/verify_apk.py`** — runs on the built APK: container, binary AXML manifest, resource
   table with real entries, `android:icon` resolving to a stored file, DEX header/checksum/SHA-1,
   v1 digests recomputed against the zip, and a v2/v3 APK Signing Block whose certificate matches
   the v1 one. Non-zero exit blocks publication.
+
+CI writes the outcome of all of it — plus `apksigner verify`, `aapt2 dump badging` and the
+compiler's own error output — into **[`android/BUILD_REPORT.md`](BUILD_REPORT.md)**, committed
+straight back to the branch, so a failed build explains itself without anyone having to open
+the Action logs. That file is excluded from this workflow's own path filters, which is what
+stops the report commit from re-triggering the build forever.
 
 ## Layout
 
@@ -128,9 +146,11 @@ android/
 ├── settings.gradle               google() + mavenCentral(), one module
 ├── gradle.properties
 ├── keystore.properties           (git-ignored; written by CI or by you)
+├── BUILD_REPORT.md               what the last CI build did — written by CI, never by hand
 ├── tools/
 │   ├── make_icons.py             frontend/icons → res/mipmap-* (pure stdlib PNG decode/resize/encode)
 │   ├── verify_resources.py       preflight: every resource reference resolves
+│   ├── compile_check.py          preflight: the Java compiles, no Gradle/SDK download needed
 │   └── verify_apk.py             postflight: is this package actually installable?
 └── app/src/main/
     ├── AndroidManifest.xml       permissions, MAIN/LAUNCHER, cleartext for LAN demos

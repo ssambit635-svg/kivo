@@ -23,10 +23,14 @@ on:
     branches: [main]
     paths:
       - 'android/**'
+      # ...except the report this workflow commits back, or it would re-trigger
+      # itself forever (each run writes a new report -> new push -> new run).
+      - '!android/BUILD_REPORT.md'
       - '.github/workflows/android.yml'
   pull_request:
     paths:
       - 'android/**'
+      - '!android/BUILD_REPORT.md'
       - '.github/workflows/android.yml'
   workflow_dispatch:
     inputs:
@@ -302,8 +306,14 @@ jobs:
       # ------------------------------------------------------------------
       # Push the result back into git. Artifacts are the normal channel, but a
       # build report in the repo is what makes a failure debuggable from
-      # anywhere, and frontend/kivo.apk is what the backend actually serves at
-      # /download/apk. Committed with [skip ci] so this never loops.
+      # anywhere (Action logs are only readable by a logged-in human), and
+      # frontend/kivo.apk is what the backend actually serves at /download/apk.
+      #
+      # This commit is NOT marked skip-ci on purpose: the backend suite asserts
+      # the package at frontend/kivo.apk is installable, so it must re-run on
+      # the commit that delivers it. The loop is broken instead by excluding
+      # android/BUILD_REPORT.md from this workflow's own path filters, so a
+      # report-only push never wakes this workflow again.
       # ------------------------------------------------------------------
       - name: Collect the build report
         if: always()
@@ -417,7 +427,11 @@ jobs:
           if [ -f dist/kivo.apk ] && grep -q "\[verify\] PASSED" dist/verify.log 2>/dev/null; then
             STATUS="verified"
           fi
-          git commit --quiet -m "chore(android): ${STATUS} APK build report from CI [skip ci]"
+          # Deliberately NOT marked skip-ci: this push carries frontend/kivo.apk,
+          # and the backend suite has a test that asserts the package it serves is
+          # installable. Re-running is the point. (This workflow does not re-run:
+          # android/BUILD_REPORT.md is excluded from its own path filters.)
+          git commit --quiet -m "chore(android): ${STATUS} APK build from CI"
           if git push --quiet origin "HEAD:${BRANCH}"; then
             echo "Pushed to ${BRANCH}."
           else
