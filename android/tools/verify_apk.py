@@ -135,29 +135,27 @@ def extract_v2_certificates(pair: bytes) -> list[bytes]:
 # --------------------------------------------------------------------------- #
 # binary AndroidManifest.xml (AXML)
 # --------------------------------------------------------------------------- #
-def axml_strings(data: bytes) -> list[str]:
-    """Decode the AXML string pool.
+def string_pool(data: bytes, offset: int = 0) -> list[str]:
+    """Decode a RES_STRING_POOL chunk sitting at `offset` in `data`.
 
-    Enough to prove the manifest really is binary AXML and to see which tags and
-    attributes it declares — a text-XML manifest (or a broken pool) is rejected
-    by PackageParser before anything else is looked at.
+    AXML and resources.arsc use the same pool format, so one decoder serves
+    both: the manifest's tag and attribute names, and the resource table's type
+    names ("layout", "mipmap") plus its key names ("activity_main",
+    "ic_launcher").
     """
-    doc_type, doc_header, _total = struct.unpack("<HHI", data[:8])
-    if doc_type != 0x0003 or doc_header != 0x0008:
-        raise ValueError(f"manifest is not binary AXML (type {doc_type:#06x}, header {doc_header:#06x})")
-    (pool_type,) = struct.unpack("<H", data[8:10])
+    (pool_type, _header_size, _chunk_size) = struct.unpack("<HHI", data[offset : offset + 8])
     if pool_type != 0x0001:
-        raise ValueError("no string pool right after the AXML header")
-    (string_count,) = struct.unpack("<I", data[16:20])
-    (flags,) = struct.unpack("<I", data[24:28])
-    (strings_start,) = struct.unpack("<I", data[28:32])
+        raise ValueError(f"not a string pool (type {pool_type:#06x})")
+    (string_count,) = struct.unpack("<I", data[offset + 8 : offset + 12])
+    (flags,) = struct.unpack("<I", data[offset + 16 : offset + 20])
+    (strings_start,) = struct.unpack("<I", data[offset + 20 : offset + 24])
     is_utf8 = bool(flags & (1 << 8))
-    offsets = struct.unpack(f"<{string_count}I", data[36 : 36 + 4 * string_count])
-    base = 8 + strings_start
+    offsets = struct.unpack(f"<{string_count}I", data[offset + 28 : offset + 28 + 4 * string_count])
+    base = offset + strings_start
 
     out: list[str] = []
-    for offset in offsets:
-        pos = base + offset
+    for off in offsets:
+        pos = base + off
         try:
             if is_utf8:
                 # two lengths: characters (UTF-16 units) then bytes, each 1 or 2 bytes
@@ -182,6 +180,19 @@ def axml_strings(data: bytes) -> list[str]:
         except (struct.error, IndexError, UnicodeDecodeError):
             out.append("")
     return out
+
+
+def axml_strings(data: bytes) -> list[str]:
+    """Decode the AXML string pool.
+
+    Enough to prove the manifest really is binary AXML and to see which tags and
+    attributes it declares — a text-XML manifest (or a broken pool) is rejected
+    by PackageParser before anything else is looked at.
+    """
+    doc_type, doc_header, _total = struct.unpack("<HHI", data[:8])
+    if doc_type != 0x0003 or doc_header != 0x0008:
+        raise ValueError(f"manifest is not binary AXML (type {doc_type:#06x}, header {doc_header:#06x})")
+    return string_pool(data, 8)
 
 
 # --------------------------------------------------------------------------- #
@@ -222,6 +233,35 @@ def arsc_summary(data: bytes) -> tuple[list[int], int, int]:
                 inner += isize
         pos += chunk_size
     return package_ids, types, entries
+
+
+def arsc_strings(data: bytes) -> set[str]:
+    """Every pooled string in a resources.arsc — type names and key names.
+
+    AGP's release resource optimizer renames res/ *paths*
+    (res/mipmap-hdpi/ic_launcher.png becomes res/BW.png) but the table keeps
+    naming its types and keys, so "does this app have a launcher icon and a
+    layout" is a question for the table, not for the zip's directory names.
+    """
+    found: set[str] = set()
+
+    def walk(start: int, end: int, depth: int = 0) -> None:
+        pos = start
+        while pos + 8 <= end:
+            (chunk_type, header_size, chunk_size) = struct.unpack("<HHI", data[pos : pos + 8])
+            if chunk_size < 8 or pos + chunk_size > end:
+                return
+            if chunk_type == 0x0001:  # RES_STRING_POOL
+                try:
+                    found.update(string_pool(data, pos))
+                except (struct.error, IndexError, ValueError):
+                    pass
+            elif chunk_type == 0x0200 and depth < 3:  # RES_TABLE_PACKAGE_TYPE
+                walk(pos + header_size, pos + chunk_size, depth + 1)
+            pos += chunk_size
+
+    walk(12, len(data))
+    return found
 
 
 # --------------------------------------------------------------------------- #
@@ -376,10 +416,23 @@ def main(argv: list[str]) -> int:
 
     res_files = [n for n in names if n.startswith("res/")]
     check(len(res_files) > 0, f"contains {len(res_files)} compiled res/ file(s)")
-    check(
-        any(n.startswith("res/layout/") for n in res_files),
-        "contains a compiled layout (res/layout/)",
-    )
+    # Not "is there a res/layout/ directory": AGP shortens resource paths in
+    # release builds, so the compiled layout can legitimately live at res/BW.xml.
+    # The resource table is the authority on what the app contains.
+    try:
+        table_names = arsc_strings(arsc)
+        check("layout" in table_names and "activity_main" in table_names,
+              "resource table names a layout entry called activity_main")
+        check("mipmap" in table_names and "ic_launcher" in table_names,
+              "resource table names the launcher icon (mipmap/ic_launcher)")
+    except Exception as exc:  # noqa: BLE001
+        check(False, f"resource table strings parsed ({exc})")
+    layouts = [n for n in res_files if n.startswith("res/layout/")]
+    compiled_xml = [n for n in res_files if n.endswith(".xml")]
+    probe = (layouts or compiled_xml)[:1]
+    if probe:
+        check(zf.read(probe[0])[:4] == b"\x03\x00\x08\x00",
+              f"{probe[0]} is compiled binary AXML, not text XML")
 
     # -- 4. dex --------------------------------------------------------------
     print("[verify] classes.dex")

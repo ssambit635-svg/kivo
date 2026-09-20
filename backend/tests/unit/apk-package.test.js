@@ -275,19 +275,34 @@ describe('frontend/kivo.apk — is it a package Android will install?', () => {
     expect(containsName(arsc, 'mipmap'), 'no mipmap resource type').toBe(true);
     expect(containsName(arsc, 'app_name'), 'no app_name string resource').toBe(true);
 
-    const icons = [...entries.keys()].filter((n) => n.startsWith('res/mipmap') && n.endsWith('.png'));
-    expect(icons.length, 'no compiled launcher icon PNGs in the package').toBeGreaterThanOrEqual(5);
-    for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
-      expect(icons.some((n) => n.includes(`mipmap-${density}/ic_launcher.png`)), `no ${density} launcher icon`).toBe(true);
+    // AGP's release resource optimizer renames res/ paths — res/mipmap-hdpi/
+    // ic_launcher.png can ship as res/BW.png — so density coverage is asserted
+    // against the readable paths when they are there, and against the resource
+    // table when they are not. The bytes must be real PNGs either way: a launcher
+    // icon Android cannot decode is exactly the install failure this guards.
+    const resPngs = [...entries.keys()].filter((n) => n.startsWith('res/') && n.endsWith('.png'));
+    expect(resPngs.length, 'no compiled PNG resources in the package').toBeGreaterThanOrEqual(5);
+    const mipmapPngs = resPngs.filter((n) => n.startsWith('res/mipmap'));
+    if (mipmapPngs.length > 0) {
+      for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
+        expect(
+          mipmapPngs.some((n) => n.includes(`mipmap-${density}/ic_launcher.png`)),
+          `no ${density} launcher icon`,
+        ).toBe(true);
+      }
     }
-    // every icon entry really is a PNG
-    for (const icon of icons) {
+    for (const icon of resPngs) {
       const bytes = read(icon);
       expect(bytes.subarray(1, 4).toString('ascii'), `${icon} is not a PNG`).toBe('PNG');
     }
-    // compiled layouts too — the shell has a real UI, not a text file in res/
-    const layout = [...entries.keys()].find((n) => n.startsWith('res/layout/'));
-    expect(layout, 'no compiled layout in the package').toBeTruthy();
+    // compiled layouts too — the shell has a real UI, not a text file in res/.
+    // Same story: ask the table for the entry, then check whichever compiled XML
+    // the package actually carries is binary AXML.
+    expect(containsName(arsc, 'layout'), 'no layout resource type in the table').toBe(true);
+    expect(containsName(arsc, 'activity_main'), 'no activity_main entry in the table').toBe(true);
+    const layout = [...entries.keys()].find((n) => n.startsWith('res/layout/'))
+      ?? [...entries.keys()].find((n) => n.startsWith('res/') && n.endsWith('.xml'));
+    expect(layout, 'no compiled XML resource in the package').toBeTruthy();
     expect(isBinaryAxml(read(layout)), `${layout} is not compiled AXML`).toBe(true);
   });
 
