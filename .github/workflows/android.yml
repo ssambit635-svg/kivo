@@ -180,18 +180,68 @@ jobs:
             -PkivoVersionName="$VERSION_NAME" \
             :app:assembleRelease 2>&1 | tee ../dist/build.log
 
-      - name: Verify the package with the official tools
+      - name: Sign with v1 + v2 and verify with the official tools
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
-          cp "$APK" dist/kivo.apk
 
           BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
           echo "Using build-tools: $BUILD_TOOLS"
 
+          # ------------------------------------------------------------------
+          # Sign the package here instead of trusting AGP's defaults.
+          #
+          # AGP drops the v1 (JAR) signature once minSdk >= 24, and on several
+          # versions it ignores `enableV1Signing true` outright — the previous
+          # run produced a perfectly installable v2-only APK and failed this
+          # workflow's own v1 gate. apksigner is the tool AGP calls anyway, so
+          # calling it directly with the schemes named explicitly makes the
+          # output independent of AGP's version-specific heuristics.
+          #
+          # Order matters: zipalign first, then sign — signing afterwards would
+          # disturb the 4-byte alignment that v2 verification depends on.
+          # ------------------------------------------------------------------
+          cp "$APK" dist/from-gradle.apk
+          "$BUILD_TOOLS/zipalign" -f 4 dist/from-gradle.apk dist/aligned.apk
+
+          KS_PROP="android/keystore.properties"
+          prop() { grep -E "^$1=" "$KS_PROP" | head -1 | cut -d= -f2- | tr -d '\r'; }
+          KEYSTORE="$(prop storeFile)"
+          test -f "$KEYSTORE"
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$KEYSTORE" \
+            --ks-pass "pass:$(prop storePassword)" \
+            --ks-key-alias "$(prop keyAlias)" \
+            --key-pass "pass:$(prop keyPassword)" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled false \
+            --out dist/kivo.apk \
+            dist/aligned.apk
+          echo "signed with apksigner: v1 (JAR) + v2, key $(prop keyAlias)"
+
           echo "----- apksigner verify -----"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs dist/kivo.apk | tee dist/apksigner.txt
+
+          # apksigner does not even look at the JAR signature when the APK
+          # declares minSdk >= 24, so "v1: false" above proves nothing. This
+          # pass pins the range below 24, where v1 is mandatory: it fails
+          # outright if the JAR signature is missing or its digests disagree.
+          echo "----- apksigner verify, v1 forced (API 21-23) -----"
+          "$BUILD_TOOLS/apksigner" verify --verbose --min-sdk-version 21 --max-sdk-version 23 \
+            dist/kivo.apk | tee dist/apksigner-v1.txt
+
+          echo "----- zip alignment -----"
+          "$BUILD_TOOLS/zipalign" -c 4 dist/kivo.apk \
+            && echo "aligned on 4-byte boundaries" | tee dist/alignment.txt
+
+          echo "----- v1 signature files in the zip -----"
+          python3 -c "
+          import zipfile
+          meta = sorted(n for n in zipfile.ZipFile('dist/kivo.apk').namelist() if n.startswith('META-INF/'))
+          print('\n'.join(meta) if meta else 'NO META-INF ENTRIES')
+          " | tee dist/v1files.txt
 
           echo "----- aapt2 dump badging -----"
           "$BUILD_TOOLS/aapt2" dump badging dist/kivo.apk | tee dist/badging.txt
@@ -210,13 +260,17 @@ jobs:
               failed=1
             fi
           }
-          gate "Verified using v1 scheme.*: true" dist/apksigner.txt \
-            "v1 (JAR) signature verifies — AGP skips this unless enableV1Signing is set"
+          gate "Verified using v1 scheme.*: true" dist/apksigner-v1.txt \
+            "v1 (JAR) signature verifies where it is mandatory (API 21-23)"
           gate "Verified using v2 scheme.*: true" dist/apksigner.txt \
             "v2 (APK Signature Scheme v2) verifies — what Android 7+ checks at install"
           gate "Number of signers: 1" dist/apksigner.txt "exactly one signer"
+          gate "META-INF/MANIFEST.MF" dist/v1files.txt "v1 manifest is in the zip"
+          gate "\.SF$" dist/v1files.txt "a v1 signature file (.SF) is in the zip"
+          gate "\.(RSA|DSA|EC)$" dist/v1files.txt "a v1 signature block (.RSA/.DSA/.EC) is in the zip"
+          gate "aligned on 4-byte boundaries" dist/alignment.txt "zipalign -c 4 passes"
           gate "package: name='ai.kivo.app'" dist/badging.txt "package id is ai.kivo.app"
-          gate "sdkVersion:'24'" dist/badging.txt "minSdkVersion 24 (Android 7.0)"
+          gate "minSdkVersion:'24'" dist/badging.txt "minSdkVersion 24 (Android 7.0)"
           gate "targetSdkVersion:'34'" dist/badging.txt "targetSdkVersion 34 (Android 14)"
           gate "launchable-activity: name='ai.kivo.app.MainActivity'" dist/badging.txt \
             "a launchable MAIN/LAUNCHER activity exists"
@@ -360,7 +414,7 @@ jobs:
             # Each of these is written by one step, in order, so the first MISSING
             # line names the step that died. Action logs are not readable without
             # logging in to GitHub, which makes this the only honest failure report.
-            for evidence in key.log build.log apksigner.txt badging.txt gates.txt verify.log; do
+            for evidence in key.log build.log apksigner.txt apksigner-v1.txt alignment.txt v1files.txt badging.txt gates.txt verify.log; do
               if [ -f "dist/$evidence" ]; then
                 echo "- \`dist/$evidence\` — $(wc -l < "dist/$evidence") line(s)"
               else
@@ -389,6 +443,22 @@ jobs:
               echo
               echo '```'
               cat dist/apksigner.txt
+              echo '```'
+              echo
+            fi
+            if [ -f dist/apksigner-v1.txt ]; then
+              echo "## apksigner verify — v1 forced (API 21-23)"
+              echo
+              echo '```'
+              cat dist/apksigner-v1.txt
+              echo '```'
+              echo
+            fi
+            if [ -f dist/v1files.txt ]; then
+              echo "## META-INF/ contents"
+              echo
+              echo '```'
+              cat dist/v1files.txt
               echo '```'
               echo
             fi

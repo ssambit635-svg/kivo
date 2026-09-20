@@ -405,10 +405,15 @@ def main(argv: list[str]) -> int:
               if not mismatches else f"{len(mismatches)} digest mismatch(es): {mismatches[:3]}")
         check(bool(sf_files) and bool(key_blocks),
               f"v1 signature files present ({', '.join(sf_files + key_blocks) or 'none'})")
-        # apksigner names the signer CERT; backend/tests/unit/apk-package.test.js
-        # asserts that exact path, so catch a rename here rather than in the suite.
-        check("META-INF/CERT.SF" in names,
-              "v1 signer is named CERT.SF (apksigner's default)")
+        # The .SF and the PKCS#7 block must carry the same signer name
+        # (apksigner's default is CERT.SF + CERT.RSA, jarsigner uses the key
+        # alias). A mismatched pair is what an APK signed twice looks like.
+        sf_signers = {Path(n).stem for n in sf_files}
+        block_signers = {Path(n).stem for n in key_blocks}
+        check(bool(sf_signers & block_signers),
+              "the .SF and the signature block share a signer name "
+              f"({', '.join(sorted(sf_signers)) or 'none'} vs "
+              f"{', '.join(sorted(block_signers)) or 'none'})")
     except KeyError:
         check(False, "META-INF/MANIFEST.MF is present — AGP turns v1 (JAR) signing off by "
                      "default when minSdk >= 24, so android/app/build.gradle sets "

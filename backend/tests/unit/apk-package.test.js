@@ -230,7 +230,16 @@ describe('frontend/kivo.apk — is it a package Android will install?', () => {
     const signature = [...entries.keys()].filter((n) => /^META-INF\/.*\.(RSA|DSA|EC)$/i.test(n));
     expect(signature.length, 'no v1 signature block in META-INF/').toBeGreaterThan(0);
     expect(entries.has('META-INF/MANIFEST.MF')).toBe(true);
-    expect(entries.has('META-INF/CERT.SF')).toBe(true);
+    // apksigner names the signer CERT (CERT.SF + CERT.RSA); jarsigner uses the
+    // key alias instead. What actually has to hold is that the .SF and the
+    // PKCS#7 block belong to the same signer.
+    const sfFiles = [...entries.keys()].filter((n) => /^META-INF\/.*\.SF$/i.test(n));
+    expect(sfFiles.length, 'no v1 signature file (.SF) in META-INF/').toBeGreaterThan(0);
+    const signerOf = (n) => n.slice('META-INF/'.length).replace(/\.[^.]+$/, '');
+    expect(
+      signature.some((block) => sfFiles.some((sf) => signerOf(sf) === signerOf(block))),
+      `the .SF and the signature block must share a signer name (got ${sfFiles.join(', ')} and ${signature.join(', ')})`,
+    ).toBe(true);
   });
 
   it('stores the manifest as binary AXML, not text', () => {
