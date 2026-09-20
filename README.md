@@ -19,7 +19,7 @@ City-battle strategy and gap analysis: [`HACKATHON_GAP_ANALYSIS.md`](HACKATHON_G
 | Backend API | Complete - Built and tested, see [`backend/README.md`](backend/README.md) |
 | AuthN/AuthZ | Complete - scrypt + JWT access (rotating refresh tokens w/ reuse detection), RBAC + member-isolation policies |
 | AI pipeline | Complete - **Real image OCR (Tesseract)** + plain-text, extraction, trends, explainable risk, grounded local LLM, doctor summary |
-| Phone-first UI | Complete - Camera report scanner (`getUserMedia` + gallery fallback) · voice journaling · installable PWA (manifest + service worker) · mobile bottom-nav |
+| Phone-first UI | Complete - Camera report scanner (`getUserMedia` + gallery fallback) · voice journaling · installable PWA (manifest + service worker) · floating bottom dock · edge-to-edge dark Android shell (no native bar over the web UI, no light bezels) |
 | Engagement widgets | Complete - Health Score Timeline · Report Confidence Badges · Health Milestones (icon keys, no emojis) |
 | Ask the Twin | Complete - Grounded conversational Q&A (`POST /api/members/:id/ask`) — deterministic intent → verified-data evidence → grounded narration; diagnosis requests always refused |
 | Security automation | Complete - Automated IP abuse-block + audit alerts · `/api` no-store · Permissions-Policy · secret scanner · header-posture check · dependency advisory gate (npm's supported endpoint) · CI pipeline |
@@ -30,7 +30,7 @@ City-battle strategy and gap analysis: [`HACKATHON_GAP_ANALYSIS.md`](HACKATHON_G
 | Doctor console | Complete - **Separate frontend at `/doctor/`** — certificate-checked self-onboarding (registration number + uploaded council certificate; mock KYC), shorts studio, one-screen clinical brief, AI medicine draft the doctor edits/approves, shareable identity card, earnings statement |
 | RBAC | Complete - `user_roles` table (`patient` / `doctor` / `admin`), server-side grants, re-read per request · doctors cannot touch the patient API · patients cannot open the console |
 | Tests | Complete - **564 passing** in 43 files (`cd backend && npm test`) + 120-check live endpoint smoke (`npm run smoke`) |
-| Frontend | Complete - Demo dashboard at `/app/` — vanilla HTML/CSS/JS, zero build step, real SVG icons |
+| Frontend | Complete - **"Obsidian Vital" dark-glass redesign (2026)** at `/app/` — vanilla HTML/CSS/JS, zero build step, splash · personalization onboarding · AI-robot welcome · bento home with photo hero · 5-page bottom-nav shell (`theme.css` + `kivoux.js`) |
 | Android app | Complete - **Installable `kivo.apk`** (`ai.kivo.app`, minSdk 24 / targetSdk 34) built by GitHub Actions with the real toolchain (AAPT2 + javac + D8 + apksig v1/v2), verified twice before it is published · WebView shell with a surface switcher (`/m/`, `/app/`, `/doctor/`), camera + mic grants for the report scanner, gallery file chooser, honest network-error screens · see [`android/README.md`](android/README.md) |
 
 ## Quick start (cost-free)

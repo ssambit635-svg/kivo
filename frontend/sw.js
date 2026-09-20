@@ -10,20 +10,28 @@
  * separate frontend for a separate role, and clinical screens should never be
  * served stale from a cache.
  */
-const VERSION = 'kivo-v3-session';
+const VERSION = 'kivo-v4-obsidian';
 const SHELL = [
   '/app/',
   '/app/index.html',
   '/app/styles.css',
   '/app/care.css',
+  '/app/theme.css',
   '/app/app.js',
   '/app/connection.js',
   '/app/care.js',
+  '/app/kivoux.js',
   '/app/icons.js',
+  '/app/motion.js',
   '/app/manifest.webmanifest',
   '/app/icons/icon-192.png',
   '/app/icons/icon-512.png',
   '/app/icons/maskable-512.png',
+  '/app/fonts/inter-latin-400-normal.woff2',
+  '/app/fonts/inter-latin-500-normal.woff2',
+  '/app/fonts/inter-latin-600-normal.woff2',
+  '/app/img/hero-run.jpg',
+  '/app/img/avatar-user.jpg',
 ];
 
 self.addEventListener('install', (event) => {
