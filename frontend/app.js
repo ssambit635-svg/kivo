@@ -263,8 +263,10 @@
 
   function handoffToDoctorConsole(){
     try{ sessionStorage.setItem('kivo.role-handoff', JSON.stringify(state.tokens)); }catch(e){}
-    // Keep patient tokens too for persistent login — don't clear anymore
-    // clearTokens(); // old behavior cleared, causing sign-in again
+    // Doctor sessions live ONLY under the doctor console's own storage key —
+    // that is what keeps a doctor signed in across launches. Never leave
+    // doctor tokens in the patient store.
+    clearTokens();
     location.href='/doctor/';
   }
 
