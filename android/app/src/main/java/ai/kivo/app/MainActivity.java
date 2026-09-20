@@ -12,6 +12,8 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -81,6 +83,15 @@ public class MainActivity extends Activity {
     private static final int REQ_FILE_CHOOSER = 4201;
     private static final int REQ_RUNTIME_PERMS = 4202;
 
+    /**
+     * Waking a free-tier cloud host (Render after ~15 min idle) can take
+     * 30-60 s; the first load then fails with a timeout. Before showing the
+     * honest error screen, quietly retry a bounded number of times, so the
+     * app "just opens" even when the cloud server had fallen asleep.
+     */
+    private static final int MAX_WAKE_RETRIES = 2;
+    private static final long WAKE_RETRY_DELAY_MS = 8000;
+
     private WebView webView;
     private View setupPanel;
     private View errorPanel;
@@ -97,6 +108,18 @@ public class MainActivity extends Activity {
 
     private String currentServer = "";
     private String currentSurface = SURFACE_PHONE;
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private int wakeRetries = 0;
+    private boolean loadHadError = false;
+    private final Runnable wakeRetryRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (webView != null && !TextUtils.isEmpty(currentServer)) {
+                webView.reload();
+            }
+        }
+    };
 
     /* ------------------------------------------------------------------ */
     /* lifecycle                                                           */
@@ -131,6 +154,14 @@ public class MainActivity extends Activity {
         String savedServer = prefs.getString(KEY_SERVER, "");
         currentSurface = prefs.getString(KEY_SURFACE, SURFACE_PHONE);
         if (TextUtils.isEmpty(savedServer)) {
+            String baked = defaultServer();
+            if (!TextUtils.isEmpty(baked)) {
+                // Cloud build (android/default-server.txt baked at compile
+                // time): straight into the product — no server picker, no
+                // laptop, no npm start. The menu still has "Change server…".
+                start(baked, currentSurface);
+                return;
+            }
             showSetup();
         } else {
             serverInput.setText(savedServer);
@@ -156,6 +187,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        mainHandler.removeCallbacks(wakeRetryRunnable);
         if (webView != null) {
             webView.destroy();
             webView = null;
@@ -246,6 +278,9 @@ public class MainActivity extends Activity {
         currentSurface = path;
         prefs.edit().putString(KEY_SERVER, server).putString(KEY_SURFACE, path).apply();
 
+        mainHandler.removeCallbacks(wakeRetryRunnable);
+        wakeRetries = 0;
+        loadHadError = false;
         errorPanel.setVisibility(View.GONE);
         setupPanel.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
@@ -258,6 +293,10 @@ public class MainActivity extends Activity {
             showSetup();
             return;
         }
+        mainHandler.removeCallbacks(wakeRetryRunnable);
+        wakeRetries = 0;
+        loadHadError = false;
+        errorPanel.setVisibility(View.GONE);
         webView.reload();
     }
 
@@ -267,6 +306,8 @@ public class MainActivity extends Activity {
         webView.setVisibility(View.GONE);
         showLanHint();
         if (serverInput != null) {
+            String saved = prefs == null ? "" : prefs.getString(KEY_SERVER, "");
+            serverInput.setText(TextUtils.isEmpty(saved) ? defaultServer() : saved);
             serverInput.requestFocus();
         }
     }
@@ -341,6 +382,52 @@ public class MainActivity extends Activity {
         return SURFACE_PHONE;
     }
 
+    /**
+     * The server address baked into this build at compile time
+     * (android/default-server.txt becomes the kivo_default_server resource),
+     * or "" when this build ships without one. Read by identifier, because the
+     * resource only exists when the file had a URL in it.
+     */
+    private String defaultServer() {
+        try {
+            int id = getResources().getIdentifier("kivo_default_server", "string", getPackageName());
+            if (id == 0) {
+                return "";
+            }
+            String value = normalizeServer(getString(id));
+            return value == null ? "" : value;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Error codes a sleeping free-tier cloud host produces while waking up.
+     * DNS failures and TLS problems are NOT wakeable — retrying those just
+     * burns the user's time, so they go straight to the error screen.
+     */
+    private static boolean isWakeableError(int code) {
+        return code == WebViewClient.ERROR_TIMEOUT
+                || code == WebViewClient.ERROR_CONNECT
+                || code == WebViewClient.ERROR_IO;
+    }
+
+    /**
+     * Shows the "waking the cloud" note and schedules one more load attempt.
+     * Returns false when the bounded retries are used up — the caller then
+     * shows the real error screen.
+     */
+    private boolean scheduleWakeRetry() {
+        if (wakeRetries >= MAX_WAKE_RETRIES) {
+            return false;
+        }
+        wakeRetries += 1;
+        showError(getString(R.string.waking_server, wakeRetries, MAX_WAKE_RETRIES));
+        mainHandler.removeCallbacks(wakeRetryRunnable);
+        mainHandler.postDelayed(wakeRetryRunnable, WAKE_RETRY_DELAY_MS);
+        return true;
+    }
+
     private static boolean isLoopback(String server) {
         String host;
         try {
@@ -358,6 +445,13 @@ public class MainActivity extends Activity {
     /** The phone's own Wi-Fi IPs, so the user knows which subnet to type. */
     private void showLanHint() {
         if (setupHint == null) {
+            return;
+        }
+        // A cloud build has a server baked in — the picker is only ever opened
+        // deliberately (menu → Change server), so teach the LAN story briefly.
+        String baked = defaultServer();
+        if (!TextUtils.isEmpty(baked)) {
+            setupHint.setText(getString(R.string.setup_hint_default, baked));
             return;
         }
         String ips = lanAddresses();
@@ -674,6 +768,11 @@ public class MainActivity extends Activity {
             if (progressBar != null) {
                 progressBar.setVisibility(View.GONE);
             }
+            if (!loadHadError) {
+                // A page really finished: the server is awake and answering.
+                wakeRetries = 0;
+                errorPanel.setVisibility(View.GONE);
+            }
         }
 
         @Override
@@ -681,7 +780,14 @@ public class MainActivity extends Activity {
             if (request == null || !request.isForMainFrame() || error == null) {
                 return;
             }
-            showError(describeError(error.getErrorCode(), error.getDescription()));
+            loadHadError = true;
+            int code = error.getErrorCode();
+            // A sleeping free-tier cloud host times out on the first load —
+            // retry quietly (bounded) before admitting defeat on screen.
+            if (isWakeableError(code) && scheduleWakeRetry()) {
+                return;
+            }
+            showError(describeError(code, error.getDescription()));
         }
 
         @Override
@@ -689,7 +795,12 @@ public class MainActivity extends Activity {
             if (request == null || !request.isForMainFrame() || response == null) {
                 return;
             }
+            loadHadError = true;
             int status = response.getStatusCode();
+            // Some edge proxies answer 502/503 while the cloud instance boots.
+            if ((status == 502 || status == 503) && scheduleWakeRetry()) {
+                return;
+            }
             showError(status == 404
                     ? getString(R.string.err_http_404, currentServer + currentSurface)
                     : getString(R.string.err_http_generic, String.valueOf(status), currentServer + currentSurface));

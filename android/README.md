@@ -28,11 +28,21 @@ points at. On a `push` to `main` the workflow rebuilds it and commits the verifi
 
 1. Copy `kivo.apk` to the phone (USB, Drive, or open `/download/apk` in the phone's browser).
 2. Open it and allow **"install unknown apps"** for the browser/files app.
-3. First launch asks for the **server address**. Start the backend on your computer
+3. First launch asks for the **server address** — unless the build has a **baked-in default**
+   (see [`default-server.txt`](default-server.txt)), in which case it opens straight into that
+   server, every time. For a LAN demo, start the backend on your computer
    (`cd backend && npm start`) and type that computer's LAN address, e.g. `http://192.168.1.7:8080`.
    The screen shows this phone's own Wi-Fi IPs so you know which subnet to look in.
 4. `localhost` / `127.0.0.1` will not work — on a phone, localhost is the phone. The app
    says so if you try.
+
+#### Baked-in default server (cloud mode)
+
+Put the permanent URL as the first non-comment line of [`default-server.txt`](default-server.txt)
+and rebuild: the first-run screen disappears, the app auto-connects, and a sleeping free-tier
+cloud host is handled by a bounded auto-retry ("waking the cloud… attempt 1 of 2") before any
+error screen. The menu's **Change server…** entry still opens the picker for a laptop-on-Wi-Fi
+demo.
 
 > **Signature note.** An update only installs over an existing app when both are signed with
 > the *same* key. CI reuses one cached key, so successive CI builds update cleanly. If you build
@@ -45,6 +55,7 @@ points at. On a `push` to `main` the workflow rebuilds it and commits the verifi
 |---|---|
 | Launcher icon (adaptive + legacy, every density) | `app/src/main/res/mipmap-*`, generated from `frontend/icons` by `tools/make_icons.py` |
 | Server picker on first run, with the phone's LAN IPs | `MainActivity.showLanHint()` / `res/layout/activity_main.xml` |
+| Baked-in default server (`default-server.txt`) + bounded "waking the cloud" auto-retry | `defaultServer()` / `scheduleWakeRetry()` in `MainActivity` |
 | Camera + microphone for `getUserMedia` (report scanner, voice journal) | `KivoChromeClient.onPermissionRequest` → runtime permissions → `PermissionRequest.grant` |
 | Gallery fallback for `<input type="file">` | `KivoChromeClient.onShowFileChooser` |
 | Surface switcher: `/m/` phone app, `/app/` dashboard, `/doctor/` console | overflow menu → `openSurface()` |

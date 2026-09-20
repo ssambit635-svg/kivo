@@ -16,7 +16,12 @@
  *
  * Safe to re-run: exits with a notice when the demo account already exists.
  * Usage:  node scripts/seed-demo.js
+ *
+ * Also importable: `seedDemo()` is used by the server itself when
+ * SEED_DEMO_ON_BOOT=1 (cloud hosts wipe the disk on restart; this restores the
+ * demo journey every boot).
  */
+import { pathToFileURL } from 'node:url';
 import { Container } from '../src/container/Container.js';
 
 const EMAIL = 'demo@kivo.dev';
@@ -75,7 +80,7 @@ const REPORT_JUN = [
   '----- END OF REPORT -----',
 ].join('\n');
 
-async function main() {
+export async function seedDemo() {
   const c = new Container(); // default config → data/medtwin.db (same file the server uses)
 
   if (c.userRepository.emailExists(EMAIL)) {
@@ -208,7 +213,12 @@ async function main() {
   c.close();
 }
 
-main().catch((err) => {
-  console.error('seed failed:', err);
-  process.exit(1);
-});
+// CLI entry point — skip when imported by the server (SEED_DEMO_ON_BOOT).
+const invokedDirectly = process.argv[1]
+  && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) {
+  seedDemo().catch((err) => {
+    console.error('seed failed:', err);
+    process.exit(1);
+  });
+}

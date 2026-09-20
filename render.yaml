@@ -1,0 +1,47 @@
+# Render Blueprint — the permanent, zero-laptop kivo deployment.
+#
+# One FREE web service runs the entire product: the API, the patient app (/m/,
+# /app/), the doctor console (/doctor/) and the APK download all come from this
+# single Node process + SQLite — no external services, nothing to pay for.
+#
+# One-time setup (≈3 minutes, browser only):
+#   1. Push this file to your GitHub repo's main branch.
+#   2. Click the "Deploy to Render" button in README.md (or render.com →
+#      New + → Blueprint → pick this repo).
+#   3. Render reads this file, provisions the free service and gives you a
+#      permanent https URL. Every push to main auto-deploys from then on.
+#
+# Free-tier notes (fine for a hackathon MVP, stated honestly):
+#   - The disk is ephemeral. SEED_DEMO_ON_BOOT (below) re-seeds the demo
+#     journey — patient, doctor, 3 reports, care plans, shorts — at every
+#     boot, so the app is always demo-ready. Accounts created by judges live
+#     until the next restart/deploy; a paid instance + disk removes this.
+#   - The service sleeps after ~15 min idle; the first visitor wakes it
+#     (~30-60 s). The APK retries through this automatically, and the
+#     optional keep-alive workflow (`.github/workflows/keep-alive.yml`)
+#     prevents it entirely during demo days.
+
+services:
+  - type: web
+    name: kivo-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    autoDeploy: true
+    buildCommand: npm ci && (npm run ocr:setup || echo "[warn] OCR language data not vendored — image OCR will fall back to the CDN at runtime")
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      # Config refuses to boot in production without a real secret — Render
+      # generates a strong random one on first deploy.
+      - key: JWT_SECRET
+        generateValue: true
+      # Restore the demo journey after every restart (ephemeral disk).
+      - key: SEED_DEMO_ON_BOOT
+        value: "1"
+      - key: MAX_UPLOAD_MB
+        value: "10"

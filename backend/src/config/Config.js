@@ -29,6 +29,13 @@ export class Config {
     // --- persistence -----------------------------------------------------
     this.dbPath = env.DB_PATH || (this.isTest ? ':memory:' : 'data/medtwin.db');
     this.uploadDir = env.UPLOAD_DIR || 'uploads';
+
+    // --- demo seed on boot -------------------------------------------------
+    // Cloud hosts (Render free tier etc.) wipe the disk on every restart. With
+    // SEED_DEMO_ON_BOOT=1 the server re-seeds the demo journey at startup, so
+    // the deployed app always has the demo patient, doctor and reports ready.
+    // Harmless when data already exists — the seed exits with a notice.
+    this.seedOnBoot = ['1', 'true', 'yes'].includes(String(env.SEED_DEMO_ON_BOOT || '').toLowerCase());
     // Phone cameras (esp. 50MP+ sensors) produce multi-MB originals; the PWA
     // downscales before upload, but gallery picks can still be large — 10 MB
     // default keeps real phones working while staying abuse-safe.
