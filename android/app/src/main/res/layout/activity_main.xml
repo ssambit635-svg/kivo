@@ -10,13 +10,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/window_background"
-    android:fitsSystemWindows="true"
+    android:fitsSystemWindows="false"
     android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/native_bar"
         android:layout_width="match_parent"
         android:layout_height="@dimen/native_bar_height"
+        android:fitsSystemWindows="true"
         android:background="@color/brand"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -84,6 +85,7 @@
             android:layout_height="match_parent"
             android:background="@color/window_background"
             android:fillViewport="true"
+            android:fitsSystemWindows="true"
             android:visibility="gone">
 
             <LinearLayout
@@ -177,6 +179,7 @@
             android:layout_height="match_parent"
             android:background="@color/window_background"
             android:fillViewport="true"
+            android:fitsSystemWindows="true"
             android:visibility="gone">
 
             <LinearLayout

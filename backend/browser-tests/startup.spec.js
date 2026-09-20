@@ -12,6 +12,35 @@ async function signIn(page, email = 'demo@kivo.dev', password = 'Kivo!Demo#2026'
   await page.locator('#auth-submit').click();
 }
 
+// The 2026 Celeste redesign retired the topbar logout pill; signing out now
+// lives in Profile (avatar -> Sign out), so the journeys follow the real UX.
+async function settled(page) {
+  // the first-light splash owns the screen for ~2s after boot
+  await page.locator('#splash').waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
+  // personalization onboarding + the AI robot welcome own the screen for
+  // fresh profiles; the journeys under test live behind them.
+  const dismiss = async () => page.evaluate(() => {
+    for (const id of ['onboarding', 'bot-welcome']) {
+      const n = document.getElementById(id);
+      if (n && n.parentNode) n.parentNode.removeChild(n);
+    }
+    document.body.style.overflow = '';
+  });
+  for (let i = 0; i < 6; i++) {
+    const covered = await page.evaluate(() =>
+      !!document.getElementById('onboarding') || !!document.getElementById('bot-welcome'));
+    if (!covered) break;
+    await dismiss();
+    await page.waitForTimeout(600); // let the skip->bot cascade settle
+  }
+}
+
+async function signOut(page) {
+  await settled(page);
+  await page.locator('#topbar-avatar').click();
+  await page.locator('#page-profile .link-row', { hasText: 'Sign out' }).click();
+}
+
 // Mirrors Android's bundled /native/ document/asset responses, not its API.
 // Device-level WebView/permissions still need a real phone check.
 async function nativeShell(page) {
@@ -40,6 +69,8 @@ test('old mobile URL opens login, not sample data; patient features use the API'
   await signIn(page);
   await expect(page.locator('#dash-view')).toBeVisible();
   await expect(page.locator('#member-name')).not.toHaveText('—');
+  await settled(page);
+  await page.locator('#nav-ask').click(); // Ask lives on its own tab since the 2026 redesign
   await page.locator('#ask-input').fill('What changed in my health?');
   const ask = page.waitForResponse(r => r.url().includes('/ask') && r.request().method() === 'POST');
   await page.locator('#ask-send').click();
@@ -47,7 +78,7 @@ test('old mobile URL opens login, not sample data; patient features use the API'
   await page.locator('#nav-care').click();
   await expect(page.locator('#care-view')).toBeVisible();
   await expect(page.locator('#care-view')).toContainText('Care');
-  await page.locator('#btn-logout').click();
+  await signOut(page);
   await expect(page.locator('#auth-view')).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -80,7 +111,7 @@ test('native cold launch KEEPS the session — only signing out ends it', async 
   await expect(page.locator('#dash-view')).toBeVisible();
 
   // Sign out is the one thing that ends the session.
-  await page.locator('#btn-logout').click();
+  await signOut(page);
   await expect(page.locator('#auth-view')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('mt.tokens'))).toBeNull();
 });

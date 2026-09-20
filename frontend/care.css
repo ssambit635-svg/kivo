@@ -14,7 +14,7 @@
 .care-teaser-card{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
   padding:14px 16px; margin-bottom:16px;
-  background:linear-gradient(135deg,#FFFFFF 0%, #F0FDFA 100%);
+  background:linear-gradient(135deg,#FFFFFF 0%, #F5F3FF 100%);
   border-radius:20px; border:1px solid var(--line); box-shadow:var(--shadow-sm);
 }
 .care-teaser-main{ display:flex; align-items:flex-start; gap:10px; min-width:0; }
@@ -25,7 +25,7 @@
 .care-plan-main{ display:flex; flex-direction:column; }
 .care-plan-main strong{ font-size:15px; font-weight:800; }
 .care-actions{ display:flex; flex-wrap:wrap; gap:8px; }
-.chip.demo{ background:#EEF2FF; color:#3730A3; border:1px dashed #A5B4FC; font-weight:800; letter-spacing:.04em; }
+.chip.demo{ background:var(--violet-soft); color:var(--violet); border:1px dashed rgba(139,124,246,.5); font-weight:800; letter-spacing:.04em; }
 
 .care-list{ display:flex; flex-direction:column; gap:10px; }
 .care-consult{
@@ -33,7 +33,7 @@
   border:1px solid var(--line); border-radius:16px; padding:12px 14px; background:#fff;
   cursor:pointer; transition:all .22s;
 }
-.care-consult:hover{ background:#F0FDFA; border-color:#99F6E0; transform:translateY(-1px); box-shadow:var(--shadow-sm); }
+.care-consult:hover{ background:var(--teal-ghost); border-color:rgba(110,123,247,.35); transform:translateY(-1px); box-shadow:var(--shadow-sm); }
 .care-consult-main{ display:flex; flex-direction:column; min-width:0; }
 .care-consult-main strong{ font-size:14px; font-weight:700; }
 
@@ -67,15 +67,16 @@
 .short-card:hover{ transform:translateY(-2px); }
 .short-poster{
   position:relative; display:block; aspect-ratio:9/13; border-radius:16px; overflow:hidden;
-  background:linear-gradient(160deg,#0F766E 0%, #134E4A 55%, #0B1220 100%);
+  background:linear-gradient(160deg,#7B6CF6 0%, #5563EA 55%, #23306B 100%);
   box-shadow:var(--shadow-md);
 }
-.short-poster[data-topic='cardiology']{ background:linear-gradient(160deg,#B91C1C 0%, #7F1D1D 60%, #1F1315 100%); }
-.short-poster[data-topic='endocrinology']{ background:linear-gradient(160deg,#B45309 0%, #78350F 60%, #1A1207 100%); }
-.short-poster[data-topic='dermatology']{ background:linear-gradient(160deg,#BE185D 0%, #831843 60%, #1B0F16 100%); }
-.short-poster[data-topic='psychiatry']{ background:linear-gradient(160deg,#4F46E5 0%, #312E81 60%, #111034 100%); }
-.short-poster[data-topic='paediatrics']{ background:linear-gradient(160deg,#0891B2 0%, #0E7490 60%, #082F36 100%); }
-.short-poster[data-topic='nutrition']{ background:linear-gradient(160deg,#15803D 0%, #14532D 60%, #08130C 100%); }
+.short-poster[data-topic='orthopaedics']{ background:linear-gradient(160deg,#8FB7FF 0%, #4E9AF5 55%, #1E3A8A 100%); }
+.short-poster[data-topic='cardiology']{ background:linear-gradient(160deg,#FF8E8E 0%, #E5484D 55%, #5B1D2C 100%); }
+.short-poster[data-topic='endocrinology']{ background:linear-gradient(160deg,#FFC96B 0%, #E88B00 55%, #5C3A0A 100%); }
+.short-poster[data-topic='dermatology']{ background:linear-gradient(160deg,#FF9ECF 0%, #D6408B 55%, #4E1638 100%); }
+.short-poster[data-topic='psychiatry']{ background:linear-gradient(160deg,#A5B4FC 0%, #6E7BF7 55%, #232B72 100%); }
+.short-poster[data-topic='paediatrics']{ background:linear-gradient(160deg,#7DD3FC 0%, #0EA5C9 55%, #0B3A46 100%); }
+.short-poster[data-topic='nutrition']{ background:linear-gradient(160deg,#86EFAC 0%, #16A34A 55%, #0B3B1E 100%); }
 .short-play{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:#fff; opacity:.92; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.18); backdrop-filter:blur(8px); display:inline-flex; align-items:center; justify-content:center; }
 .short-dur{ position:absolute; right:8px; bottom:8px; font-size:11px; color:#fff; background:rgba(0,0,0,.45); border-radius:9999px; padding:2px 8px; font-weight:700; backdrop-filter:blur(6px); }
 .short-free{ position:absolute; left:8px; top:8px; font-size:10px; font-weight:800; letter-spacing:.06em; color:#065F46; background:#D1FAE5; border-radius:9999px; padding:3px 8px; }
@@ -129,11 +130,11 @@
   display:flex; flex-direction:column; gap:6px;
   border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin:10px 0; font-size:13.5px; background:#fff;
 }
-.consent-box{ flex-direction:row; align-items:center; gap:10px; color:var(--teal-dark); background:var(--teal-ghost); border-color:#99F6E0; }
+.consent-box{ flex-direction:row; align-items:center; gap:10px; color:var(--teal-dark); background:var(--teal-ghost); border-color:rgba(110,123,247,.3); }
 .consent-box.muted-box{ color:var(--muted); background:var(--card-2); border-color:var(--line); }
 .consent-box .btn{ margin-left:auto; }
-.reply-box{ background:#F0FDFA; border-color:#99F6E0; }
-.med-box{ background:#EEF2FF; border-color:#C7D2FE; }
+.reply-box{ background:var(--sky-soft); border-color:rgba(62,139,255,.3); }
+.med-box{ background:var(--violet-soft); border-color:rgba(139,124,246,.3); }
 .med-row{ display:flex; flex-direction:column; border-top:1px solid rgba(79,70,229,.12); padding-top:8px; margin-top:6px; }
 
 .thread{ display:flex; flex-direction:column; gap:10px; margin:10px 0; }
@@ -147,11 +148,12 @@
 .link-row{ display:flex; align-items:center; gap:10px; border:1px solid var(--line); background:#fff; border-radius:12px; padding:10px 12px; font:inherit; font-size:13px; text-align:left; cursor:pointer; transition:all .2s; font-weight:600; }
 .link-row:hover{ border-color:var(--teal); background:var(--teal-ghost); transform:translateY(-1px); }
 
-.story{ position:relative; display:flex; flex-direction:column; justify-content:flex-end; min-height:340px; border-radius:20px; padding:16px; color:#fff; background:linear-gradient(165deg,#0F766E,#0B3F3A 60%, #07141C); box-shadow:var(--shadow-lg); }
-.story[data-topic='cardiology']{ background:linear-gradient(165deg,#B91C1C,#7F1D1D 60%, #1B0D0D); }
-.story[data-topic='endocrinology']{ background:linear-gradient(165deg,#B45309,#78350F 60%, #1B1206); }
-.story[data-topic='dermatology']{ background:linear-gradient(165deg,#BE185D,#831843 60%, #1B0F16); }
-.story[data-topic='psychiatry']{ background:linear-gradient(165deg,#4F46E5,#312E81 60%, #101033); }
+.story{ position:relative; display:flex; flex-direction:column; justify-content:flex-end; min-height:340px; border-radius:20px; padding:16px; color:#fff; background:linear-gradient(165deg,#7B6CF6,#4350C7 60%, #1B2452); box-shadow:var(--shadow-lg); }
+.story[data-topic='orthopaedics']{ background:linear-gradient(165deg,#8FB7FF,#4E9AF5 50%, #1E3A8A); }
+.story[data-topic='cardiology']{ background:linear-gradient(165deg,#FF8E8E,#E5484D 60%, #5B1D2C); }
+.story[data-topic='endocrinology']{ background:linear-gradient(165deg,#FFC96B,#E88B00 60%, #5C3A0A); }
+.story[data-topic='dermatology']{ background:linear-gradient(165deg,#FF9ECF,#D6408B 60%, #4E1638); }
+.story[data-topic='psychiatry']{ background:linear-gradient(165deg,#A5B4FC,#6E7BF7 60%, #232B72); }
 .story-progress{ position:absolute; left:12px; right:12px; top:12px; height:3px; background:rgba(255,255,255,.25); border-radius:9999px; overflow:hidden; }
 .story-progress span{ display:block; height:100%; width:0; background:#fff; border-radius:9999px; }
 .story-doctor{ font-size:12px; opacity:.85; margin-bottom:8px; font-weight:600; }
@@ -166,4 +168,4 @@
 .foot-doctor a{ color:var(--teal-dark); font-weight:700; text-decoration:none; }
 .foot-doctor a:hover{ text-decoration:underline; }
 .care-doctors{ display:flex; flex-direction:column; gap:10px; }
-.chip.teal{ background:var(--teal-soft); color:var(--teal-dark); border-color:#99F6E0; }
+.chip.teal{ background:var(--teal-soft); color:var(--teal-dark); border-color:rgba(110,123,247,.3); }
