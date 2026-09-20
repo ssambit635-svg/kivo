@@ -358,11 +358,17 @@ jobs:
               echo
             fi
             if [ -f dist/build.log ]; then
-              echo "## gradle output (tail)"
+              echo "## compiler / tool errors (with context)"
               echo
               echo '```'
-              grep -Ei "error|warning: |FAILURE|Caused by|What went wrong|> Task|BUILD " dist/build.log \
-                | tail -120 || tail -120 dist/build.log
+              grep -n -B 2 -A 8 -E "error:|FAILURE:|What went wrong|Execution failed|Caused by:|AAPT|aapt2|Note:|\* Where" dist/build.log \
+                | head -200 || true
+              echo '```'
+              echo
+              echo "## task log (tail)"
+              echo
+              echo '```'
+              tail -60 dist/build.log
               echo '```'
             else
               echo "## gradle output"

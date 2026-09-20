@@ -448,7 +448,7 @@ public class MainActivity extends Activity {
         }
         String message = getString(
                 R.string.about_body,
-                packageName(),
+                getPackageName(),
                 versionName(),
                 versionCode(),
                 TextUtils.isEmpty(currentServer) ? getString(R.string.about_no_server) : currentServer,
