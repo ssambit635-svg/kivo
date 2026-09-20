@@ -10,7 +10,7 @@
  * separate frontend for a separate role, and clinical screens should never be
  * served stale from a cache.
  */
-const VERSION = 'kivo-v4-obsidian';
+const VERSION = 'kivo-v6-celeste';
 const SHELL = [
   '/app/',
   '/app/index.html',
@@ -27,11 +27,20 @@ const SHELL = [
   '/app/icons/icon-192.png',
   '/app/icons/icon-512.png',
   '/app/icons/maskable-512.png',
-  '/app/fonts/inter-latin-400-normal.woff2',
-  '/app/fonts/inter-latin-500-normal.woff2',
-  '/app/fonts/inter-latin-600-normal.woff2',
+  '/app/fonts/plus-jakarta-sans-latin-400-normal.woff2',
+  '/app/fonts/plus-jakarta-sans-latin-500-normal.woff2',
+  '/app/fonts/plus-jakarta-sans-latin-600-normal.woff2',
+  '/app/fonts/plus-jakarta-sans-latin-700-normal.woff2',
+  '/app/fonts/plus-jakarta-sans-latin-800-normal.woff2',
   '/app/img/hero-run.jpg',
   '/app/img/avatar-user.jpg',
+  '/app/img/walk.jpg',
+  '/app/img/doc-1.jpg',
+  '/app/img/doc-2.jpg',
+  '/app/img/doc-3.jpg',
+  '/app/img/doc-4.jpg',
+  '/app/img/short-knee.jpg',
+  '/app/img/short-desk.jpg',
 ];
 
 self.addEventListener('install', (event) => {

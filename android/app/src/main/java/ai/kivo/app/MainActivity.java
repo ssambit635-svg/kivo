@@ -120,6 +120,21 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Edge-to-edge "heaven" canvas: the web app draws its own safe-area
+        // chrome (sticky pearl topbar, floating dock), so the WebView flows
+        // under the system bars. Both bars stay transparent with dark glyphs;
+        // the setup/error panels and the native bar inset themselves.
+        final View decor = getWindow().getDecorView();
+        final int edgeFlags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        decor.setSystemUiVisibility(edgeFlags);
+        getWindow().setStatusBarColor(0x00000000);
+        getWindow().setNavigationBarColor(0x00000000);
+        decor.setOnSystemUiVisibilityChangeListener(v -> decor.setSystemUiVisibility(edgeFlags));
+
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
 
         nativeBar = findViewById(R.id.native_bar);
@@ -127,6 +142,7 @@ public class MainActivity extends Activity {
         barServer = findViewById(R.id.bar_server);
         progressBar = findViewById(R.id.progress);
         webView = findViewById(R.id.web);
+        webView.setBackgroundColor(0xFFF5F7FC); // pearl canvas while the shell boots
         setupPanel = findViewById(R.id.setup_panel);
         errorPanel = findViewById(R.id.error_panel);
         errorDetail = findViewById(R.id.error_detail);

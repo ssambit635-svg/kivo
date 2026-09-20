@@ -80,6 +80,9 @@
   function showPage(name, opts) {
     if (PAGES.indexOf(name) < 0) name = 'home';
     currentPage = name;
+    // a tab page always replaces the Care surface — no stacked views
+    var cv = $('care-view');
+    if (cv && !cv.classList.contains('hidden') && App && App.showView) App.showView('dash');
     PAGES.forEach(function (p) {
       var el = $('page-' + p);
       if (el) el.classList.toggle('hidden', p !== name);
@@ -115,6 +118,8 @@
     if (navHome) navHome.addEventListener('click', function () { showPage('home'); });
     if (navInsights) navInsights.addEventListener('click', function () { showPage('insights'); });
     if (navAsk) navAsk.addEventListener('click', function () { showPage('ask'); });
+    var avatar = $('topbar-avatar');
+    if (avatar) avatar.addEventListener('click', function () { showPage('profile'); });
     ['care-view', 'dash-view', 'auth-view'].forEach(function (id) {
       var el = $(id);
       if (!el || !window.MutationObserver) return;
@@ -189,30 +194,30 @@
     return '<svg class="bot-svg" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kivo robot">' +
       '<defs>' +
       '<linearGradient id="botBody" x1="60" y1="40" x2="160" y2="200" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#1B2836"/><stop offset="1" stop-color="#0D141D"/></linearGradient>' +
+      '<stop stop-color="#3A4A7E"/><stop offset="1" stop-color="#1B2550"/></linearGradient>' +
       '<linearGradient id="botFace" x1="70" y1="70" x2="150" y2="140" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#04241C"/><stop offset="1" stop-color="#062E3A"/></linearGradient>' +
+      '<stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#E4EDFF"/></linearGradient>' +
       '<linearGradient id="botAcc" x1="0" y1="0" x2="220" y2="220" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#46F3C3"/><stop offset="1" stop-color="#23CBE0"/></linearGradient>' +
+      '<stop stop-color="#4E9AF5"/><stop offset="1" stop-color="#8B7CF6"/></linearGradient>' +
       '</defs>' +
-      '<ellipse cx="110" cy="204" rx="52" ry="8" fill="rgba(70,243,195,.14)"/>' +
+      '<ellipse cx="110" cy="204" rx="52" ry="8" fill="rgba(123,108,246,.16)"/>' +
       '<line x1="110" y1="18" x2="110" y2="38" stroke="url(#botAcc)" stroke-width="4" stroke-linecap="round"/>' +
-      '<circle class="bot-antenna-dot" cx="110" cy="14" r="7" fill="#46F3C3"/>' +
-      '<circle cx="110" cy="14" r="12" stroke="rgba(70,243,195,.35)" stroke-width="2"/>' +
-      '<rect x="55" y="38" width="110" height="112" rx="34" fill="url(#botBody)" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>' +
-      '<rect x="72" y="58" width="76" height="56" rx="22" fill="url(#botFace)" stroke="rgba(70,243,195,.35)" stroke-width="1.5"/>' +
-      '<g class="bot-eye" style="transform-origin:97px 86px"><circle cx="97" cy="86" r="7.5" fill="#46F3C3"/></g>' +
-      '<g class="bot-eye" style="transform-origin:123px 86px"><circle cx="123" cy="86" r="7.5" fill="#46F3C3"/></g>' +
-      '<path d="M100 100 Q110 108 120 100" stroke="#46F3C3" stroke-width="3.5" stroke-linecap="round"/>' +
-      '<rect x="88" y="128" width="44" height="8" rx="4" fill="rgba(70,243,195,.25)"/>' +
+      '<circle class="bot-antenna-dot" cx="110" cy="14" r="7" fill="#7B6CF6"/>' +
+      '<circle cx="110" cy="14" r="12" stroke="rgba(123,108,246,.35)" stroke-width="2"/>' +
+      '<rect x="55" y="38" width="110" height="112" rx="34" fill="url(#botBody)" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/>' +
+      '<rect x="72" y="58" width="76" height="56" rx="22" fill="url(#botFace)" stroke="rgba(123,108,246,.4)" stroke-width="1.5"/>' +
+      '<g class="bot-eye" style="transform-origin:97px 86px"><circle cx="97" cy="86" r="7.5" fill="#5563EA"/></g>' +
+      '<g class="bot-eye" style="transform-origin:123px 86px"><circle cx="123" cy="86" r="7.5" fill="#5563EA"/></g>' +
+      '<path d="M100 100 Q110 108 120 100" stroke="#5563EA" stroke-width="3.5" stroke-linecap="round"/>' +
+      '<rect x="88" y="128" width="44" height="8" rx="4" fill="rgba(255,255,255,.28)"/>' +
       '<path class="bot-arm" d="M55 92 Q30 96 26 118" stroke="url(#botAcc)" stroke-width="9" stroke-linecap="round"/>' +
-      '<circle cx="26" cy="118" r="7" fill="#46F3C3"/>' +
+      '<circle cx="26" cy="118" r="7" fill="#7B6CF6"/>' +
       '<path d="M165 92 Q188 96 192 112" stroke="url(#botAcc)" stroke-width="9" stroke-linecap="round"/>' +
-      '<circle cx="192" cy="112" r="7" fill="#46F3C3"/>' +
+      '<circle cx="192" cy="112" r="7" fill="#7B6CF6"/>' +
       '<path d="M78 150 L70 186" stroke="url(#botAcc)" stroke-width="9" stroke-linecap="round"/>' +
       '<path d="M142 150 L150 186" stroke="url(#botAcc)" stroke-width="9" stroke-linecap="round"/>' +
-      '<path d="M60 186 L80 186" stroke="rgba(255,255,255,.3)" stroke-width="9" stroke-linecap="round"/>' +
-      '<path d="M140 186 L160 186" stroke="rgba(255,255,255,.3)" stroke-width="9" stroke-linecap="round"/>' +
+      '<path d="M60 186 L80 186" stroke="rgba(15,27,61,.25)" stroke-width="9" stroke-linecap="round"/>' +
+      '<path d="M140 186 L160 186" stroke="rgba(15,27,61,.25)" stroke-width="9" stroke-linecap="round"/>' +
       '</svg>';
   }
 
@@ -665,13 +670,41 @@
     for (var i = 0; i < cards.length; i++) {
       var av = cards[i].querySelector('.avatar');
       if (av && !av.querySelector('img')) {
+        var who = cards[i].querySelector('.doctor-who strong');
         var img = document.createElement('img');
-        img.src = './img/doc-' + (i % 2 === 0 ? '1' : '2') + '.jpg';
+        img.src = docPhotoFor(who ? who.textContent : '');
         img.alt = '';
         av.innerHTML = '';
         av.appendChild(img);
       }
     }
+    // real photo posters for known shorts; the rest keep the dusk gradients
+    var shorts = view.querySelectorAll('.short-card');
+    for (var s = 0; s < shorts.length; s++) {
+      var poster = shorts[s].querySelector('.short-poster');
+      if (!poster || poster.querySelector('img')) continue;
+      var t = shorts[s].querySelector('.short-title');
+      var title = t ? t.textContent.toLowerCase() : '';
+      var src = '';
+      if (title.indexOf('knee') >= 0) src = './img/short-knee.jpg';
+      else if (title.indexOf('sitting') >= 0 || title.indexOf('back') >= 0) src = './img/short-desk.jpg';
+      if (src) {
+        var pimg = document.createElement('img');
+        pimg.src = src;
+        pimg.alt = '';
+        poster.insertBefore(pimg, poster.firstChild);
+      }
+    }
+  }
+
+  /* stable, human photo mapping for doctor cards */
+  function docPhotoFor(name) {
+    var n = String(name || '').toLowerCase();
+    if (n.indexOf('mohan') >= 0) return './img/doc-3.jpg';
+    if (n.indexOf('asha') >= 0 || n.indexOf('meera') >= 0) return './img/doc-1.jpg';
+    var h = 0;
+    for (var i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+    return './img/' + ['doc-1', 'doc-2', 'doc-4'][h % 3] + '.jpg';
   }
 
   /* ------------------------------------------------------------------ session flow */
