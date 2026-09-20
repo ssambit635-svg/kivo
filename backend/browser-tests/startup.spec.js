@@ -54,7 +54,8 @@ test('bundled native login appears even with no API; no server picker or downloa
 
 test('native cold launch KEEPS the session — only signing out ends it', async ({ page }) => {
   await nativeShell(page);
-  await page.goto('/native/');
+  await page.goto('/native/?login=1'); // no stored session yet → sign-in screen
+  await expect(page.locator('#auth-view')).toBeVisible();
   await signIn(page);
   await expect(page.locator('#dash-view')).toBeVisible();
 
