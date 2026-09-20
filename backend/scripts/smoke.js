@@ -670,7 +670,7 @@ async function main() {
   });
 
   // ---------------- care network: subscriptions + doctor console + shorts ----------------
-  let doctorTok, doctorId, careConsultationId, careVideoId, carePaidVideoId;
+  let doctorTok, doctorId, doctorEmail, doctorRegNo, careConsultationId, careVideoId, carePaidVideoId;
   await check('GET /api/public/plans (mock billing catalog)', async () => {
     const r = await req('GET', '/api/public/plans');
     expectStatus(r.status, 200, 'plans');
@@ -688,15 +688,17 @@ async function main() {
     expectStatus(r.status, 200, 'doctor console');
     if (!r.text.includes('<html')) throw new Error('no html');
   });
-  await check('POST /api/doctor/apply (mock KYC + doctor role)', async () => {
+  await check('POST /api/doctor/apply (registration-number certificate check + doctor role)', async () => {
+    doctorEmail = `dr.smoke+${Date.now()}@medtwin.dev`;
+    doctorRegNo = `MCI-SMOKE-${Date.now()}`;
     const r = await req('POST', '/api/doctor/apply', {
       body: {
-        email: `dr.smoke+${Date.now()}@medtwin.dev`,
+        email: doctorEmail,
         displayName: 'Dr Smoke Charan',
         password: PASSWORD,
         specialty: 'orthopaedics',
         headline: 'Bone & joint specialist',
-        registrationNo: `MCI-SMOKE-${Date.now()}`,
+        registrationNo: doctorRegNo,
         experienceYears: 11,
         city: 'Pune',
         consultFeeInr: 400,
@@ -708,6 +710,49 @@ async function main() {
     doctorId = r.json.doctor.id;
     if (!r.json.user.roles.includes('doctor')) throw new Error('role not granted');
     if (r.json.doctor.kyc.status !== 'mock_verified') throw new Error('kyc not mock-verified');
+    if (r.json.doctor.certificate.status !== 'verified') throw new Error('certificate not verified');
+    if (r.json.requiresCertificate !== false) throw new Error('requiresCertificate should be false');
+  });
+  await check('POST /api/auth/doctor-login (registration number must match the certificate on file)', async () => {
+    const ok = await req('POST', '/api/auth/doctor-login', {
+      body: { email: doctorEmail, password: PASSWORD, registrationNo: doctorRegNo },
+    });
+    expectStatus(ok.status, 200, 'doctor login');
+    if (ok.json.doctor?.id !== doctorId) throw new Error('wrong doctor profile');
+    if (ok.json.requiresCertificate !== false) throw new Error('certificate flag wrong');
+
+    const bad = await req('POST', '/api/auth/doctor-login', {
+      body: { email: doctorEmail, password: PASSWORD, registrationNo: 'MCI-000000' },
+    });
+    expectStatus(bad.status, 401, 'wrong registration number');
+    if (bad.json?.error?.code !== 'CERTIFICATE_MISMATCH') throw new Error(`code ${bad.json?.error?.code}`);
+
+    const notDoctor = await req('POST', '/api/auth/doctor-login', {
+      body: { email, password: NEW_PASSWORD, registrationNo: doctorRegNo },
+    });
+    expectStatus(notDoctor.status, 403, 'patient at the doctor door');
+    if (notDoctor.json?.error?.code !== 'NOT_A_DOCTOR_ACCOUNT') throw new Error(`code ${notDoctor.json?.error?.code}`);
+
+    const noReg = await req('POST', '/api/auth/doctor-login', {
+      body: { email: doctorEmail, password: PASSWORD },
+    });
+    expectStatus(noReg.status, 400, 'registration number is required');
+  });
+  await check('POST /api/doctor/certificate (document read; only its sha256 is kept)', async () => {
+    const certText = [
+      'MEDICAL COUNCIL OF INDIA — SMOKE FIXTURE',
+      'This is to certify that Dr Smoke Charan is registered to practise medicine.',
+      `Registration No: ${doctorRegNo}`,
+    ].join('\n');
+    const form = new FormData();
+    form.append('certificate', new Blob([certText], { type: 'text/plain' }), 'certificate.txt');
+    const r = await req('POST', '/api/doctor/certificate', { token: doctorTok, body: form, raw: true });
+    expectStatus(r.status, 200, 'certificate upload');
+    if (r.json.certificate.status !== 'verified') throw new Error(`status ${r.json.certificate.status}`);
+    if (r.json.certificate.method !== 'document_checked') throw new Error('method not document_checked');
+    if (!/^CERT-[0-9A-F]{12}$/.test(r.json.certificate.ref)) throw new Error('bad certificate ref');
+    if (!/^[0-9a-f]{64}$/.test(r.json.certificate.document?.sha256 || '')) throw new Error('no document fingerprint');
+    if (JSON.stringify(r.json).includes('MEDICAL COUNCIL')) throw new Error('certificate text echoed back');
   });
   await check('GET /api/doctor/overview', async () => {
     const r = await req('GET', '/api/doctor/overview', { token: doctorTok });

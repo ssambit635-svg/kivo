@@ -160,6 +160,39 @@
   /* ---------------------------------------------------------------- */
 
   var authMode = 'login';
+  var authRole = 'patient'; // 'patient' | 'doctor' — the two sign-in toggles
+
+  function syncAuthCopy() {
+    var isDoctor = authRole === 'doctor';
+    var isLogin = authMode === 'login';
+    $('role-patient').classList.toggle('active', !isDoctor);
+    $('role-doctor').classList.toggle('active', isDoctor);
+    $('role-patient').setAttribute('aria-selected', String(!isDoctor));
+    $('role-doctor').setAttribute('aria-selected', String(isDoctor));
+    if ($('auth-mode-tabs')) $('auth-mode-tabs').classList.toggle('hidden', isDoctor);
+    $('row-name').classList.toggle('hidden', isDoctor || isLogin);
+    $('row-regno').classList.toggle('hidden', !isDoctor);
+    $('auth-note').classList.toggle('hidden', !isDoctor);
+    $('auth-apply-hint').classList.toggle('hidden', !isDoctor);
+    $('auth-demo-hint').classList.toggle('hidden', isDoctor);
+    $('auth-heading').textContent = isDoctor
+      ? 'Doctor sign in'
+      : (isLogin ? 'Welcome back' : 'Create your kivo profile');
+    $('auth-subtitle').textContent = isDoctor
+      ? 'Your registration number is checked against your medical council certificate, then the console opens.'
+      : 'Sign in to see your kivo come alive.';
+    $('auth-submit').textContent = isDoctor
+      ? 'Open the doctor console'
+      : (isLogin ? 'Sign in' : 'Create account');
+    $('auth-error').classList.add('hidden');
+  }
+
+  function setAuthRole(role) {
+    authRole = role === 'doctor' ? 'doctor' : 'patient';
+    if (authRole === 'doctor') authMode = 'login'; // doctors sign in (or apply in the console)
+    try { localStorage.setItem('mt.lastRole', authRole); } catch (e) { /* private mode */ }
+    syncAuthCopy();
+  }
 
   function showAuth() {
     $('dash-view').classList.add('hidden');
@@ -167,6 +200,7 @@
     $('auth-view').classList.remove('hidden');
     var care = $('care-view');
     if (care) care.classList.add('hidden');
+    try { syncAuthCopy(); } catch (e) { /* markup unchanged */ }
   }
 
   function showDash() {
@@ -210,10 +244,15 @@
     var isLogin = mode === 'login';
     $('tab-login').classList.toggle('active', isLogin);
     $('tab-register').classList.toggle('active', !isLogin);
-    $('row-name').classList.toggle('hidden', isLogin);
-    $('auth-heading').textContent = isLogin ? 'Welcome back' : 'Create your kivo profile';
-    $('auth-submit').textContent = isLogin ? 'Sign in' : 'Create account';
-    $('auth-error').classList.add('hidden');
+    $('in-password').setAttribute('autocomplete', isLogin ? 'current-password' : 'new-password');
+    syncAuthCopy();
+  }
+
+  /** Hand the freshly obtained doctor session to the doctor console. */
+  function handoffToDoctorConsole() {
+    try { sessionStorage.setItem('kivo.role-handoff', JSON.stringify(state.tokens)); } catch (e) { /* console can sign in directly */ }
+    clearTokens();
+    location.href = '/doctor/';
   }
 
   function onAuthSubmit(ev) {
@@ -222,8 +261,41 @@
     var password = $('in-password').value;
     var errBox = $('auth-error');
     errBox.classList.add('hidden');
-    $('auth-submit').disabled = true;
 
+    if (authRole === 'doctor') {
+      var regno = $('in-regno').value.trim();
+      if (!regno) {
+        errBox.textContent = 'Enter your medical council registration number (for example MCI-123456).';
+        errBox.classList.remove('hidden');
+        return;
+      }
+      $('auth-submit').disabled = true;
+      window.KivoConnection.ensureReady()
+        .then(function () {
+          return api('/auth/doctor-login', {
+            method: 'POST', body: { email: email, password: password, registrationNo: regno },
+          }, false);
+        })
+        .then(function (session) {
+          saveTokens({ accessToken: session.accessToken, refreshToken: session.refreshToken });
+          state.user = session.user;
+          notifySession();
+          // Doctors always work in the role-separated console.
+          handoffToDoctorConsole();
+        })
+        .catch(function (err) {
+          errBox.textContent = err instanceof TypeError
+            ? 'Cannot connect right now. Check your internet and try again.'
+            : (err.message || 'Please try again.');
+          errBox.classList.remove('hidden');
+        })
+        .finally(function () {
+          $('auth-submit').disabled = false;
+        });
+      return;
+    }
+
+    $('auth-submit').disabled = true;
     var mode = authMode;
     var displayName = $('in-name').value.trim() || email.split('@')[0];
     var promise = window.KivoConnection.ensureReady().then(function () {
@@ -236,16 +308,17 @@
     });
 
     promise.then(function (session) {
+      if (session.user && session.user.accountType === 'doctor') {
+        // Right credentials, wrong toggle: switch the form over instead of
+        // bouncing them out, so the only missing piece is the reg. number.
+        setAuthRole('doctor');
+        errBox.textContent = 'This is a doctor account — add your medical registration number to open the doctor console.';
+        errBox.classList.remove('hidden');
+        return null;
+      }
       saveTokens({ accessToken: session.accessToken, refreshToken: session.refreshToken });
       state.user = session.user;
       notifySession();
-      if (session.user && session.user.accountType === 'doctor') {
-        // Two user categories, two frontends: doctors work in the console.
-        try { sessionStorage.setItem('kivo.role-handoff', JSON.stringify(state.tokens)); } catch (e) { /* doctor can sign in directly */ }
-        clearTokens();
-        location.href = '/doctor/';
-        return null;
-      }
       return bootDashboard();
     }).catch(function (err) {
       errBox.textContent = err instanceof TypeError ? 'Cannot connect right now. Check your internet and try again.' : (err.message || 'Please try again.');
@@ -1056,7 +1129,7 @@
       }
     }
     if(list.length===0){
-      host.appendChild(el('pre',{text: JSON.stringify(data,null,2), style:'font-size:11px; white-space:pre-wrap; background:#f6f8f9; padding:10px; border-radius:8px;'}));
+      host.appendChild(emptyState('trending-up','No trend lines yet — verify another report and kivo can compare the readings.'));
       return;
     }
     list.slice(0,8).forEach(function(t){
@@ -1099,27 +1172,87 @@
     host.appendChild(card);
   }
 
+  var AREA_LABEL = {
+    activity: 'Movement',
+    sleep: 'Sleep',
+    nutrition: 'Food & weight',
+    lifestyle: 'Lifestyle',
+    general: 'General',
+  };
+
+  /**
+   * Guidance is written to be READ: the API returns fixed, plain-language notes
+   * (`items[].title/body/why` + the recorded `inputs` behind each one), a short
+   * narrative, the context it was computed from and a disclaimer. Anything that
+   * used to fall through to a raw JSON dump is now rendered as text.
+   */
   function renderGuidance(host, data){
-    if(!data){ host.appendChild(emptyState('info','No guidance yet.')); return; }
-    var g = data.guidance || data;
-    if(Array.isArray(g)){
-      g.forEach(function(item){
-        var c=el('div',{class:'intel-card'});
-        c.appendChild(el('h4',{text: item.title || item.area || 'Guidance'}));
-        c.appendChild(el('p',{class:'muted', text: item.text || item.message || JSON.stringify(item)}));
-        host.appendChild(c);
-      });
-    } else if(g.sections){
-      g.sections.forEach(function(s){
-        var c=el('div',{class:'intel-card'});
-        c.appendChild(el('h4',{text: s.title}));
-        c.appendChild(el('p',{class:'muted', text: s.body}));
-        host.appendChild(c);
-      });
-      if(g.disclaimer) host.appendChild(disclaimerBox(g.disclaimer));
-    } else {
-      host.appendChild(el('pre',{text: JSON.stringify(data,null,2), style:'font-size:11px; white-space:pre-wrap; background:#f6f8f9; padding:10px; border-radius:8px;'}));
+    if(!data){ host.appendChild(emptyState('info','No guidance yet — verify a report or add a few observations and this fills in.')); return; }
+    var g = Array.isArray(data) ? { items: data } : (data.guidance || data);
+    var items = Array.isArray(g) ? g
+      : (Array.isArray(g.items) ? g.items : (Array.isArray(g.sections) ? g.sections : []));
+
+    var narrative = typeof g.narrative === 'string' ? g.narrative : (g.narrative && g.narrative.text ? g.narrative.text : '');
+    if(narrative){
+      var intro=el('div',{class:'intel-card'});
+      intro.appendChild(el('h4',{text:'In plain words'}));
+      intro.appendChild(el('p',{class:'muted', text: narrative}));
+      host.appendChild(intro);
     }
+
+    if(items.length === 0){
+      host.appendChild(emptyState('info', 'Nothing to personalise yet — add a verified report or an observation (weight, activity, sleep).'));
+    }
+
+    items.forEach(function(item){
+      var card=el('div',{class:'intel-card'});
+      var head=el('div',{class:'intel-head'});
+      head.appendChild(el('h4',{text: item.title || item.heading || 'Guidance'}));
+      if(item.area) head.appendChild(el('span',{class:'chip grey', text: AREA_LABEL[item.area] || item.area}));
+      card.appendChild(head);
+
+      var body = item.body || item.text || item.message;
+      if(body) card.appendChild(el('p',{class:'muted', text: String(body)}));
+
+      if(item.why){
+        var why=el('p',{class:'intel-why'});
+        why.appendChild(el('strong',{text:'Why you are seeing this: '}));
+        why.appendChild(document.createTextNode(String(item.why)));
+        card.appendChild(why);
+      }
+
+      if(item.inputs && item.inputs.length){
+        var chips=el('div',{class:'suggestion-chips'});
+        item.inputs.forEach(function(inp){
+          if(!inp) return;
+          var label = String(inp.label || inp.name || 'Value');
+          var value = inp.value == null ? '' : ' ' + inp.value;
+          var unit = inp.unit ? ' ' + inp.unit : '';
+          chips.appendChild(el('span',{class:'chip grey', text: label + ':' + value + unit}));
+        });
+        card.appendChild(chips);
+      }
+      host.appendChild(card);
+    });
+
+    var ctxRows = [];
+    var c = g.context || {};
+    if(c.age != null) ctxRows.push('age ' + c.age);
+    if(c.bmi != null) ctxRows.push('BMI ' + c.bmi);
+    if(c.activityMinPerWeek != null) ctxRows.push(c.activityMinPerWeek + ' min activity/week');
+    if(c.sleepHours != null) ctxRows.push(c.sleepHours + ' h sleep');
+    if(ctxRows.length) host.appendChild(el('p',{class:'muted', text:'Based on: ' + ctxRows.join(' · ')}));
+    if(c.latestLabs && c.latestLabs.length){
+      var labs=el('div',{class:'suggestion-chips'});
+      c.latestLabs.forEach(function(l){
+        if(!l) return;
+        labs.appendChild(el('span',{class:'chip grey', text: (l.name || l.code || 'marker') + ': ' + (l.value != null ? l.value : '—') + (l.unit ? ' ' + l.unit : '')}));
+      });
+      host.appendChild(labs);
+    }
+
+    var disclaimer = g.disclaimer || data.disclaimer;
+    if(disclaimer) host.appendChild(disclaimerBox(disclaimer));
   }
 
   function renderMeds(host, data){
@@ -1135,7 +1268,8 @@
         host.appendChild(c);
       });
     } else {
-      host.appendChild(el('pre',{text: JSON.stringify(data,null,2), style:'font-size:11px; white-space:pre-wrap; background:#f6f8f9; padding:10px; border-radius:8px;'}));
+      var summarized = data.awareness || data.summary || data.note;
+      host.appendChild(emptyState('pill', summarized || 'No medications recorded yet — add them in observations.'));
     }
     if(data.disclaimer) host.appendChild(disclaimerBox(data.disclaimer));
   }
@@ -1484,6 +1618,8 @@
     setStaticIcons();
     $('tab-login').addEventListener('click', function () { setAuthMode('login'); });
     $('tab-register').addEventListener('click', function () { setAuthMode('register'); });
+    $('role-patient').addEventListener('click', function () { setAuthRole('patient'); });
+    $('role-doctor').addEventListener('click', function () { setAuthRole('doctor'); });
     $('auth-form').addEventListener('submit', onAuthSubmit);
     $('btn-logout').addEventListener('click', onLogout);
     // btn-refresh is wired below with debounced + withLoading for buttery smoothness
@@ -1541,20 +1677,27 @@
       document.body.classList.add('native-app');
       window.KivoConnection.ensureReady().catch(function () { /* stays on login */ });
     }
+    // Stay signed in on this device until the user signs out. Older APK builds
+    // appended `?login=1` on every cold launch and this branch used to throw the
+    // stored session away for it — that was the "asks me to sign in every time"
+    // bug. The parameter is now only a hint to show the sign-in screen when no
+    // session can be restored; signing out is what ends a session.
+    loadTokens();
     if (new URLSearchParams(location.search).get('login') === '1') {
-      clearTokens(); // explicit cold-launch login; ordinary reload keeps a session
       history.replaceState(null, '', location.pathname);
-    } else {
-      loadTokens();
     }
+    try {
+      var lastRole = localStorage.getItem('mt.lastRole');
+      if (lastRole === 'doctor') setAuthRole('doctor');
+    } catch (e) { /* private mode */ }
     if (state.tokens && state.tokens.accessToken) {
+      // Restore the device session first (access token, or a refresh when it has
+      // expired) — a stored session is what keeps the user signed in.
       api('/auth/me').then(function (me) {
         state.user = me.user;
         notifySession();
         if (me.user && me.user.accountType === 'doctor') {
-          try { sessionStorage.setItem('kivo.role-handoff', JSON.stringify(state.tokens)); } catch (e) { /* doctor can sign in directly */ }
-        clearTokens();
-        location.href = '/doctor/';
+          handoffToDoctorConsole();
           return null;
         }
         return bootDashboard();

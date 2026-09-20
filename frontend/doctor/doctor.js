@@ -21,6 +21,7 @@
     tokens: null,
     user: null,
     doctor: null,
+    certificatePolicy: null,
     view: 'dashboard',
     overview: null,
     consultations: [],
@@ -156,11 +157,23 @@
     ev.preventDefault();
     var err = $('doc-login-error');
     err.classList.add('hidden');
+    var regno = $('doc-regno').value.trim();
+    if (!regno) {
+      err.textContent = 'Enter the registration number printed on your medical council certificate.';
+      err.classList.remove('hidden');
+      return;
+    }
     $('doc-login-submit').disabled = true;
-    api('/auth/login', { method: 'POST', body: { email: $('doc-email').value.trim(), password: $('doc-password').value } })
+    // Doctor sign-in carries the certificate number: it is checked against the
+    // certificate on file BEFORE any doctor session is handed to this console.
+    api('/auth/doctor-login', {
+      method: 'POST',
+      body: { email: $('doc-email').value.trim(), password: $('doc-password').value, registrationNo: regno },
+    })
       .then(function (session) {
         saveTokens({ accessToken: session.accessToken, refreshToken: session.refreshToken });
         state.user = session.user;
+        state.certificatePolicy = session.certificatePolicy || state.certificatePolicy;
         return boot();
       })
       .catch(function (e) {
@@ -178,28 +191,44 @@
     var split = function (id) {
       return $(id).value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
     };
-    api('/doctor/apply', {
-      method: 'POST',
-      body: {
-        email: $('ap-email').value.trim(),
-        displayName: $('ap-name').value.trim(),
-        password: $('ap-password').value,
-        specialty: $('ap-specialty').value,
-        headline: $('ap-headline').value.trim() || undefined,
-        registrationNo: $('ap-regno').value.trim(),
-        experienceYears: Number($('ap-years').value || 0),
-        city: $('ap-city').value.trim() || undefined,
-        consultFeeInr: Number($('ap-fee').value || 0),
-        qualifications: split('ap-quals'),
-        languages: split('ap-langs'),
-        bio: $('ap-bio').value.trim() || undefined,
-      },
-    })
+
+    // FormData, not JSON: the medical council certificate travels with the
+    // application so it can be checked before the profile goes live. Empty
+    // fields are left out entirely (the API treats '' as absent anyway).
+    var form = new FormData();
+    var put = function (key, value) {
+      if (value === undefined || value === null || value === '') return;
+      form.append(key, value);
+    };
+    put('email', $('ap-email').value.trim());
+    put('displayName', $('ap-name').value.trim());
+    put('password', $('ap-password').value);
+    put('specialty', $('ap-specialty').value);
+    put('headline', $('ap-headline').value.trim());
+    put('registrationNo', $('ap-regno').value.trim());
+    put('experienceYears', Number($('ap-years').value || 0));
+    put('city', $('ap-city').value.trim());
+    put('consultFeeInr', Number($('ap-fee').value || 0));
+    var quals = split('ap-quals');
+    var langs = split('ap-langs');
+    if (quals.length) form.append('qualifications', JSON.stringify(quals));
+    if (langs.length) form.append('languages', JSON.stringify(langs));
+    put('bio', $('ap-bio').value.trim());
+    var cert = $('ap-certificate').files && $('ap-certificate').files[0];
+    if (cert) form.append('certificate', cert);
+
+    api('/doctor/apply', { method: 'POST', body: form })
       .then(function (session) {
         saveTokens({ accessToken: session.accessToken, refreshToken: session.refreshToken });
         state.user = session.user;
         state.doctor = session.doctor;
-        toast(session.doctor.status === 'active' ? 'Welcome — demo verification applied.' : 'Application submitted.');
+        state.certificatePolicy = session.certificatePolicy || state.certificatePolicy;
+        var certResult = session.certificate || (session.doctor && session.doctor.certificate);
+        if (certResult && certResult.status === 'rejected') {
+          toast('Certificate check failed — see the reasons on screen and upload it again.');
+        } else {
+          toast(session.doctor.status === 'active' ? 'Welcome — certificate checked, demo verification applied.' : 'Application submitted for review.');
+        }
         return boot();
       })
       .catch(function (e) {
@@ -223,6 +252,7 @@
     return api('/doctor/me')
       .then(function (res) {
         state.doctor = res.doctor;
+        state.certificatePolicy = res.certificatePolicy || state.certificatePolicy;
         if (!state.doctor) {
           showAuth();
           setAuthTab('apply');
@@ -232,6 +262,7 @@
         }
         showConsole();
         renderVerificationBanner();
+        renderCertificatePanel();
         if (state.doctor.status !== 'active') {
           state.view = 'profile';
           setView('profile');
@@ -275,6 +306,7 @@
       badge.textContent = String(queue);
       badge.classList.toggle('hidden', !queue);
       renderVerificationBanner();
+      renderCertificatePanel();
       render();
     });
   }
@@ -286,6 +318,7 @@
     host.innerHTML = '';
     if (!state.doctor) return;
     if (state.doctor.status === 'active') {
+      var cert = state.doctor.certificate || {};
       var row = el('div', { class: 'doc-card doc-row doc-verified' });
       var left = el('div');
       left.appendChild(el('strong', { text: 'Verified for this preview — ' + state.doctor.identityCardNo }));
@@ -294,7 +327,11 @@
           class: 'muted',
           text:
             'Patients see your name, headline "' + state.doctor.headline + '" and a demo verification badge. ' +
-            'No medical registry has been checked yet.',
+            (cert.verified
+              ? 'Your certificate ' + (cert.ref || '') + ' was checked (' +
+                (cert.method === 'document_checked' ? 'document read' : 'registration number') +
+                '); no medical council registry was contacted.'
+              : 'No medical registry has been checked yet.'),
         }),
       );
       row.appendChild(left);
@@ -310,6 +347,22 @@
           'Charts stay closed until a patient shares one with you for a consultation.',
       }),
     );
+    // Certificate first: the mock KYC step is the fallback for a demo account
+    // whose certificate was checked by registration number only.
+    var cert = state.doctor.certificate || {};
+    if (!cert.verified) {
+      pending.appendChild(
+        el('p', {
+          class: 'muted',
+          text:
+            'Upload your medical council certificate below — the registration number and your name are read from it, ' +
+            'and that check is what opens the console.',
+        }),
+      );
+      host.appendChild(pending);
+      return;
+    }
+
     var btn = el('button', { class: 'btn primary', type: 'button' }, ['Complete verification step']);
     btn.addEventListener('click', function () {
       api('/doctor/kyc/mock', { method: 'POST', body: {} })
@@ -322,6 +375,85 @@
     });
     pending.appendChild(btn);
     host.appendChild(pending);
+  }
+
+  /* ------------------------------------------------- certificate verification */
+
+  /** Renders the upload/re-check card — the one screen an unverified doctor gets. */
+  function renderCertificatePanel() {
+    var card = $('doc-cert-card');
+    if (!card) return;
+    var cert = (state.doctor && state.doctor.certificate) || null;
+    if (!state.doctor || (cert && cert.verified)) {
+      card.classList.add('hidden');
+      return;
+    }
+    card.classList.remove('hidden');
+
+    var STATUS_COPY = {
+      not_submitted: 'No certificate on file yet. Upload it once and the check runs immediately.',
+      rejected: 'The last certificate did not pass the check. Fix the point below and upload it again.',
+      verified: 'Certificate checked.',
+    };
+    $('doc-cert-status').textContent = STATUS_COPY[(cert && cert.status) || 'not_submitted'] || '';
+
+    var checksHost = $('doc-cert-checks');
+    checksHost.innerHTML = '';
+    if (cert && cert.checks && cert.checks.length) {
+      cert.checks.forEach(function (c) {
+        var chip = el('span', {
+          class: 'chip ' + (c.passed ? 'green' : (c.blocking ? 'red' : 'amber')),
+          text: (c.passed ? '✓ ' : (c.blocking ? '✕ ' : '! ')) + c.label,
+          title: c.detail || '',
+        });
+        checksHost.appendChild(chip);
+      });
+    }
+    if (cert && cert.reason) {
+      checksHost.appendChild(el('p', { class: 'muted', text: cert.reason }));
+    }
+    var policy = state.certificatePolicy;
+    if (policy) {
+      $('doc-cert-note').textContent = policy.note + ' Accepted: ' + policy.accept + ' · up to ' + Math.round(policy.maxBytes / 1024 / 1024) + ' MB.';
+    }
+    if (!$('doc-cert-regno').value && state.doctor.registrationNo) {
+      $('doc-cert-regno').value = state.doctor.registrationNo;
+    }
+  }
+
+  function onCertificateUpload() {
+    var err = $('doc-cert-error');
+    err.classList.add('hidden');
+    var file = $('doc-cert-file').files && $('doc-cert-file').files[0];
+    if (!file) {
+      err.textContent = 'Choose your certificate file first (PDF, JPG or PNG).';
+      err.classList.remove('hidden');
+      return;
+    }
+    var form = new FormData();
+    form.append('certificate', file);
+    var regno = $('doc-cert-regno').value.trim();
+    if (regno) form.append('registrationNo', regno);
+    $('doc-cert-submit').disabled = true;
+    api('/doctor/certificate', { method: 'POST', body: form })
+      .then(function (res) {
+        state.doctor = res.doctor;
+        state.certificatePolicy = res.policy || state.certificatePolicy;
+        renderVerificationBanner();
+        renderCertificatePanel();
+        if (res.certificate && res.certificate.verified) {
+          toast(res.activated ? 'Certificate checked — the console is open.' : 'Certificate checked — waiting for review.');
+          return boot();
+        }
+        err.textContent = (res.certificate && res.certificate.reason) || 'That certificate did not pass the check.';
+        err.classList.remove('hidden');
+        return null;
+      })
+      .catch(function (e) {
+        err.textContent = e.message;
+        err.classList.remove('hidden');
+      })
+      .then(function () { $('doc-cert-submit').disabled = false; });
   }
 
   /* ---------------------------------------------------------------- routing */
@@ -1183,6 +1315,7 @@
     $('doc-tab-apply').addEventListener('click', function () { setAuthTab('apply'); });
     $('doc-login-form').addEventListener('submit', onLogin);
     $('doc-apply-form').addEventListener('submit', onApply);
+    $('doc-cert-submit').addEventListener('click', onCertificateUpload);
     $('doc-logout').addEventListener('click', logout);
     document.querySelectorAll('.doc-nav-item').forEach(function (b) {
       b.addEventListener('click', function () { setView(b.getAttribute('data-view')); });
@@ -1206,15 +1339,21 @@
       if (raw) saveTokens(JSON.parse(raw));
     } catch (e) { /* private mode */ }
 
+    // `/doctor/#apply` (linked from the patient app's Doctor toggle) lands
+    // straight on the join form.
+    var wantsApply = location.hash === '#apply';
+
     if (state.tokens && state.tokens.accessToken) {
       boot().then(function () {
         if (!state.doctor) {
           state.tokens = null;
           showAuth();
+          if (wantsApply) setAuthTab('apply');
         }
       });
     } else {
       showAuth();
+      if (wantsApply) setAuthTab('apply');
     }
   }
 

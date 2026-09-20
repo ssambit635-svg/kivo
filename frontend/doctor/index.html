@@ -37,6 +37,13 @@
         <h2 id="doc-auth-heading">Doctor sign in</h2>
         <p class="muted">Patient charts open only while a patient shares them with you — and only for the consultation they booked.</p>
 
+        <!-- The mirror of the patient app's two toggles: same account system,
+             two frontends. Doctor is the active side here. -->
+        <div id="doc-role-tabs" class="tabs role-tabs" role="tablist" aria-label="Sign in as">
+          <a id="doc-role-patient" class="tab" href="/app/" role="tab">Patient</a>
+          <button id="doc-role-doctor" class="tab active" type="button" role="tab" aria-selected="true">Doctor</button>
+        </div>
+
         <div class="tabs" role="tablist">
           <button id="doc-tab-login" class="tab active" type="button" role="tab">Sign in</button>
           <button id="doc-tab-apply" class="tab" type="button" role="tab">Join the network</button>
@@ -51,14 +58,23 @@
             <span>Password</span>
             <input id="doc-password" type="password" autocomplete="current-password" required />
           </label>
+          <label class="field">
+            <span>Medical registration no. (on your certificate)</span>
+            <input id="doc-regno" type="text" autocomplete="off" placeholder="MCI-123456" required />
+          </label>
+          <p class="hint">
+            We check this number against the medical council certificate on your account before the console opens.
+          </p>
           <p id="doc-login-error" class="error hidden" role="alert"></p>
           <button class="btn primary block" type="submit" id="doc-login-submit">Sign in</button>
+          <p class="hint">Signing in as a patient? <a href="/app/">Open the patient app</a>.</p>
         </form>
 
         <form id="doc-apply-form" class="hidden" novalidate>
           <p class="doc-note" id="doc-apply-note">
-            Preview onboarding: your profile is activated right away and <b>no medical registry is contacted yet</b>,
-            so patients see a "demo" verification badge until a real check replaces it.
+            Preview onboarding: your certificate is read here (registration number + name) before the profile goes live,
+            and <b>no medical registry is contacted yet</b> — patients see a "demo" verification badge until a real
+            check replaces this.
           </p>
           <div class="doc-grid-2">
             <label class="field"><span>Full name</span><input id="ap-name" type="text" placeholder="Dr Mohan Charan" required /></label>
@@ -82,6 +98,14 @@
             <label class="field"><span>Languages (comma separated)</span><input id="ap-langs" type="text" placeholder="English, Hindi" /></label>
           </div>
           <label class="field"><span>Short bio</span><textarea id="ap-bio" rows="3" placeholder="What you treat, how you like to explain things."></textarea></label>
+          <label class="field">
+            <span>Medical council certificate (PDF, JPG or PNG)</span>
+            <input id="ap-certificate" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+          </label>
+          <p class="hint" id="ap-certificate-note">
+            We read the registration number and your name from the certificate and keep a fingerprint of the file.
+            The document itself is not stored, and no council registry is contacted in this build.
+          </p>
           <p id="doc-apply-error" class="error hidden" role="alert"></p>
           <button class="btn primary block" type="submit" id="doc-apply-submit">Create doctor account</button>
         </form>
@@ -108,6 +132,27 @@
         </nav>
 
         <div id="doc-verification-banner"></div>
+
+        <!-- Shown until the medical council certificate on the account has been
+             checked. It is the only console surface a not-yet-verified doctor
+             can reach: every clinical endpoint stays closed until it passes. -->
+        <section id="doc-cert-card" class="doc-card hidden" aria-labelledby="doc-cert-h">
+          <h3 id="doc-cert-h">Finish certificate verification</h3>
+          <p class="muted" id="doc-cert-status"></p>
+          <div id="doc-cert-checks"></div>
+          <label class="field">
+            <span>Medical council certificate (PDF, JPG or PNG)</span>
+            <input id="doc-cert-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+          </label>
+          <label class="field">
+            <span>Registration number on the certificate</span>
+            <input id="doc-cert-regno" type="text" autocomplete="off" placeholder="MCI-123456" />
+          </label>
+          <p id="doc-cert-error" class="error hidden" role="alert"></p>
+          <button class="btn primary" type="button" id="doc-cert-submit">Upload &amp; verify</button>
+          <p class="hint" id="doc-cert-note"></p>
+        </section>
+
         <div id="doc-view"></div>
       </section>
     </main>

@@ -28,23 +28,35 @@ const boolish = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
+/** multipart sends `''` for untouched optional inputs — treat that as absent. */
+const blankToUndefined = (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value);
+
+const optionalText = (min, max) =>
+  z.preprocess(blankToUndefined, z.string().trim().min(min).max(max).optional());
+
 export const doctorSchemas = {
   apply: z.object({
     email: z.string().trim().toLowerCase().email('Valid email required').max(254),
     displayName: z.string().trim().min(1).max(120),
     password: z.string().min(12, 'Password must be at least 12 characters').max(128),
     specialty: z.enum(SPECIALTY_KEYS),
-    headline: z.string().trim().min(3).max(120).optional(),
+    headline: optionalText(3, 120),
     subSpecialties: stringList.optional(),
     qualifications: stringList.optional(),
     registrationNo: z.string().trim().min(4).max(40),
-    registrationCouncil: z.string().trim().max(120).optional(),
+    registrationCouncil: optionalText(1, 120),
     experienceYears: z.coerce.number().int().min(0).max(70).default(0),
     languages: stringList.optional(),
-    clinicName: z.string().trim().max(160).optional(),
-    city: z.string().trim().max(80).optional(),
-    bio: z.string().trim().max(1500).optional(),
+    clinicName: optionalText(1, 160),
+    city: optionalText(1, 80),
+    bio: optionalText(1, 1500),
     consultFeeInr: z.coerce.number().int().min(0).max(100000).default(0),
+  }),
+  /** Certificate upload from the verification screen / right after sign-in. */
+  certificate: z.object({
+    registrationNo: optionalText(3, 40),
+    certificateNo: optionalText(3, 40),
+    registrationCouncil: optionalText(1, 120),
   }),
   profileUpdate: z
     .object({
@@ -143,10 +155,20 @@ export class DoctorConsoleController {
   }
 
   // -------------------------------------------------------------- onboarding
-  /** Public: a doctor applies for an account (never self-assigns a role). */
-  apply = (req, res, next) => {
+  /**
+   * Public: a doctor applies for an account (never self-assigns a role).
+   * With a medical council certificate attached the application is checked —
+   * number, name and document — before the profile can go live; without one the
+   * typed registration number is recorded instead and the console asks for the
+   * certificate on first sign-in.
+   */
+  apply = async (req, res, next) => {
     try {
-      res.status(201).json(this.doctors.apply(req.body, ctxFromReq(req)));
+      const ctx = ctxFromReq(req);
+      const session = req.file
+        ? await this.doctors.applyWithCertificate(req.body, req.file, ctx)
+        : this.doctors.apply(req.body, ctx);
+      res.status(201).json(session);
     } catch (e) {
       next(e);
     }
@@ -154,7 +176,28 @@ export class DoctorConsoleController {
 
   me = (req, res, next) => {
     try {
-      res.json({ doctor: this.doctors.me(req.actor) });
+      const status = this.doctors.certificateStatus(req.actor);
+      res.json({
+        doctor: status.doctor,
+        certificate: status.certificate,
+        certificatePolicy: status.policy,
+        verificationMode: status.mode,
+      });
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  /** Certificate upload / re-upload used by the console's verification screen. */
+  uploadCertificate = async (req, res, next) => {
+    try {
+      res.json(
+        await this.doctors.verifyCertificate(
+          req.actor,
+          { file: req.file || null, ...req.body },
+          ctxFromReq(req),
+        ),
+      );
     } catch (e) {
       next(e);
     }

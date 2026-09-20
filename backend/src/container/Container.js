@@ -59,6 +59,7 @@ import { AskTwinService } from '../services/AskTwinService.js';
 import { SubscriptionService } from '../services/care/SubscriptionService.js';
 import { PayoutService } from '../services/care/PayoutService.js';
 import { DoctorService } from '../services/care/DoctorService.js';
+import { CertificateVerificationService } from '../services/care/CertificateVerificationService.js';
 import { MediaLinkService } from '../services/care/MediaLinkService.js';
 import { VideoService } from '../services/care/VideoService.js';
 import { ClinicalBriefService } from '../services/care/ClinicalBriefService.js';
@@ -115,6 +116,7 @@ export class Container {
       tokenService: this.tokenService,
       auditService: this.auditService,
       roleRepository: this.roleRepository,
+      doctorRepository: this.doctorRepository,
     });
     this.authService.selfTest();
 
@@ -241,6 +243,12 @@ export class Container {
       auditService: this.auditService,
     });
     this.mediaLinkService = new MediaLinkService({ config });
+    // Reads the medical council certificate (PDF/image) a doctor uploads. Every
+    // verdict is labelled mode:'mock' — no council registry is contacted.
+    this.certificateService = new CertificateVerificationService({
+      config,
+      ocrService: this.ocrService,
+    });
     this.doctorService = new DoctorService({
       config,
       doctorRepository: this.doctorRepository,
@@ -252,6 +260,7 @@ export class Container {
       authService: this.authService,
       policyService: this.policyService,
       auditService: this.auditService,
+      certificateService: this.certificateService,
     });
     this.videoService = new VideoService({
       config,

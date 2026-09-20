@@ -21,9 +21,20 @@ import {
  * - Every meaningful event is written to the audit log.
  */
 export class AuthService {
-  constructor({ config, userRepository, refreshTokenRepository, memberRepository, passwordService, tokenService, auditService, roleRepository = null }) {
+  constructor({
+    config,
+    userRepository,
+    refreshTokenRepository,
+    memberRepository,
+    passwordService,
+    tokenService,
+    auditService,
+    roleRepository = null,
+    doctorRepository = null,
+  }) {
     this.config = config;
     this.roleRepo = roleRepository;
+    this.doctorRepo = doctorRepository;
     this.users = userRepository;
     this.refreshTokens = refreshTokenRepository;
     this.members = memberRepository;
@@ -57,20 +68,109 @@ export class AuthService {
 
   // ------------------------------------------------------------------- login
   login({ email, password }, ctx = {}) {
+    const user = this.authenticateWithPassword(email, password, ctx, 'auth.login');
+    return this.issueSession(user, ctx, { familyId: newId() });
+  }
+
+  /**
+   * DOCTOR sign-in — the only door into the doctor console.
+   *
+   * Two things are checked beyond the password, and both are the point of the
+   * feature: the account must really be a doctor account, and the medical
+   * council registration number typed at sign-in must match the certificate on
+   * file. A doctor whose certificate has not been checked yet still gets a
+   * session (so they can finish verification on the console's upload screen)
+   * but no `doctor` role, so every clinical endpoint stays shut until the
+   * certificate check passes.
+   */
+  loginDoctor({ email, password, registrationNo }, ctx = {}) {
+    if (!this.doctorRepo) throw new UnauthorizedError('Doctor sign-in is not available', 'UNAVAILABLE');
+    const user = this.authenticateWithPassword(email, password, ctx, 'auth.doctor_login');
+    const doctor = this.doctorRepo.findByUserId(user.id);
+    if (!doctor) {
+      this.audit.record({
+        userId: user.id,
+        action: 'auth.doctor_login',
+        outcome: 'failure',
+        metadata: { reason: 'not_a_doctor_account' },
+        ctx,
+      });
+      throw new ForbiddenError(
+        'This account is not a doctor account. Sign in as a patient, or apply to join the doctor network.',
+        'NOT_A_DOCTOR_ACCOUNT',
+      );
+    }
+
+    const typed = stripRegistration(registrationNo);
+    const onFile = [doctor.registration_no, doctor.certificate_no]
+      .filter(Boolean)
+      .map(stripRegistration);
+    if (!typed || !onFile.includes(typed)) {
+      this.audit.record({
+        userId: user.id,
+        action: 'auth.doctor_login',
+        outcome: 'failure',
+        metadata: { reason: 'certificate_mismatch' },
+        ctx,
+      });
+      throw new UnauthorizedError(
+        'That registration number does not match the medical certificate on file for this account. ' +
+          'Check the number (for example MCI-123456) and try again — the exact number is the one you applied with.',
+        'CERTIFICATE_MISMATCH',
+      );
+    }
+
+    if (doctor.status === 'suspended') {
+      this.audit.record({
+        userId: user.id,
+        action: 'auth.doctor_login',
+        outcome: 'failure',
+        metadata: { reason: 'suspended' },
+        ctx,
+      });
+      throw new ForbiddenError('This doctor profile is suspended', 'DOCTOR_SUSPENDED');
+    }
+
+    this.audit.record({
+      userId: user.id,
+      action: 'auth.doctor_login',
+      metadata: {
+        certificateStatus: doctor.certificate_status || 'not_submitted',
+        profileStatus: doctor.status,
+      },
+      ctx,
+    });
+
+    const session = this.issueSession(user, ctx, { familyId: newId() });
+    return {
+      ...session,
+      doctor: doctor.toJSON(),
+      // Drives the console's verification screen when the certificate check is
+      // still outstanding (or was rejected).
+      certificate: doctor.certificate,
+      requiresCertificate: !doctor.isCertificateVerified,
+    };
+  }
+
+  /**
+   * Shared password/lockout verification for both sign-in doors. Unknown emails
+   * still pay a scrypt cost (dummy verify) to blunt user enumeration.
+   */
+  authenticateWithPassword(email, password, ctx = {}, action = 'auth.login') {
     const user = this.users.findByEmail(email);
     if (!user) {
       this.passwords.verify(password, this.passwords.dummyHash); // constant-ish time
-      this.audit.record({ action: 'auth.login', outcome: 'failure', metadata: { reason: 'unknown_email' }, ctx });
+      this.audit.record({ action, outcome: 'failure', metadata: { reason: 'unknown_email' }, ctx });
       throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
     }
 
     if (user.isDisabled) {
-      this.audit.record({ userId: user.id, action: 'auth.login', outcome: 'failure', metadata: { reason: 'disabled' }, ctx });
+      this.audit.record({ userId: user.id, action, outcome: 'failure', metadata: { reason: 'disabled' }, ctx });
       throw new ForbiddenError('This account has been disabled', 'ACCOUNT_DISABLED');
     }
 
     if (user.lockout_until && !isPast(user.lockout_until)) {
-      this.audit.record({ userId: user.id, action: 'auth.login', outcome: 'failure', metadata: { reason: 'locked' }, ctx });
+      this.audit.record({ userId: user.id, action, outcome: 'failure', metadata: { reason: 'locked' }, ctx });
       throw new UnauthorizedError(
         `Account is temporarily locked. Try again after ${user.lockout_until}`,
         'ACCOUNT_LOCKED',
@@ -83,7 +183,7 @@ export class AuthService {
         this.config.loginMaxFailedAttempts,
         this.config.lockoutMinutes,
       );
-      this.audit.record({ userId: user.id, action: 'auth.login', outcome: 'failure', metadata: { reason: 'bad_password' }, ctx });
+      this.audit.record({ userId: user.id, action, outcome: 'failure', metadata: { reason: 'bad_password' }, ctx });
       if (lockoutUntil) {
         this.audit.record({ userId: user.id, action: 'auth.lockout', metadata: { lockoutUntil }, ctx });
         throw new UnauthorizedError(
@@ -95,8 +195,7 @@ export class AuthService {
     }
 
     this.users.recordLoginSuccess(user.id);
-    this.audit.record({ userId: user.id, action: 'auth.login', ctx });
-    return this.issueSession(user, ctx, { familyId: newId() });
+    return user;
   }
 
   // ----------------------------------------------------------------- refresh
@@ -276,4 +375,9 @@ export class AuthService {
     const probe = this.passwords.hash('self-test');
     if (!this.passwords.verify('self-test', probe)) throw new Error('Password self-test failed');
   }
+}
+
+/** `MCI-123456` and `mci 123456` are the same certificate number. */
+function stripRegistration(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }

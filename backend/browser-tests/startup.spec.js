@@ -52,14 +52,24 @@ test('bundled native login appears even with no API; no server picker or downloa
   await expect(page.locator('#auth-submit')).toBeEnabled();
 });
 
-test('native cold launch clears old session; ordinary reload keeps login', async ({ page }) => {
+test('native cold launch KEEPS the session — only signing out ends it', async ({ page }) => {
   await nativeShell(page);
-  await page.goto('/native/?login=1');
+  await page.goto('/native/?login=1'); // no stored session yet → sign-in screen
+  await expect(page.locator('#auth-view')).toBeVisible();
   await signIn(page);
   await expect(page.locator('#dash-view')).toBeVisible();
+
+  // Older APK builds still append ?login=1 on every cold start; that must no
+  // longer throw the device session away (the "sign in again every launch" bug).
+  await page.goto('/native/?login=1');
+  await expect(page.locator('#dash-view')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('mt.tokens'))).not.toBeNull();
+
   await page.reload();
   await expect(page.locator('#dash-view')).toBeVisible();
-  await page.goto('/native/?login=1');
+
+  // Sign out is the one thing that ends the session.
+  await page.locator('#btn-logout').click();
   await expect(page.locator('#auth-view')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('mt.tokens'))).toBeNull();
 });
@@ -80,14 +90,36 @@ test('sleeping cloud recovers without replaying sign-in POST', async ({ page }) 
   expect(loginCalls).toBe(1);
 });
 
-test('doctor signs in once and reaches role-separated console', async ({ page }) => {
+test('doctor toggles to Doctor sign-in with a certificate number and lands in the console', async ({ page }) => {
   await page.goto('/app/');
-  await signIn(page, 'dr.mohan@kivo.dev', 'Kivo!Doctor#2026');
+  await page.locator('#role-doctor').click();
+  await expect(page.locator('#row-regno')).toBeVisible();
+
+  // Wrong number → refused, with the certificate mismatch explained.
+  await page.locator('#in-email').fill('dr.mohan@kivo.dev');
+  await page.locator('#in-password').fill('Kivo!Doctor#2026');
+  await page.locator('#in-regno').fill('MCI-000000');
+  await page.locator('#auth-submit').click();
+  await expect(page.locator('#auth-error')).toContainText('registration number');
+
+  // The number on the certificate on file → straight into the doctor console.
+  await page.locator('#in-regno').fill('MCI-DEMO-4471');
+  await page.locator('#auth-submit').click();
   await expect(page).toHaveURL(/\/doctor\/$/);
   await expect(page.locator('#doc-console')).toBeVisible();
   await expect(page.locator('#doc-auth')).toBeHidden();
   expect(await page.evaluate(() => localStorage.getItem('mt.tokens'))).toBeNull();
   expect(await page.evaluate(() => sessionStorage.getItem('kivo.role-handoff'))).toBeNull();
+  // The doctor session lives under the doctor console's own key.
+  expect(await page.evaluate(() => localStorage.getItem('mt.doctor.tokens'))).not.toBeNull();
+});
+
+test('a doctor account on the Patient toggle is sent to the Doctor toggle, not signed in as a patient', async ({ page }) => {
+  await page.goto('/app/');
+  await signIn(page, 'dr.mohan@kivo.dev', 'Kivo!Doctor#2026');
+  await expect(page.locator('#row-regno')).toBeVisible();
+  await expect(page.locator('#auth-error')).toContainText('doctor account');
+  await expect(page.locator('#dash-view')).toBeHidden();
 });
 
 test('create-account form creates a real account and member', async ({ page }) => {

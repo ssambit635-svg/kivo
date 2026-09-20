@@ -94,6 +94,14 @@ code {
 .tab.active { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(15, 30, 46, 0.12); }
 .tab:active { transform: scale(0.98); }
 
+/* Role toggles (patient / doctor) — deliberately stronger than the sign-in /
+   create-account pair: this one changes which frontend you land in. */
+.role-tabs { margin-bottom: 10px; background: linear-gradient(180deg, #eef2f5, #e7eef2); }
+.role-tabs .tab { font-weight: 700; letter-spacing: 0.01em; }
+.role-tabs .tab.active { color: var(--teal-dark); box-shadow: 0 1px 4px rgba(15, 30, 46, 0.16); }
+.intel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.intel-why { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-2); background: #f6f9fa; border-left: 2px solid #cfe3e1; padding: 6px 8px; border-radius: 0 8px 8px 0; }
+
 .field { display: block; margin-bottom: 12px; }
 .field > span, .field-inline > span { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 5px; }
 input, textarea, select {

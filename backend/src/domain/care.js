@@ -36,6 +36,42 @@ export class DoctorProfile {
     return this.status === 'active' && this.kyc_status === 'mock_verified';
   }
 
+  /**
+   * Certificate gate: 'verified' means the registration number (and, when a
+   * document was uploaded, that document) was checked for THIS profile.
+   * 'not_submitted' / 'rejected' both keep the doctor console shut, which is
+   * what makes the sign-in gate real rather than decorative.
+   */
+  get isCertificateVerified() {
+    return this.certificate_status === 'verified';
+  }
+
+  /** Doctor-facing certificate summary — metadata + verdict, never the file. */
+  get certificate() {
+    const checks = parseJson(this.certificate_checks, []);
+    return {
+      status: this.certificate_status || 'not_submitted',
+      verified: this.isCertificateVerified,
+      ref: this.certificate_ref || null,
+      registrationNo: this.registration_no,
+      certificateNo: this.certificate_no || null,
+      method: this.certificate_method || null,
+      mode: 'mock',
+      reason: this.certificate_reason || null,
+      checks,
+      verifiedAt: this.certificate_verified_at || null,
+      submittedAt: this.certificate_submitted_at || null,
+      document: this.certificate_sha256
+        ? {
+            fileName: this.certificate_file_name || null,
+            mime: this.certificate_mime || null,
+            bytes: this.certificate_bytes || null,
+            sha256: this.certificate_sha256,
+          }
+        : null,
+    };
+  }
+
   /** Public identity — this is what patients (and the shareable card) see. */
   toPublicJSON() {
     return {
@@ -61,6 +97,8 @@ export class DoctorProfile {
         mode: 'mock',
         label: 'Demo verification',
         registrationCouncil: this.registration_council || null,
+        registrationChecked: this.isCertificateVerified,
+        certificateMethod: this.certificate_method || null,
       },
       identityCardNo: this.identity_card_no,
       memberSince: this.created_at,
@@ -79,6 +117,7 @@ export class DoctorProfile {
         verifiedAt: this.kyc_verified_at,
         mode: 'mock',
       },
+      certificate: this.certificate,
       createdAt: this.created_at,
       updatedAt: this.updated_at,
     };

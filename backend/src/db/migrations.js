@@ -450,6 +450,34 @@ const MIGRATIONS = [
       CREATE INDEX idx_views_doctor_period ON video_views(doctor_id, period);
     `,
   },
+  {
+    version: 5,
+    name: 'doctor-certificate-verification',
+    sql: `
+      -- Doctors sign in with their medical council registration number, and the
+      -- console opens only for an account whose certificate we actually checked.
+      -- This records THAT check: which registration/certificate number, how it
+      -- was checked, and the verdict. The document itself is never stored —
+      -- only its sha256 (a tamper-evident reference) and file metadata, so the
+      -- "no KYC document is persisted" property of this build still holds.
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_status TEXT NOT NULL DEFAULT 'not_submitted';
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_no TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_council TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_ref TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_sha256 TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_file_name TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_mime TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_bytes INTEGER;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_method TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_checks TEXT NOT NULL DEFAULT '[]';
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_reason TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_verified_at TEXT;
+      ALTER TABLE doctor_profiles ADD COLUMN certificate_submitted_at TEXT;
+
+      -- Sign-in gate + queue listing both filter on this.
+      CREATE INDEX idx_doctor_certificate ON doctor_profiles(certificate_status, status);
+    `,
+  },
 ];
 
 export function runMigrations(database) {
