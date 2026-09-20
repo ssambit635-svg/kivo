@@ -1,166 +1,186 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#134e4a" />
-    <meta name="robots" content="noindex" />
-    <title>kivo doctor console</title>
-    <link rel="icon" type="image/png" href="/app/icons/icon-192.png" />
-    <!-- Shared design tokens + the icon set from the patient app: one visual
-         language across two role-separated frontends. -->
-    <link rel="stylesheet" href="/app/styles.css" />
-    <link rel="stylesheet" href="./doctor.css" />
-  </head>
-  <body class="doc-body">
-    <header class="topbar doc-topbar">
-      <div class="brand">
-        <span id="doc-logo" class="brand-logo doc-logo" aria-hidden="true"></span>
-        <div class="brand-text">
-          <h1>kivo <span class="doc-tag">doctor</span></h1>
-          <p id="doc-subtitle">Console for verified doctors</p>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#0F766E" />
+  <meta name="robots" content="noindex" />
+  <title>kivo doctor console</title>
+  <link rel="icon" type="image/png" href="/app/icons/icon-192.png" />
+  <link rel="stylesheet" href="/app/styles.css" />
+  <link rel="stylesheet" href="./doctor.css" />
+</head>
+<body class="doc-body">
+  <header class="topbar doc-topbar">
+    <div class="brand">
+      <span id="doc-logo" class="brand-logo doc-logo" aria-hidden="true">k</span>
+      <div class="brand-text">
+        <h1>kivo <span class="doc-tag">doctor</span></h1>
+        <p id="doc-subtitle">Console for verified doctors</p>
+      </div>
+    </div>
+    <div id="doc-userbox" class="userbox hidden">
+      <span id="doc-user-icon" class="user-icon" aria-hidden="true">D</span>
+      <span id="doc-user-name" class="user-email"></span>
+      <button id="doc-logout" class="btn ghost sm" type="button">
+        <span id="doc-logout-icon" class="btn-ic" aria-hidden="true">↪</span>Out
+      </button>
+    </div>
+  </header>
+
+  <main class="main doc-main">
+    <!-- ================= AUTH / APPLY ================= -->
+    <section id="doc-auth" class="card auth-card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+        <span class="brand-logo doc-logo" style="width:48px;height:48px;border-radius:14px;font-size:22px">k</span>
+        <div>
+          <h2 id="doc-auth-heading">Doctor sign in</h2>
+          <p class="muted">Patient charts open only while a patient shares them — and only for the booked consultation.</p>
         </div>
       </div>
-      <div id="doc-userbox" class="userbox hidden">
-        <span id="doc-user-icon" class="user-icon" aria-hidden="true"></span>
-        <span id="doc-user-name" class="user-email"></span>
-        <button id="doc-logout" class="btn ghost sm" type="button">
-          <span id="doc-logout-icon" class="btn-ic" aria-hidden="true"></span>Sign out
+
+      <div id="doc-role-tabs" class="tabs role-tabs" role="tablist" aria-label="Sign in as">
+        <a id="doc-role-patient" class="tab" href="/app/" role="tab">Patient</a>
+        <button id="doc-role-doctor" class="tab active" type="button" role="tab" aria-selected="true">Doctor</button>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button id="doc-tab-login" class="tab active" type="button" role="tab">Sign in</button>
+        <button id="doc-tab-apply" class="tab" type="button" role="tab">Create account</button>
+      </div>
+
+      <form id="doc-login-form" novalidate>
+        <label class="field">
+          <span>Email</span>
+          <input id="doc-email" type="email" autocomplete="email" placeholder="doctor@clinic.com" required />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <div class="field-with-icon">
+            <input id="doc-password" type="password" autocomplete="current-password" placeholder="••••••••••••" required />
+            <button type="button" class="pw-toggle" id="doc-toggle-pw" aria-label="Show password">👁</button>
+          </div>
+        </label>
+        <label class="field">
+          <span>Medical registration no. (on your certificate)</span>
+          <input id="doc-regno" type="text" autocomplete="off" placeholder="MCI-123456 or MCI-DEMO-4471 for demo" required />
+        </label>
+        <p class="hint">We check this number against the certificate on file before console opens. Demo: use MCI-DEMO-4471.</p>
+
+        <div class="remember-row">
+          <label class="check"><input id="doc-remember" type="checkbox" checked /> Keep me signed in</label>
+          <span class="muted" style="font-weight:600">One-time sign in until sign out</span>
+        </div>
+
+        <p id="doc-login-error" class="error hidden" role="alert"></p>
+        <button class="btn primary block" type="submit" id="doc-login-submit">Sign in to console</button>
+
+        <div class="demo-row">
+          <button type="button" class="demo-btn" id="doc-demo-fill"><b>Demo Doctor</b><span>dr.mohan@kivo.dev • one tap</span></button>
+          <button type="button" class="demo-btn" id="doc-demo-patient"><b>Patient App</b><span>Open patient side</span></button>
+        </div>
+
+        <p class="hint">Signing in as a patient? <a href="/app/">Open the patient app</a> — same account system, separate console.</p>
+      </form>
+
+      <form id="doc-apply-form" class="hidden" novalidate>
+        <p class="doc-note" id="doc-apply-note">Create your doctor account — certificate is read instantly (mock KYC for demo). No registry contacted yet, patients see demo verification badge.</p>
+
+        <div class="doc-grid-2">
+          <label class="field"><span>Full name</span><input id="ap-name" type="text" placeholder="Dr Mohan Charan" required /></label>
+          <label class="field"><span>Email</span><input id="ap-email" type="email" placeholder="mohan@clinic.com" required /></label>
+        </div>
+        <div class="doc-grid-2">
+          <label class="field"><span>Password (12+ chars)</span>
+            <div class="field-with-icon">
+              <input id="ap-password" type="password" autocomplete="new-password" placeholder="Kivo!Doctor#2026" required />
+              <button type="button" class="pw-toggle" id="ap-toggle-pw" aria-label="Show">👁</button>
+            </div>
+          </label>
+          <label class="field"><span>Specialty</span><select id="ap-specialty"></select></label>
+        </div>
+        <div class="doc-grid-2">
+          <label class="field"><span>Headline (what patients see)</span><input id="ap-headline" type="text" placeholder="Bone & joint specialist" /></label>
+          <label class="field"><span>Registration number</span><input id="ap-regno" type="text" placeholder="MCI-123456" required /></label>
+        </div>
+        <div class="doc-grid-3">
+          <label class="field"><span>Experience (years)</span><input id="ap-years" type="number" min="0" max="70" value="5" /></label>
+          <label class="field"><span>City</span><input id="ap-city" type="text" placeholder="Pune" /></label>
+          <label class="field"><span>Consult fee (₹)</span><input id="ap-fee" type="number" min="0" max="100000" value="300" /></label>
+        </div>
+        <div class="doc-grid-2">
+          <label class="field"><span>Qualifications (comma)</span><input id="ap-quals" type="text" placeholder="MBBS, MS Ortho" /></label>
+          <label class="field"><span>Languages (comma)</span><input id="ap-langs" type="text" placeholder="English, Hindi" /></label>
+        </div>
+        <label class="field"><span>Short bio</span><textarea id="ap-bio" rows="3" placeholder="What you treat, how you explain things."></textarea></label>
+        <label class="field">
+          <span>Medical council certificate (PDF, JPG or PNG)</span>
+          <input id="ap-certificate" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+        </label>
+        <p class="hint" id="ap-certificate-note">We read reg. number and name from certificate and keep fingerprint. Document not stored, no registry contacted in this build.</p>
+        <p id="doc-apply-error" class="error hidden" role="alert"></p>
+        <button class="btn primary block" type="submit" id="doc-apply-submit">Create doctor account</button>
+        <p class="hint" style="text-align:center;margin-top:10px">Already have account? <a href="#" id="doc-go-login" style="font-weight:700">Sign in</a></p>
+      </form>
+    </section>
+
+    <!-- ================= CONSOLE ================= -->
+    <section id="doc-console" class="hidden">
+      <nav class="doc-nav" id="doc-nav" aria-label="Doctor console">
+        <button class="doc-nav-item active" type="button" data-view="dashboard" id="nav-dashboard">
+          <span class="nav-ic" aria-hidden="true">◍</span><span>Dashboard</span>
         </button>
-      </div>
-    </header>
+        <button class="doc-nav-item" type="button" data-view="consults" id="nav-consults">
+          <span class="nav-ic" aria-hidden="true">✉</span><span>Consults <em id="nav-consults-badge" class="doc-badge hidden"></em></span>
+        </button>
+        <button class="doc-nav-item" type="button" data-view="studio" id="nav-studio">
+          <span class="nav-ic" aria-hidden="true">▶</span><span>Shorts</span>
+        </button>
+        <button class="doc-nav-item" type="button" data-view="earnings" id="nav-earnings">
+          <span class="nav-ic" aria-hidden="true">₹</span><span>Earnings</span>
+        </button>
+        <button class="doc-nav-item" type="button" data-view="profile" id="nav-profile">
+          <span class="nav-ic" aria-hidden="true">◍</span><span>Profile</span>
+        </button>
+      </nav>
 
-    <main class="main doc-main">
-      <!-- ================= AUTH / APPLY ================= -->
-      <section id="doc-auth" class="card auth-card">
-        <h2 id="doc-auth-heading">Doctor sign in</h2>
-        <p class="muted">Patient charts open only while a patient shares them with you — and only for the consultation they booked.</p>
+      <div id="doc-verification-banner"></div>
 
-        <!-- The mirror of the patient app's two toggles: same account system,
-             two frontends. Doctor is the active side here. -->
-        <div id="doc-role-tabs" class="tabs role-tabs" role="tablist" aria-label="Sign in as">
-          <a id="doc-role-patient" class="tab" href="/app/" role="tab">Patient</a>
-          <button id="doc-role-doctor" class="tab active" type="button" role="tab" aria-selected="true">Doctor</button>
-        </div>
-
-        <div class="tabs" role="tablist">
-          <button id="doc-tab-login" class="tab active" type="button" role="tab">Sign in</button>
-          <button id="doc-tab-apply" class="tab" type="button" role="tab">Join the network</button>
-        </div>
-
-        <form id="doc-login-form" novalidate>
-          <label class="field">
-            <span>Email</span>
-            <input id="doc-email" type="email" autocomplete="email" placeholder="doctor@clinic.com" required />
-          </label>
-          <label class="field">
-            <span>Password</span>
-            <input id="doc-password" type="password" autocomplete="current-password" required />
-          </label>
-          <label class="field">
-            <span>Medical registration no. (on your certificate)</span>
-            <input id="doc-regno" type="text" autocomplete="off" placeholder="MCI-123456" required />
-          </label>
-          <p class="hint">
-            We check this number against the medical council certificate on your account before the console opens.
-          </p>
-          <p id="doc-login-error" class="error hidden" role="alert"></p>
-          <button class="btn primary block" type="submit" id="doc-login-submit">Sign in</button>
-          <p class="hint">Signing in as a patient? <a href="/app/">Open the patient app</a>.</p>
-        </form>
-
-        <form id="doc-apply-form" class="hidden" novalidate>
-          <p class="doc-note" id="doc-apply-note">
-            Preview onboarding: your certificate is read here (registration number + name) before the profile goes live,
-            and <b>no medical registry is contacted yet</b> — patients see a "demo" verification badge until a real
-            check replaces this.
-          </p>
-          <div class="doc-grid-2">
-            <label class="field"><span>Full name</span><input id="ap-name" type="text" placeholder="Dr Mohan Charan" required /></label>
-            <label class="field"><span>Email</span><input id="ap-email" type="email" placeholder="mohan@clinic.com" required /></label>
-          </div>
-          <div class="doc-grid-2">
-            <label class="field"><span>Password (12+ chars)</span><input id="ap-password" type="password" autocomplete="new-password" required /></label>
-            <label class="field"><span>Specialty</span><select id="ap-specialty"></select></label>
-          </div>
-          <div class="doc-grid-2">
-            <label class="field"><span>Headline (what patients see)</span><input id="ap-headline" type="text" placeholder="Bone &amp; joint specialist" /></label>
-            <label class="field"><span>Registration number</span><input id="ap-regno" type="text" placeholder="MCI-123456" required /></label>
-          </div>
-          <div class="doc-grid-3">
-            <label class="field"><span>Experience (years)</span><input id="ap-years" type="number" min="0" max="70" value="5" /></label>
-            <label class="field"><span>City</span><input id="ap-city" type="text" placeholder="Pune" /></label>
-            <label class="field"><span>Consult fee (₹)</span><input id="ap-fee" type="number" min="0" max="100000" value="300" /></label>
-          </div>
-          <div class="doc-grid-2">
-            <label class="field"><span>Qualifications (comma separated)</span><input id="ap-quals" type="text" placeholder="MBBS, MS Ortho" /></label>
-            <label class="field"><span>Languages (comma separated)</span><input id="ap-langs" type="text" placeholder="English, Hindi" /></label>
-          </div>
-          <label class="field"><span>Short bio</span><textarea id="ap-bio" rows="3" placeholder="What you treat, how you like to explain things."></textarea></label>
-          <label class="field">
-            <span>Medical council certificate (PDF, JPG or PNG)</span>
-            <input id="ap-certificate" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
-          </label>
-          <p class="hint" id="ap-certificate-note">
-            We read the registration number and your name from the certificate and keep a fingerprint of the file.
-            The document itself is not stored, and no council registry is contacted in this build.
-          </p>
-          <p id="doc-apply-error" class="error hidden" role="alert"></p>
-          <button class="btn primary block" type="submit" id="doc-apply-submit">Create doctor account</button>
-        </form>
+      <section id="doc-cert-card" class="doc-card hidden" aria-labelledby="doc-cert-h">
+        <h3 id="doc-cert-h">Finish certificate verification</h3>
+        <p class="muted" id="doc-cert-status"></p>
+        <div id="doc-cert-checks"></div>
+        <label class="field">
+          <span>Medical council certificate (PDF, JPG or PNG)</span>
+          <input id="doc-cert-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+        </label>
+        <label class="field">
+          <span>Registration number on the certificate</span>
+          <input id="doc-cert-regno" type="text" autocomplete="off" placeholder="MCI-123456" />
+        </label>
+        <p id="doc-cert-error" class="error hidden" role="alert"></p>
+        <button class="btn primary" type="button" id="doc-cert-submit">Upload & verify</button>
+        <p class="hint" id="doc-cert-note"></p>
       </section>
 
-      <!-- ================= CONSOLE ================= -->
-      <section id="doc-console" class="hidden">
-        <nav class="doc-nav" id="doc-nav" aria-label="Doctor console">
-          <button class="doc-nav-item active" type="button" data-view="dashboard" id="nav-dashboard">
-            <span class="nav-ic" aria-hidden="true"></span><span>Dashboard</span>
-          </button>
-          <button class="doc-nav-item" type="button" data-view="consults" id="nav-consults">
-            <span class="nav-ic" aria-hidden="true"></span><span>Consultations <em id="nav-consults-badge" class="doc-badge hidden"></em></span>
-          </button>
-          <button class="doc-nav-item" type="button" data-view="studio" id="nav-studio">
-            <span class="nav-ic" aria-hidden="true"></span><span>Shorts studio</span>
-          </button>
-          <button class="doc-nav-item" type="button" data-view="earnings" id="nav-earnings">
-            <span class="nav-ic" aria-hidden="true"></span><span>Earnings</span>
-          </button>
-          <button class="doc-nav-item" type="button" data-view="profile" id="nav-profile">
-            <span class="nav-ic" aria-hidden="true"></span><span>Profile &amp; ID card</span>
-          </button>
-        </nav>
+      <div id="doc-view"></div>
 
-        <div id="doc-verification-banner"></div>
+      <!-- Bottom nav for doctor (mobile) -->
+      <nav class="bottom-nav doc-bottom-nav" aria-label="Doctor primary">
+        <button class="nav-item active" type="button" data-view="dashboard" data-bottom="dashboard"><span class="nav-ic">◍</span><span class="nav-label">Home</span></button>
+        <button class="nav-item" type="button" data-view="consults" data-bottom="consults"><span class="nav-ic">✉</span><span class="nav-label">Consults</span></button>
+        <button class="nav-item" type="button" data-view="studio" data-bottom="studio"><span class="nav-ic">▶</span><span class="nav-label">Studio</span></button>
+        <button class="nav-item" type="button" data-view="profile" data-bottom="profile"><span class="nav-ic">◍</span><span class="nav-label">Profile</span></button>
+      </nav>
+    </section>
+  </main>
 
-        <!-- Shown until the medical council certificate on the account has been
-             checked. It is the only console surface a not-yet-verified doctor
-             can reach: every clinical endpoint stays closed until it passes. -->
-        <section id="doc-cert-card" class="doc-card hidden" aria-labelledby="doc-cert-h">
-          <h3 id="doc-cert-h">Finish certificate verification</h3>
-          <p class="muted" id="doc-cert-status"></p>
-          <div id="doc-cert-checks"></div>
-          <label class="field">
-            <span>Medical council certificate (PDF, JPG or PNG)</span>
-            <input id="doc-cert-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
-          </label>
-          <label class="field">
-            <span>Registration number on the certificate</span>
-            <input id="doc-cert-regno" type="text" autocomplete="off" placeholder="MCI-123456" />
-          </label>
-          <p id="doc-cert-error" class="error hidden" role="alert"></p>
-          <button class="btn primary" type="button" id="doc-cert-submit">Upload &amp; verify</button>
-          <p class="hint" id="doc-cert-note"></p>
-        </section>
+  <div id="doc-toast" class="toast hidden" role="status"></div>
+  <div id="doc-overlay" class="hidden"></div>
 
-        <div id="doc-view"></div>
-      </section>
-    </main>
-
-    <div id="doc-toast" class="toast hidden" role="status"></div>
-    <div id="doc-overlay" class="hidden"></div>
-
-    <script src="/app/icons.js"></script>
-    <script src="./doctor.js"></script>
-  </body>
+  <script src="/app/icons.js"></script>
+  <script src="/app/motion.js"></script>
+  <script src="./doctor.js"></script>
+</body>
 </html>
