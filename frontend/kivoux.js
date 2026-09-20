@@ -55,6 +55,7 @@
     setIcon('upload-icon', 'upload', 15);
     setIcon('voice-icon', 'mic', 16);
     setIcon('logout-icon', 'log-out', 14);
+    var apk = $('topbar-apk'); if (apk) Icons.set(apk, 'file-up', 18);
     setIcon('refresh-icon', 'refresh-cw', 15);
   }
 
@@ -170,12 +171,6 @@
     if (hs) hs.addEventListener('click', function () { var b = $('btn-scan'); if (b) b.click(); });
     var ha = $('hero-ask');
     if (ha) ha.addEventListener('click', function () { showPage('ask'); });
-    var qaReports = $('qa-reports');
-    if (qaReports) qaReports.addEventListener('click', function () {
-      showPage('home', { noAnim: true });
-      var r = document.querySelector('.widget-reports');
-      if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
     var qaVoice = $('qa-voice');
     if (qaVoice) qaVoice.addEventListener('click', function () { var b = $('btn-voice'); if (b) b.click(); });
     var qaMiles = $('qa-milestones');
