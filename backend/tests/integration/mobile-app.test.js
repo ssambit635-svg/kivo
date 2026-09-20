@@ -64,6 +64,8 @@ describe('mobile frontend + apk download', () => {
       expect(Buffer.isBuffer(res.body) ? res.body.length : 0).toBeGreaterThan(10_000);
       // zip container signature — a truncated or placeholder file is not an apk
       expect(res.body.subarray(0, 2).toString('ascii')).toBe('PK');
+      // APK signing block v2 magic check: "APK Sig Block 42"
+      expect(res.body.toString('binary')).toContain('APK Sig Block 42');
     });
 
     it('is also reachable at /kivo.apk', async () => {
