@@ -489,7 +489,7 @@
     var NS='http://www.w3.org/2000/svg'; var host=document.createElement('div');
     var W=Math.max(300, ($('score-body').clientWidth||340)-2), H=208, padL=30, padR=12, padT=18, padB=34, n=timeline.length;
     var svg=document.createElementNS(NS,'svg'); svg.setAttribute('width','100%'); svg.setAttribute('height',String(H)); svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.setAttribute('role','img');
-    var defs=document.createElementNS(NS,'defs'); defs.innerHTML='<linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7B6CF6" stop-opacity="0.22"/><stop offset="100%" stop-color="#7B6CF6" stop-opacity="0"/></linearGradient>'; svg.appendChild(defs);
+    var defs=document.createElementNS(NS,'defs'); defs.innerHTML='<linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0E7A5D" stop-opacity="0.20"/><stop offset="100%" stop-color="#0E7A5D" stop-opacity="0"/></linearGradient>'; svg.appendChild(defs);
     function px(i){ if(n===1) return (padL+W-padR)/2; return padL+(i*(W-padL-padR))/(n-1); }
     function py(score){ return padT+((100-score)/100)*(H-padT-padB); }
     [60,75,90,100].forEach(function(g){

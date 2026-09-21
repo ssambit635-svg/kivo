@@ -10,7 +10,7 @@
  * separate frontend for a separate role, and clinical screens should never be
  * served stale from a cache.
  */
-const VERSION = 'kivo-v6-celeste';
+const VERSION = 'kivo-v7-verdant';
 const SHELL = [
   '/app/',
   '/app/index.html',
@@ -35,6 +35,8 @@ const SHELL = [
   '/app/img/hero-run.jpg',
   '/app/img/avatar-user.jpg',
   '/app/img/walk.jpg',
+  '/app/img/welcome.jpg',
+  '/app/img/auth-hero.jpg',
   '/app/img/doc-1.jpg',
   '/app/img/doc-2.jpg',
   '/app/img/doc-3.jpg',

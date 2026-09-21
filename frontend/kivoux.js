@@ -1,13 +1,13 @@
 /**
- * kivo — kivoux.js · "Obsidian Vital" experience layer (2026 redesign)
+ * kivo — kivoux.js · "Verdant" experience layer (2026 redesign)
  *
  * Sits on top of app.js (MtApp) + care.js without touching their logic:
  *   · splash → first light
  *   · page router (home / vitals / ask / profile) + care/report sync
  *   · hero greeting + quick actions
  *   · personalization onboarding (age, gender, height, weight, activity, goal, sleep)
- *   · animated AI-robot welcome
- *   · profile page renderer
+ *   · photo-card welcome (real imagery, calm staggered reveal)
+ *   · profile page renderer + user profile-photo (PFP) upload with monogram fallback
  */
 (function () {
   'use strict';
@@ -19,6 +19,7 @@
 
   var PROFILE_KEY = 'kivo.profile.v1';
   var SEEN_BOT_KEY = 'kivo.bot.v1';
+  var PFP_KEY = 'kivo.pfp.v1';
 
   /* ------------------------------------------------------------------ store */
 
@@ -27,6 +28,93 @@
   }
   function saveProfile(p) {
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch (e) {}
+  }
+  function loadPfp() {
+    try { return localStorage.getItem(PFP_KEY) || ''; } catch (e) { return ''; }
+  }
+  function savePfp(dataUrl) {
+    try { localStorage.setItem(PFP_KEY, dataUrl); } catch (e) {}
+  }
+  function clearPfp() {
+    try { localStorage.removeItem(PFP_KEY); } catch (e) {}
+  }
+
+  /* ------------------------------------------------------------------ avatar (PFP) */
+
+  /* Monogram avatar — the classy default when the user has no photo yet. */
+  function initialsAvatar(letter) {
+    var c = document.createElement('canvas');
+    c.width = 172; c.height = 172;
+    var x = c.getContext('2d');
+    var g = x.createLinearGradient(0, 0, 172, 172);
+    g.addColorStop(0, '#0E7A5D');
+    g.addColorStop(1, '#22A37C');
+    x.fillStyle = g;
+    x.fillRect(0, 0, 172, 172);
+    x.fillStyle = 'rgba(255,255,255,.10)';
+    x.beginPath(); x.arc(44, 40, 74, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#fff';
+    x.font = '800 82px "Plus Jakarta Sans", system-ui, sans-serif';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText(String(letter || 'k').toUpperCase(), 86, 90);
+    return c.toDataURL('image/jpeg', 0.9);
+  }
+
+  function initialLetter() {
+    var p = loadProfile();
+    var user = App && App.user ? App.user() : null;
+    var name = (p && p.name) || (user && user.displayName) || '';
+    name = String(name || '').trim();
+    return name ? name.charAt(0) : 'k';
+  }
+
+  function currentAvatarSrc() {
+    return loadPfp() || initialsAvatar(initialLetter());
+  }
+
+  function applyAvatars() {
+    var src = currentAvatarSrc();
+    var t = $('topbar-avatar-img');
+    if (t) t.src = src;
+    var a = $('profile-avatar');
+    if (a) a.src = src;
+  }
+
+  /* Pick → center-crop → downscale → store as JPEG data URL (keeps storage small). */
+  function handlePfpFile(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type || '')) {
+      if (App && App.toast) App.toast('Choose an image file for your photo');
+      return;
+    }
+    var url;
+    try { url = URL.createObjectURL(file); } catch (e) { return; }
+    var img = new Image();
+    img.onload = function () {
+      try { URL.revokeObjectURL(url); } catch (e) {}
+      var size = 320;
+      var c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      var x = c.getContext('2d');
+      var s = Math.min(img.naturalWidth, img.naturalHeight);
+      var sx = (img.naturalWidth - s) / 2;
+      var sy = (img.naturalHeight - s) / 2;
+      x.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      try {
+        savePfp(c.toDataURL('image/jpeg', 0.85));
+        applyAvatars();
+        if (App && App.toast) App.toast('Profile photo updated');
+        if (currentPage === 'profile') renderProfile();
+      } catch (e) {
+        if (App && App.toast) App.toast('Could not save that photo');
+      }
+    };
+    img.onerror = function () {
+      try { URL.revokeObjectURL(url); } catch (e) {}
+      if (App && App.toast) App.toast('Could not read that photo');
+    };
+    img.src = url;
   }
 
   /* ------------------------------------------------------------------ icons */
@@ -169,6 +257,8 @@
     }
     var hg = $('hero-greet');
     if (hg && displayName) hg.textContent = greetWord();
+    // a new name may change the monogram avatar
+    applyAvatars();
   }
 
   function bindHeroAndQA() {
@@ -188,94 +278,48 @@
     if (qaVitals) qaVitals.addEventListener('click', function () { showPage('insights'); });
   }
 
-  /* ------------------------------------------------------------------ robot */
+  /* ------------------------------------------------------------------ welcome */
 
-  function robotSVG() {
-    return '<svg class="bot-svg" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kivo robot">' +
-      '<defs>' +
-      '<linearGradient id="botBody" x1="60" y1="40" x2="160" y2="200" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#3A4A7E"/><stop offset="1" stop-color="#1B2550"/></linearGradient>' +
-      '<linearGradient id="botFace" x1="70" y1="70" x2="150" y2="140" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#E4EDFF"/></linearGradient>' +
-      '<linearGradient id="botAcc" x1="0" y1="0" x2="220" y2="220" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#4E9AF5"/><stop offset="1" stop-color="#8B7CF6"/></linearGradient>' +
-      '</defs>' +
-      '<ellipse cx="110" cy="204" rx="52" ry="8" fill="rgba(123,108,246,.16)"/>' +
-      '<line x1="110" y1="18" x2="110" y2="38" stroke="url(#botAcc)" stroke-width="4" stroke-linecap="round"/>' +
-      '<circle class="bot-antenna-dot" cx="110" cy="14" r="7" fill="#7B6CF6"/>' +
-      '<circle cx="110" cy="14" r="12" stroke="rgba(123,108,246,.35)" stroke-width="2"/>' +
-      '<rect x="55" y="38" width="110" height="112" rx="34" fill="url(#botBody)" stroke="rgba(255,255,255,.7)" stroke-width="1.5"/>' +
-      '<rect x="72" y="58" width="76" height="56" rx="22" fill="url(#botFace)" stroke="rgba(123,108,246,.4)" stroke-width="1.5"/>' +
-      '<g class="bot-eye" style="transform-origin:97px 86px"><circle cx="97" cy="86" r="7.5" fill="#5563EA"/></g>' +
-      '<g class="bot-eye" style="transform-origin:123px 86px"><circle cx="123" cy="86" r="7.5" fill="#5563EA"/></g>' +
-      '<path d="M100 100 Q110 108 120 100" stroke="#5563EA" stroke-width="3.5" stroke-linecap="round"/>' +
-      '<rect x="88" y="128" width="44" height="8" rx="4" fill="rgba(255,255,255,.28)"/>' +
-      '<path class="bot-arm" d="M55 92 Q30 96 26 118" stroke="url(#botAcc)" stroke-width="9" stroke-linecap="round"/>' +
-      '<circle cx="26" cy="118" r="7" fill="#7B6CF6"/>' +
-      '<path d="M165 92 Q188 96 192 112" stroke="url(#botAcc)" stroke-width="9" stroke-linecap="round"/>' +
-      '<circle cx="192" cy="112" r="7" fill="#7B6CF6"/>' +
-      '<path d="M78 150 L70 186" stroke="url(#botAcc)" stroke-width="9" stroke-linecap="round"/>' +
-      '<path d="M142 150 L150 186" stroke="url(#botAcc)" stroke-width="9" stroke-linecap="round"/>' +
-      '<path d="M60 186 L80 186" stroke="rgba(15,27,61,.25)" stroke-width="9" stroke-linecap="round"/>' +
-      '<path d="M140 186 L160 186" stroke="rgba(15,27,61,.25)" stroke-width="9" stroke-linecap="round"/>' +
-      '</svg>';
-  }
-
-  var botTimer = null;
-  function playBot(lines, onDone) {
+  /* Calm photo card — no toy robot. Content staggers in quietly. */
+  function playBot(cfg, onDone) {
     var old = $('bot-welcome');
     if (old) old.parentNode.removeChild(old);
 
     var wrap = document.createElement('div');
     wrap.id = 'bot-welcome';
+    var lineHtml = (cfg.lines || []).map(function (l) {
+      return '<p class="welcome-line">' + l + '</p>';
+    }).join('');
     wrap.innerHTML =
-      '<div class="bot-glow"></div>' +
-      '<div class="bot-stage">' + robotSVG() +
-      '<div class="bot-bubble" id="bot-bubble"></div>' +
-      '<button class="btn primary bot-cta hidden" id="bot-cta" type="button">Let’s go</button>' +
+      '<div class="welcome-card">' +
+      '<div class="welcome-photo">' +
+      '<img src="./img/welcome.jpg" alt="" />' +
+      '<span class="welcome-brand"><span class="brand-logo" aria-hidden="true">k</span><b>kivo</b></span>' +
+      '</div>' +
+      '<div class="welcome-body">' +
+      '<span class="welcome-kicker">' + (cfg.kicker || 'your health twin') + '</span>' +
+      '<h2 class="welcome-title">' + (cfg.title || 'Welcome') + '</h2>' +
+      lineHtml +
+      '<button class="btn primary block welcome-cta" id="bot-cta" type="button">' + (cfg.cta || 'Let’s begin') + '</button>' +
+      '</div>' +
       '</div>';
     document.body.appendChild(wrap);
     document.body.style.overflow = 'hidden';
+    requestAnimationFrame(function () { wrap.classList.add('reveal'); });
 
-    var bubble = wrap.querySelector('#bot-bubble');
     var cta = wrap.querySelector('#bot-cta');
-    var li = 0, ci = 0, dead = false;
-
-    function type() {
-      if (dead) return;
-      if (li >= lines.length) {
-        if (cta) cta.classList.remove('hidden');
-        return;
-      }
-      var line = lines[li];
-      if (ci < line.length) {
-        if (line.charAt(ci) === '<') {
-          var gt = line.indexOf('>', ci);
-          ci = gt === -1 ? line.length : gt + 1;   // tags appear whole, never cut
-        } else {
-          var lt = line.indexOf('<', ci);
-          var stop = lt === -1 ? line.length : lt;
-          ci = stop - ci > 2 ? ci + 2 : stop;      // 2 chars per tick
-        }
-        bubble.innerHTML = line.slice(0, ci);
-        botTimer = setTimeout(type, ci >= line.length ? 60 : 22);
-      } else {
-        li += 1; ci = 0;
-        botTimer = setTimeout(type, 850);
-      }
-    }
-    type();
-
+    var dead = false;
     function close() {
+      if (dead) return;
       dead = true;
-      if (botTimer) clearTimeout(botTimer);
-      wrap.style.transition = 'opacity .4s ease';
+      wrap.style.transition = 'opacity .35s ease, transform .35s ease';
       wrap.style.opacity = '0';
+      wrap.style.transform = 'scale(.98)';
       setTimeout(function () {
         if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
         document.body.style.overflow = '';
         if (onDone) onDone();
-      }, 420);
+      }, 360);
     }
     cta.addEventListener('click', close);
     wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
@@ -283,18 +327,27 @@
 
   function botLinesFor(profile, isNew) {
     var name = (profile && profile.name) || displayName || '';
-    var n = name ? '<b>' + escapeHTML(name) + '</b>' : 'friend';
+    var n = '<b>' + escapeHTML(name || 'friend') + '</b>';
     if (isNew) {
-      return [
-        'Systems online. I am <b>K</b> — your digital health twin. 🤖',
-        'I just tuned myself to ' + n + ': ' + profileSummary(profile) + '.',
-        'Point me at a lab report and I will decode every line. Let’s grow your twin. ✦'
-      ];
+      return {
+        kicker: 'Your twin, ready',
+        title: 'Namaste, ' + n + '.',
+        lines: [
+          'I’m your kivo twin — already tuned to ' + profileSummary(profile) + '.',
+          'Point me at a lab report and I’ll decode every line into clear, grounded trends.'
+        ],
+        cta: 'Let’s begin'
+      };
     }
-    return [
-      'Welcome back, ' + n + '. Your twin kept everything safe. ✦',
-      'Ask me anything about your trends — I only speak from your verified data.'
-    ];
+    return {
+      kicker: 'Good to see you',
+      title: 'Welcome back, ' + n + '.',
+      lines: [
+        'Your twin kept everything safe while you were away.',
+        'Ask me about your trends — I only speak from your verified data.'
+      ],
+      cta: 'Continue'
+    };
   }
 
   function profileSummary(p) {
@@ -572,19 +625,39 @@
     var member = App && App.member ? App.member() : null;
     var name = (p && p.name) || (user && user.displayName) || (member && member.displayName) || 'kivo member';
     var email = user && user.email ? user.email : '';
+    var pfp = loadPfp();
     host.innerHTML = '';
 
     var hero = document.createElement('section');
     hero.className = 'card profile-hero';
     hero.innerHTML =
-      '<img class="profile-avatar" src="./img/avatar-user.jpg" alt="Profile photo" />' +
+      '<div class="profile-top">' +
+      '<div class="profile-avatar-wrap">' +
+      '<img class="profile-avatar" id="profile-avatar" src="' + (pfp || initialsAvatar(initialLetter())) + '" alt="Profile photo" />' +
+      '<button class="profile-avatar-cam" id="pfp-cam" type="button" aria-label="Change profile photo" title="Add or change photo">' + Icons.svg('camera', 14) + '</button>' +
+      '</div>' +
+      '<div class="profile-who">' +
       '<h3 class="profile-name">' + escapeHTML(name) + '</h3>' +
-      '<p class="profile-email">' + escapeHTML(email) + '</p>' +
+      '<p class="profile-email">' + (email ? escapeHTML(email) : 'kivo health member') + '</p>' +
+      '</div>' +
+      '</div>' +
+      '<input type="file" id="pfp-file" accept="image/*" hidden />' +
       '<div class="profile-chips">' +
       (p && p.age ? '<span class="chip teal">' + p.age + ' yrs</span>' : '') +
       (p && p.gender ? '<span class="chip">' + escapeHTML(p.gender) + '</span>' : '') +
+      (pfp ? '<span class="chip green">photo on</span>' : '<span class="chip grey">add a photo</span>') +
       (member && member.createdAt ? '<span class="chip grey">twin active</span>' : '') +
       '</div>';
+    var cam = hero.querySelector('#pfp-cam');
+    var fileIn = hero.querySelector('#pfp-file');
+    if (cam && fileIn) {
+      cam.addEventListener('click', function () { fileIn.click(); });
+      fileIn.addEventListener('change', function (ev) {
+        var f = ev.target.files && ev.target.files[0];
+        ev.target.value = '';
+        handlePfpFile(f);
+      });
+    }
     host.appendChild(hero);
 
     if (p) {
@@ -614,6 +687,14 @@
     actions.innerHTML = '<div class="widget-head"><span class="widget-ic ic-indigo">' + Icons.svg('user', 19) + '</span>' +
       '<div><h2>Account</h2><p class="muted">everything under your control</p></div></div>';
     actions.appendChild(row('sparkles', 'Edit my answers', 'Redo personalization', function () { openOnboarding(playBot.bind(null, botLinesFor(loadProfile(), true))); }));
+    if (loadPfp()) {
+      actions.appendChild(row('camera', 'Remove photo', 'Back to your monogram avatar', function () {
+        clearPfp();
+        applyAvatars();
+        if (App && App.toast) App.toast('Photo removed');
+        renderProfile();
+      }));
+    }
     actions.appendChild(row('refresh-cw', 'Refresh my data', 'Pull the latest from your twin', function () {
       var b = $('btn-refresh'); if (b) b.click();
     }));
@@ -714,6 +795,7 @@
   function afterAuth() {
     var tb = $('topbar-avatar');
     if (tb) tb.classList.remove('hidden');
+    applyAvatars();
     if (onboardingOpen()) {
       setTimeout(function () { openOnboarding(); }, 500);
     } else if (!botPlayedThisSession) {
@@ -739,11 +821,11 @@
     if (!auth || !auth.parentNode || auth.parentNode.querySelector('.auth-hero')) return;
     var h = document.createElement('div');
     h.className = 'auth-hero';
-    h.innerHTML = '<img src="./img/walk.jpg" alt="" />' +
+    h.innerHTML = '<img src="./img/auth-hero.jpg" alt="" />' +
       '<div class="auth-hero-shade"></div>' +
       '<div class="auth-hero-copy">' +
       '<span class="hero-greet">your body, alive</span>' +
-      '<p>Scan it. Understand it. <b>Grow your twin.</b></p>' +
+      '<p>Every report, decoded. <b>Your health, in one place.</b></p>' +
       '</div>';
     auth.parentNode.insertBefore(h, auth);
   }
