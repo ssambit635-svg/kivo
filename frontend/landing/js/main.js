@@ -225,7 +225,10 @@
       .to(heroHand, { opacity: 1, y: sm ? 50 : md ? 60 : 100, rotation: 0, duration: 1.4, ease: 'power3' }, '-=0.8')
       .to(topNav, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.7')
       .to(bottomBar, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.8');
-    makeCycler(document.getElementById('heroCarousel'), ['know', 'see', 'trust'], 2600, 0.5);
+    const isMob = window.innerWidth <= 767;
+    const heroCarEl = document.getElementById('heroCarousel');
+    if (isMob && heroCarEl) heroCarEl.textContent = 'see';
+    makeCycler(heroCarEl, isMob ? ['see', 'know', 'trust'] : ['know', 'see', 'trust'], 2600, 0.5);
     makeCycler(document.getElementById('bottomBarQuote'), ['verify', 'twin', 'trend', 'risk', 'care'], 3200, 0.45);
   }
 
@@ -236,7 +239,12 @@
     gsap.set('.markerCard, .stats-block, .ctaLink', { opacity: 1, transform: 'none' });
     gsap.set('.footer-col a, .footer-title-sm, .footer-copyright, .appScreen-cta, .appSection-text--two', { opacity: 1, transform: 'none' });
   } else if (loader) {
-    loaderDuration = runLoader();
+    if (window.innerWidth <= 767) {
+      startHero();
+      loader.style.display = 'none';
+    } else {
+      loaderDuration = runLoader();
+    }
   } else {
     startHero();
   }
@@ -346,177 +354,335 @@
     });
   }
 
-  /* ---------- sticky hero (sofihealth-style pinned intro) ----------
-     The hero stays stuck at the top while the page keeps scrolling — the
-     next section (waterStick) slides up over it and takes the screen,
-     exactly like sofihealth.com. A slow parallax on the hand + title
-     sells the depth while it is pinned. */
-  gsap.set('#waterStick', { position: 'relative', zIndex: 3 });
-  ScrollTrigger.create({
-    trigger: '#hero',
-    start: 'top top',
-    end: '+=100%',
-    pin: true,
-    anticipatePin: 1,
-  });
-  if (!reduced) {
-    const heroPin = {
-      trigger: '#hero',
-      start: 'top top',
-      end: '+=100%',
-      scrub: true,
-      ease: 'none',
-    };
-    gsap.to('#heroHand', { yPercent: 26, scrollTrigger: heroPin });
-    gsap.to('.hero-title', { yPercent: -14, scrollTrigger: heroPin });
-    gsap.to('.hero-text, .hero-cta, .hero-apkBtn', { yPercent: -8, scrollTrigger: heroPin });
+  /* ---------- section order sync & responsive motion engine ---------- */
+  function syncSectionOrder(isMobile) {
+    const container = document.querySelector('.container');
+    const hero = document.getElementById('hero');
+    const waterStick = document.getElementById('waterStick');
+    const stickWrap = document.getElementById('stickWrap');
+    if (!container || !hero || !waterStick || !stickWrap) return;
+    if (isMobile) {
+      if (hero.nextElementSibling === waterStick) {
+        container.insertBefore(hero, stickWrap);
+      }
+    } else {
+      if (waterStick.nextElementSibling === hero) {
+        container.insertBefore(hero, waterStick);
+      }
+    }
   }
 
-  /* ---------- water stick: title fill + capsule white wipe ---------- */
+  /* ---------- mobile drawer navigation ---------- */
+  const menuToggle = document.getElementById('menuToggle');
+  const menuClose = document.getElementById('menuClose');
+  const mobileDrawer = document.getElementById('mobileDrawer');
+  const mobileDrawerBackdrop = document.getElementById('mobileDrawerBackdrop');
+
+  function openMobileMenu() {
+    if (!mobileDrawer) return;
+    mobileDrawer.classList.add('is-open');
+    mobileDrawer.setAttribute('aria-hidden', 'false');
+    if (menuToggle) {
+      menuToggle.classList.add('is-active');
+      menuToggle.setAttribute('aria-expanded', 'true');
+    }
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileMenu() {
+    if (!mobileDrawer) return;
+    mobileDrawer.classList.remove('is-open');
+    mobileDrawer.setAttribute('aria-hidden', 'true');
+    if (menuToggle) {
+      menuToggle.classList.remove('is-active');
+      menuToggle.setAttribute('aria-expanded', 'false');
+    }
+    document.body.style.overflow = '';
+  }
+
+  if (menuToggle) {
+    menuToggle.addEventListener('click', () => {
+      const isOpen = mobileDrawer && mobileDrawer.classList.contains('is-open');
+      if (isOpen) closeMobileMenu();
+      else openMobileMenu();
+    });
+  }
+  if (menuClose) menuClose.addEventListener('click', closeMobileMenu);
+  if (mobileDrawerBackdrop) mobileDrawerBackdrop.addEventListener('click', closeMobileMenu);
+  document.querySelectorAll('.mobileDrawer-link, .mobileDrawer-ctaBtn').forEach((el) => {
+    el.addEventListener('click', closeMobileMenu);
+  });
+
+  /* ---------- water stick elements ---------- */
   const waterSection = document.getElementById('waterStick');
   const waterShape = document.querySelector('.waterStick-shape');
   const waterCanvas = document.getElementById('waterCanvas');
-  // Hide the canvas wave animation entirely — the capsule itself is the hero
-  // of this transition now, expanding into the full-screen white wipe.
   if (waterCanvas) waterCanvas.style.display = 'none';
 
-  if (!reduced && waterSection && waterShape) {
-    // The resting capsule is sized by CSS (width ~280px, height ~380px on desktop,
-    // smaller on mobile). We start it at a tiny dot scale, grow it to its natural
-    // resting capsule size for the text-fill portion of the scroll, then expand
-    // vertically → horizontally to cover the viewport and hand off cleanly to the
-    // next section which is already on the same #f7f7f7 background.
-    const scaleToFullY = () => {
-      const h = waterShape.offsetHeight;
-      // need to reach (at minimum) the viewport diagonal so corners never show
-      return Math.max((window.innerHeight * 1.8) / h, 8);
-    };
-    const scaleToFullX = () => {
-      const w = waterShape.offsetWidth;
-      return Math.max((window.innerWidth * 2.2) / w, 12);
-    };
+  /* ---------- responsive GSAP ScrollTrigger engine ---------- */
+  ScrollTrigger.matchMedia({
+    // Desktop: existing sticky hero + waterStick capsule wipe + pinned twin
+    "(min-width: 768px)": function() {
+      syncSectionOrder(false);
 
-    // Start state: tiny centered dot. We let GSAP own the translate + scale so
-    // the element is perfectly centered and scaleX/scaleY animate from a known
-    // baseline — letting us grow vertically first, then horizontally (SoFi-
-    // style pill wipe).
-    gsap.set(waterShape, {
-      xPercent: -50,
-      yPercent: -50,
-      scaleX: 0.04,
-      scaleY: 0.04,
-      transformOrigin: 'center center',
-    });
-
-    // Single pinned timeline covering the whole dark→light transition.
-    const wsTl = gsap.timeline({
-      defaults: { ease: 'none' },
-      scrollTrigger: {
-        trigger: '#waterStick',
+      gsap.set('#waterStick', { position: 'relative', zIndex: 3 });
+      ScrollTrigger.create({
+        trigger: '#hero',
         start: 'top top',
-        end: '+=180%',
-        scrub: 1,
+        end: '+=100%',
         pin: true,
         anticipatePin: 1,
-        invalidateOnRefresh: true,
-      },
-    });
-
-    // Phase 1 (0 → 20%): dot grows to its natural resting capsule size
-    // (scaleX and scaleY together → rounded capsule, matching the original
-    // resting shape the user saw before waves were removed).
-    wsTl.to(waterShape, {
-      scaleX: 1,
-      scaleY: 1,
-      ease: 'power2.out',
-      duration: 0.2,
-    }, 0);
-
-    // Phase 2 (15% → 55%): the statement deliberately stays grey while the
-    // icon arrives and the capsule rests behind it.
-    wsTl.fromTo('.waterStick-icon',
-      { opacity: 0, scale: 0.4 },
-      { opacity: 1, scale: 1, duration: 0.2, ease: 'power2.out' },
-      0.12
-    );
-
-    // Phase 3 (55% → 78%): grow TALL first — capsule stretches vertically past
-    // the top and bottom of the viewport while staying narrow.
-    wsTl.to(waterShape, {
-      scaleY: () => scaleToFullY(),
-      ease: 'power2.inOut',
-      duration: 0.23,
-    }, 0.55);
-
-    // Phase 4 (73% → 95%): grow WIDE — capsule blows out horizontally, covering
-    // the viewport completely. Simultaneously fade the text + icon out so the
-    // wipe feels clean rather than cutting hard.
-    wsTl.to(waterShape, {
-      scaleX: () => scaleToFullX(),
-      ease: 'power3.inOut',
-      duration: 0.22,
-    }, 0.73);
-    wsTl.to(['.waterStick-icon', '.waterStick-splitedText'], {
-      opacity: 0,
-      duration: 0.18,
-      ease: 'power2.inOut',
-    }, 0.75);
-
-    // Phase 5 (92% → 100%): flatten border-radius to 0 so there are no pill
-    // edges left once full-screen — seamless hand-off to the next section.
-    wsTl.to(waterShape, {
-      borderRadius: 0,
-      duration: 0.08,
-      ease: 'power2.inOut',
-    }, 0.92);
-  }
-
-  /* ---------- pinned twin section ---------- */
-  if (isDesktop()) {
-    gsap.set('#twinCircle', { xPercent: -50, yPercent: -50, scale: 0 });
-    const featOrder = [
-      '.twin-feature--long',
-      '.twin-feature--connect',
-      '.twin-feature--personal',
-      '.twin-feature--plain',
-    ];
-    const tl = gsap.timeline({
-      defaults: { ease: 'none' },
-      scrollTrigger: {
-        trigger: '#stickWrap',
-        start: 'top top',
-        end: '+=250%',
-        scrub: 1,
-        pin: '.twin',
-        anticipatePin: 1,
-      },
-    });
-    tl.to('#twinBlackTitle', { x: '-100vw', duration: 1.1 }, 0)
-      .to('#twinCircle', { scale: 1, ease: 'power2.inOut', duration: 1.5 }, 0.2)
-      .fromTo('.twin-para--one p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.4 }, 0.55)
-      .fromTo('.twin-para--two p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.4 }, 0.65)
-      .to('.twin-para p', { opacity: 0, duration: 0.5, ease: 'power2.in' }, 1.35)
-      .fromTo('.twin-strip', { opacity: 0, y: 80 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.6 }, 0.85);
-    featOrder.forEach((sel, idx) => {
-      const at = 0.95 + idx * 0.22;
-      const right = idx % 2 === 1; // connect & plain sit on the right edge
-      const div = document.querySelector(sel + ' .twin-featureDivider');
-      const dist = () => Math.max(0, div.clientWidth - 5);
-      tl.to(sel + ' .twin-featureDivider', { scaleX: 1, ease: 'power2.inOut', duration: 0.5 }, at)
-        .fromTo(sel + ' .twin-featureDot', { x: 0 }, { x: () => (right ? -1 : 1) * dist(), ease: 'power2.inOut', duration: 0.5 }, at)
-        .fromTo(sel + ' .twin-iconHolder', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, ease: 'back.out(1.6)', duration: 0.35 }, at + 0.15)
-        .fromTo(sel + ' h2', { y: 24, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out', duration: 0.35 }, at + 0.2)
-        .fromTo(sel + ' p', { y: 16, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out', duration: 0.35 }, at + 0.28);
-    });
-  } else {
-    gsap.utils.toArray('.twin-para p, .twin-featureElements').forEach((el) => {
-      gsap.fromTo(el, { opacity: 0, y: 24 }, {
-        opacity: 1, y: 0, duration: 0.7, ease: 'power2.out',
-        scrollTrigger: { trigger: el, start: 'top 85%' },
       });
-    });
-    gsap.set('#twinCircle', { display: 'none' });
-  }
+
+      if (!reduced) {
+        const heroPin = {
+          trigger: '#hero',
+          start: 'top top',
+          end: '+=100%',
+          scrub: true,
+          ease: 'none',
+        };
+        gsap.to('#heroHand', { yPercent: 26, scrollTrigger: heroPin });
+        gsap.to('.hero-title', { yPercent: -14, scrollTrigger: heroPin });
+        gsap.to('.hero-text, .hero-cta, .hero-apkBtn', { yPercent: -8, scrollTrigger: heroPin });
+      }
+
+      if (!reduced && waterSection && waterShape) {
+        const scaleToFullY = () => {
+          const h = waterShape.offsetHeight || 300;
+          return Math.max((window.innerHeight * 1.8) / h, 8);
+        };
+        const scaleToFullX = () => {
+          const w = waterShape.offsetWidth || 280;
+          return Math.max((window.innerWidth * 2.2) / w, 12);
+        };
+
+        gsap.set(waterShape, {
+          xPercent: -50,
+          yPercent: -50,
+          scaleX: 0.04,
+          scaleY: 0.04,
+          transformOrigin: 'center center',
+        });
+
+        const wsTl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: {
+            trigger: '#waterStick',
+            start: 'top top',
+            end: '+=180%',
+            scrub: 1,
+            pin: true,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
+        });
+
+        wsTl.to(waterShape, {
+          scaleX: 1,
+          scaleY: 1,
+          ease: 'power2.out',
+          duration: 0.2,
+        }, 0);
+
+        wsTl.fromTo('.waterStick-icon',
+          { opacity: 0, scale: 0.4 },
+          { opacity: 1, scale: 1, duration: 0.2, ease: 'power2.out' },
+          0.12
+        );
+
+        wsTl.to(waterShape, {
+          scaleY: () => scaleToFullY(),
+          ease: 'power2.inOut',
+          duration: 0.23,
+        }, 0.55);
+
+        wsTl.to(waterShape, {
+          scaleX: () => scaleToFullX(),
+          ease: 'power3.inOut',
+          duration: 0.22,
+        }, 0.73);
+        wsTl.to(['.waterStick-icon', '.waterStick-splitedText'], {
+          opacity: 0,
+          duration: 0.18,
+          ease: 'power2.inOut',
+        }, 0.75);
+
+        wsTl.to(waterShape, {
+          borderRadius: 0,
+          duration: 0.08,
+          ease: 'power2.inOut',
+        }, 0.92);
+      }
+
+      if (isDesktop()) {
+        gsap.set('#twinCircle', { xPercent: -50, yPercent: -50, scale: 0, display: 'block' });
+        const featOrder = [
+          '.twin-feature--long',
+          '.twin-feature--connect',
+          '.twin-feature--personal',
+          '.twin-feature--plain',
+        ];
+        const tl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: {
+            trigger: '#stickWrap',
+            start: 'top top',
+            end: '+=250%',
+            scrub: 1,
+            pin: '.twin',
+            anticipatePin: 1,
+          },
+        });
+        tl.to('#twinBlackTitle', { x: '-100vw', duration: 1.1 }, 0)
+          .to('#twinCircle', { scale: 1, ease: 'power2.inOut', duration: 1.5 }, 0.2)
+          .fromTo('.twin-para--one p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.4 }, 0.55)
+          .fromTo('.twin-para--two p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.4 }, 0.65)
+          .to('.twin-para p', { opacity: 0, duration: 0.5, ease: 'power2.in' }, 1.35)
+          .fromTo('.twin-strip', { opacity: 0, y: 80 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.6 }, 0.85);
+        featOrder.forEach((sel, idx) => {
+          const at = 0.95 + idx * 0.22;
+          const right = idx % 2 === 1;
+          const div = document.querySelector(sel + ' .twin-featureDivider');
+          const dist = () => Math.max(0, div ? div.clientWidth - 5 : 100);
+          tl.to(sel + ' .twin-featureDivider', { scaleX: 1, ease: 'power2.inOut', duration: 0.5 }, at)
+            .fromTo(sel + ' .twin-featureDot', { x: 0 }, { x: () => (right ? -1 : 1) * dist(), ease: 'power2.inOut', duration: 0.5 }, at)
+            .fromTo(sel + ' .twin-iconHolder', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, ease: 'back.out(1.6)', duration: 0.35 }, at + 0.15)
+            .fromTo(sel + ' h2', { y: 24, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out', duration: 0.35 }, at + 0.2)
+            .fromTo(sel + ' p', { y: 16, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out', duration: 0.35 }, at + 0.28);
+        });
+      }
+    },
+
+    // Mobile: simplified timelines recomposed specifically for the phone viewport
+    "(max-width: 767px)": function() {
+      syncSectionOrder(true);
+
+      if (reduced) return;
+
+      // Section 2: Mobile Hero Intro Entrance
+      gsap.fromTo('.mobileHero-headline span',
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', stagger: 0.12, delay: 0.15 }
+      );
+      gsap.fromTo('.mobileHero-sub, .mobileHero-meta, .mobileHero-footer',
+        { opacity: 0 },
+        { opacity: 1, duration: 0.6, ease: 'power2.out', delay: 0.5 }
+      );
+
+      // Section 3: Mobile SCAN Section Entrance
+      gsap.fromTo('.mobileScan-title',
+        { opacity: 0, scale: 0.92 },
+        {
+          opacity: 1, scale: 1, duration: 0.85, ease: 'power3.out',
+          scrollTrigger: { trigger: '#mobileScan', start: 'top 75%' }
+        }
+      );
+      gsap.fromTo('.mobileScan-metaTop, .mobileScan-metaBot, .mobileScan-caption',
+        { opacity: 0 },
+        {
+          opacity: 1, duration: 0.6, ease: 'power2.out',
+          scrollTrigger: { trigger: '#mobileScan', start: 'top 75%' }
+        }
+      );
+
+      // Section 4 & 11: Central "KIVO MEASURES..." Section & Capsule Transition
+      if (waterShape) {
+        gsap.set(waterShape, {
+          xPercent: -50,
+          yPercent: -50,
+          scaleX: 0.75,
+          scaleY: 0.75,
+          borderRadius: '50%',
+          transformOrigin: 'center center'
+        });
+
+        const mobWsTl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: {
+            trigger: '#waterStick',
+            start: 'top top',
+            end: '+=140%',
+            pin: true,
+            scrub: 1,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
+        });
+
+        // Circle scales 0.75 -> 1.0; text arrives
+        mobWsTl.to(waterShape, { scaleX: 1, scaleY: 1, duration: 0.2, ease: 'power2.out' }, 0);
+        mobWsTl.fromTo('.waterStick-title',
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' },
+          0.05
+        );
+
+        // Capsule grows vertically first
+        const mobScaleY = () => Math.max((window.innerHeight * 1.8) / (waterShape.offsetHeight || 220), 8);
+        const mobScaleX = () => Math.max((window.innerWidth * 2.2) / (waterShape.offsetWidth || 220), 10);
+
+        mobWsTl.to(waterShape, {
+          scaleY: () => mobScaleY(),
+          duration: 0.3,
+          ease: 'power2.inOut',
+        }, 0.4);
+
+        // Capsule grows horizontally to wipe viewport into white
+        mobWsTl.to(waterShape, {
+          scaleX: () => mobScaleX(),
+          duration: 0.3,
+          ease: 'power3.inOut',
+        }, 0.62);
+
+        mobWsTl.to('.waterStick-title', {
+          opacity: 0,
+          duration: 0.16,
+          ease: 'power2.inOut',
+        }, 0.65);
+
+        mobWsTl.to(waterShape, {
+          borderRadius: 0,
+          duration: 0.08,
+          ease: 'power2.inOut',
+        }, 0.9);
+      }
+
+      // Section 6 & 9: Mobile "SEE BETTER" Section
+      const seeBetterTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: '#hero',
+          start: 'top 80%',
+        },
+      });
+      seeBetterTl.fromTo('#hero .hero-img, #heroHand',
+        { opacity: 0, y: 60, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.95, ease: 'power3.out' }
+      );
+      seeBetterTl.fromTo('#hero .hero-title, #hero .hero-twinTag',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' },
+        '-=0.65'
+      );
+      seeBetterTl.fromTo('#hero .hero-text, #hero .hero-ctaGroup',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.1 },
+        '-=0.45'
+      );
+
+      // Section 5: Mobile Intelligence Twin Section
+      gsap.utils.toArray('.twin-para p, .twin-featureElements').forEach((el) => {
+        gsap.fromTo(el, { opacity: 0, y: 20 }, {
+          opacity: 1, y: 0, duration: 0.6, ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 88%' },
+        });
+      });
+      gsap.fromTo('.twin-strip', { opacity: 0, y: 30 }, {
+        opacity: 1, y: 0, duration: 0.7, ease: 'power2.out',
+        scrollTrigger: { trigger: '.twin-videoHolder', start: 'top 85%' }
+      });
+    }
+  });
 
   /* ---------- twin story ---------- */
   if (!reduced) {
