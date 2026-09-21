@@ -109,6 +109,15 @@
       set('[data-strip-range]', rangeText(entry) || "your report's range");
       set('[data-strip-loinc]', entry.loinc || '—');
     });
+
+    // The weave's rhythm chips show the same curated ranges as the cards.
+    document.querySelectorAll('[data-weave-range]').forEach((node) => {
+      const entry = markers[node.getAttribute('data-weave-range')];
+      if (entry) {
+        const t = rangeText(entry);
+        if (t) node.textContent = t;
+      }
+    });
   }
 
   function loadProductData() {
@@ -404,16 +413,10 @@
     el.addEventListener('click', closeMobileMenu);
   });
 
-  /* ---------- water stick & circle opening elements ---------- */
-  const waterSection = document.getElementById('waterStick');
-  const waterShape = document.querySelector('.waterStick-shape');
-  const waterCanvas = document.getElementById('waterCanvas');
-  const waterCircle = document.getElementById('waterCircle');
-
   /* ---------- responsive GSAP ScrollTrigger engine ---------- */
   ScrollTrigger.matchMedia({
     // Desktop, Laptop & Sandbox Preview (>= 600px):
-    // SoFi-style scroll circle opening right after the home page + pinned twin
+    // Pinned weave (live threads) right after the home page + pinned twin
     "(min-width: 600px)": function() {
       if (!reduced) {
         // Hero parallax depth as user scrolls
@@ -428,57 +431,53 @@
           },
         });
 
-        // 1. Circle opening right after the home page (exact like SoFi Health)
-        gsap.set('#waterCircle', { xPercent: -50, yPercent: -50, scale: 0 });
-
-        const circleTl = gsap.timeline({
+        // 1. The weave — pinned glowing-threads interlude (was the circle
+        //    opening). The live canvas runs itself (threads.js); scrub only
+        //    reveals the type and morphs the weave via KivoThreads.setScroll:
+        //    strands rise, multiply and tighten while the section is held.
+        gsap.set('.weave-filler', { clipPath: 'inset(0 0 100% 0)' });
+        const weaveTl = gsap.timeline({
           defaults: { ease: 'none' },
           scrollTrigger: {
-            trigger: '#waterStick',
+            trigger: '#weaveSection',
             start: 'top top',
             end: '+=150%',
             pin: true,
             scrub: 1,
             anticipatePin: 1,
             invalidateOnRefresh: true,
+            onUpdate: (self) => {
+              const weave = window.KivoThreads && window.KivoThreads.get();
+              if (weave) weave.setScroll(Math.max(0, (self.progress - 0.18) / 0.82));
+            },
           },
         });
-
-        // The black circle iris blooms from the center: 0 -> 1 (exact circle opening)
-        circleTl.to('#waterCircle', {
-          scale: 1,
-          duration: 1,
-          ease: 'power2.inOut',
-        }, 0);
-
-        // Icon scales in inside the circle opening
-        circleTl.fromTo('.waterStick-icon',
-          { opacity: 0, scale: 0.4 },
-          { opacity: 1, scale: 1, ease: 'power2.out', duration: 0.35 },
-          0.15
+        weaveTl.fromTo('.weave-meta',
+          { opacity: 0 },
+          { opacity: 1, duration: 0.25, ease: 'power2.out' },
+          0
         );
-
-        // White letter-reveal sweeps across headline
-        circleTl.to('.waterStick-filler', {
+        weaveTl.to('.weave-filler', {
           clipPath: 'inset(0 0 0% 0)',
-          duration: 0.5,
+          duration: 0.45,
           ease: 'power1.inOut',
-        }, 0.25);
-
-        // Pod capsule settles in center with live wave canvas
-        if (waterShape) {
-          circleTl.fromTo(waterShape,
-            { opacity: 0, scale: 0.8 },
-            { opacity: 1, scale: 1, ease: 'power2.out', duration: 0.4 },
-            0.15
-          );
-        }
+        }, 0.06);
+        weaveTl.fromTo('.weave-moods',
+          { opacity: 0, y: 22 },
+          { opacity: 1, y: 0, ease: 'power2.out', duration: 0.35 },
+          0.3
+        );
+        weaveTl.fromTo('.weave-hint',
+          { opacity: 0 },
+          { opacity: 1, duration: 0.3, ease: 'power2.out' },
+          0.42
+        );
       } else {
-        gsap.set('#waterCircle', { scale: 1 });
-        gsap.set('.waterStick-filler', { clipPath: 'inset(0 0 0% 0)' });
+        // Reduced motion: the weave still renders one calm static frame
+        gsap.set('.weave-filler', { clipPath: 'inset(0 0 0% 0)' });
       }
 
-      // 2. Pinned twin section right after waterStick
+      // 2. Pinned twin section right after the weave
       gsap.set('#twinCircle', { xPercent: -50, yPercent: -50, scale: 0, display: 'block' });
       const featOrder = [
         '.twin-feature--long',
@@ -516,7 +515,7 @@
       });
     },
 
-    // Mobile (< 600px): clean circular expansion and unpinned readable cards
+    // Mobile (< 600px): pinned weave + unpinned readable cards
     "(max-width: 599px)": function() {
       if (reduced) return;
 
@@ -546,39 +545,40 @@
         }
       );
 
-      // Section 4: Central "KIVO MEASURES..." - clean circle opening on mobile too (NO sausage stretching)
-      gsap.set('#waterCircle', { xPercent: -50, yPercent: -50, scale: 0 });
-      const mobWsTl = gsap.timeline({
+      // Section 4: The weave — pinned threads interlude; on touch the finger
+      // itself steers the pinch point (threads.js pointer events).
+      gsap.set('.weave-filler', { clipPath: 'inset(0 0 100% 0)' });
+      const mobWeaveTl = gsap.timeline({
         defaults: { ease: 'none' },
         scrollTrigger: {
-          trigger: '#waterStick',
+          trigger: '#weaveSection',
           start: 'top top',
           end: '+=120%',
           pin: true,
           scrub: 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            const weave = window.KivoThreads && window.KivoThreads.get();
+            if (weave) weave.setScroll(Math.max(0, (self.progress - 0.2) / 0.8));
+          },
         },
       });
-
-      mobWsTl.to('#waterCircle', { scale: 1, ease: 'power2.inOut', duration: 1 }, 0);
-      mobWsTl.fromTo('.waterStick-title',
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' },
-        0.1
-      );
-      mobWsTl.to('.waterStick-filler', {
+      mobWeaveTl.to('.weave-filler', {
         clipPath: 'inset(0 0 0% 0)',
-        duration: 0.5,
+        duration: 0.45,
         ease: 'power1.inOut',
-      }, 0.25);
-      if (waterShape) {
-        mobWsTl.fromTo(waterShape,
-          { opacity: 0, scale: 0.85 },
-          { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' },
-          0.15
-        );
-      }
+      }, 0.1);
+      mobWeaveTl.fromTo('.weave-moods',
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, ease: 'power2.out', duration: 0.35 },
+        0.3
+      );
+      mobWeaveTl.fromTo('.weave-hint',
+        { opacity: 0 },
+        { opacity: 1, duration: 0.3, ease: 'power2.out' },
+        0.42
+      );
 
       // Section 5: Mobile Intelligence Twin Section
       gsap.utils.toArray('.twin-para p, .twin-featureElements').forEach((el) => {
@@ -754,59 +754,25 @@
     });
   }
 
-  /* ---------- water canvas sine waves ---------- */
-  (function initWater() {
-    const c = document.getElementById('waterCanvas');
-    if (!c || !c.getContext || reduced) return;
-    const ctx = c.getContext('2d');
-    let w = 0;
-    let h = 0;
-    const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = c.clientWidth;
-      h = c.clientHeight;
-      c.width = w * dpr;
-      c.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    let t = 0;
-    let running = false;
-    const draw = () => {
-      if (!running) return;
-      t += 0.012;
-      ctx.clearRect(0, 0, w, h);
-      const mid = h / 2;
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        const amp = (24 + i * 16) * Math.min(1, w / 260);
-        const speed = 1 + i * 0.35;
-        ctx.strokeStyle = 'rgba(247,247,247,' + (0.45 - i * 0.11) + ')';
-        ctx.lineWidth = 1.5;
-        for (let x = 0; x <= w; x += 4) {
-          const y = mid + Math.sin(x * 0.02 + t * speed + i * 1.7) * amp * (0.6 + 0.4 * Math.sin(t * 0.35 + i));
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      }
-      const dx = w / 2 + Math.sin(t * 0.9) * w * 0.3;
-      ctx.beginPath();
-      ctx.arc(dx, mid + Math.sin(dx * 0.02 + t) * 20, 3, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(247,247,247,.9)';
-      ctx.fill();
-      requestAnimationFrame(draw);
-    };
-    new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !running) {
-        running = true;
-        c.classList.add('on');
-        requestAnimationFrame(draw);
-      } else if (!e.isIntersecting) {
-        running = false;
-      }
-    }, { threshold: 0.1 }).observe(c);
+  /* ---------- the weave: marker rhythm chips ----------------------------
+   * Each chip re-tunes the live thread weave (colors + tempo) via the
+   * KivoThreads handle. Ranges shown on the chips are filled from the live
+   * lab dictionary in applyDictionary — never typed in here. */
+  (function initWeaveMoods() {
+    const chips = document.querySelectorAll('.weave-mood');
+    if (!chips.length) return;
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const key = chip.getAttribute('data-mood');
+        chips.forEach((c) => {
+          const on = c === chip;
+          c.classList.toggle('weave-mood--on', on);
+          c.setAttribute('aria-pressed', String(on));
+        });
+        const weave = window.KivoThreads && window.KivoThreads.get();
+        if (weave) weave.setMood(key);
+      });
+    });
   })();
 
   /* ---------- refresh after assets ---------- */
