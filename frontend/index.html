@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="color-scheme" content="light" />
-  <meta name="theme-color" content="#F5F7FC" />
+  <meta name="theme-color" content="#F6F7F3" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -18,18 +18,50 @@
 </head>
 <body>
 
-  <!-- ================= SPLASH ================= -->
+  <!-- ================= OPENING INTRO =================
+       Plays the brand film (img/intro.mp4) with the kivo "K" building over it.
+       Runs once per app open; skipped entirely for reduced-motion users and
+       on back/forward restores (see kivoux.js bootIntro). -->
   <div id="splash" aria-hidden="true">
-    <div class="splash-logo">k</div>
+    <div class="splash-logo"><svg class="brand-mark" viewBox="249 160 502 680" fill="#fff" aria-hidden="true"><path d="M249 160h159v680H249z"/><path d="M395 660 718 434 698 404 516 404 315 544Z"/><path d="M310 656 532 840 751 840 400 548Z"/></svg></div>
     <div class="splash-word">kivo<i>.</i></div>
     <div class="splash-tag">your health, alive</div>
     <div class="splash-bar"></div>
+  </div>
+  <div id="intro" aria-hidden="true">
+    <div class="intro-media">
+      <video id="intro-video" src="./img/intro.mp4" playsinline webkit-playsinline preload="auto" muted disablepictureinpicture></video>
+      <div class="intro-tint"></div>
+    </div>
+    <div class="intro-center">
+      <svg class="intro-logo" viewBox="0 0 1000 1000" role="img" aria-label="kivo">
+        <defs>
+          <linearGradient id="introGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0B5E46"/>
+            <stop offset="1" stop-color="#18A070"/>
+          </linearGradient>
+          <clipPath id="introTileClip"><rect width="1000" height="1000" rx="228"/></clipPath>
+        </defs>
+        <g clip-path="url(#introTileClip)">
+          <rect width="1000" height="1000" fill="url(#introGrad)"/>
+        </g>
+        <g class="intro-k" fill="#fff">
+          <path d="M249 160 H408 V840 H249 Z"/>
+          <path class="intro-k-arm" d="M395 660 718 434 698 404 516 404 315 544 Z"/>
+          <path class="intro-k-leg" d="M310 656 532 840 751 840 400 548 Z"/>
+        </g>
+      </svg>
+      <div class="intro-word">kivo<i>.</i></div>
+      <div class="intro-tag">your health, alive</div>
+    </div>
+    <div class="intro-bar"><i></i></div>
+    <p class="intro-skip">tap anywhere to skip</p>
   </div>
 
   <!-- ================= TOPBAR ================= -->
   <header class="topbar">
     <div class="brand">
-      <span id="brand-logo" class="brand-logo" aria-hidden="true">k</span>
+      <span id="brand-logo" class="brand-logo" aria-hidden="true"><svg class="brand-mark" viewBox="249 160 502 680" fill="#fff" aria-hidden="true"><path d="M249 160h159v680H249z"/><path d="M395 660 718 434 698 404 516 404 315 544Z"/><path d="M310 656 532 840 751 840 400 548Z"/></svg></span>
       <div class="brand-text">
         <h1>kivo</h1>
         <p>health twin</p>
@@ -56,7 +88,7 @@
     <!-- ================= AUTH ================= -->
     <section id="auth-view" class="card auth-card">
       <div class="auth-brand">
-        <span class="brand-logo" aria-hidden="true">k</span>
+        <span class="brand-logo" aria-hidden="true"><svg class="brand-mark" viewBox="249 160 502 680" fill="#fff" aria-hidden="true"><path d="M249 160h159v680H249z"/><path d="M395 660 718 434 698 404 516 404 315 544Z"/><path d="M310 656 532 840 751 840 400 548Z"/></svg></span>
         <h2 id="auth-heading">Welcome back</h2>
         <p id="auth-subtitle" class="muted">Sign in — your twin remembers everything.</p>
       </div>

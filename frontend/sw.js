@@ -10,7 +10,7 @@
  * separate frontend for a separate role, and clinical screens should never be
  * served stale from a cache.
  */
-const VERSION = 'kivo-v7-verdant';
+const VERSION = 'kivo-v8-aurora';
 const SHELL = [
   '/app/',
   '/app/index.html',
@@ -43,6 +43,7 @@ const SHELL = [
   '/app/img/doc-4.jpg',
   '/app/img/short-knee.jpg',
   '/app/img/short-desk.jpg',
+  '/app/img/intro.mp4',
 ];
 
 self.addEventListener('install', (event) => {

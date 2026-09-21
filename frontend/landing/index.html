@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
-  <link rel="icon" href="data:,">
+  <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
   <link rel="stylesheet" href="/styles.css?v=6">
   <noscript><style>
     .loader{display:none}
@@ -22,6 +22,10 @@
 
   <!-- ============ preloader ============ -->
   <div class="loader" id="loader" aria-hidden="true">
+    <!-- opening brand film: sits between the black covers and the words;
+         the loader flips to its dark palette the moment it plays -->
+    <video class="loader-video" src="/img/intro.mp4" muted playsinline disablepictureinpicture preload="auto"></video>
+    <div class="loader-videoTint"></div>
     <div class="loader-coverTop"></div>
     <div class="loader-coverBot"></div>
     <div class="loader-contentHolder">
