@@ -2316,7 +2316,7 @@ img,svg{display:block}
     margin-bottom:10px;
   }
   .twin-switcher::-webkit-scrollbar{display:none}
-  .twin-switchBtn{flex:none;padding:8px 12px}
+  .twin-switchBtn{flex:none;padding:11px 14px}
   .twin-statusBadge{top:10px;left:12px;font-size:8.5px;padding:4px 8px}
   .twin-hudCard{
     top:auto;

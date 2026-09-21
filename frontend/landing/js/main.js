@@ -485,7 +485,7 @@
         scrollTrigger: {
           trigger: '#waterStick',
           start: 'top top',
-          end: isMobile ? '+=150%' : '+=180%',
+          end: isMobile ? '+=120%' : '+=180%',
           scrub: 1,
           pin: true,
           anticipatePin: 1,
@@ -516,17 +516,21 @@
         // ---------- mobile: recomposed for the portrait viewport ----------
         // The capsule + statement rest fully composed (armCapsule above);
         // the scroll grows that capsule over the viewport:
-        wsTl.to({}, { duration: 0.42 }); // hold — time to read
-        // (42% → 72%): the capsule grows proportionally past the viewport
+        wsTl.to({}, { duration: 0.3 }); // hold — time to read
+        // (30% → 62%): the capsule grows proportionally past the viewport
         // diagonal — corners never show, and there is no intermediate state
         // where the text sits half on white and half on black.
-        wsTl.to(waterShape, { scale: scaleToCover, ease: 'power2.inOut', duration: 0.3 }, 0.42);
-        // The copy leaves as the white takes over.
-        wsTl.to(['.waterStick-icon', '.waterStick-splitedText', '.waterStick-meta'], {
+        wsTl.to(waterShape, { scale: scaleToCover, ease: 'power2.inOut', duration: 0.32 }, 0.3);
+        // The tiny chrome (index line + glyph) leaves as the white takes over.
+        wsTl.to(['.waterStick-icon', '.waterStick-meta'], {
           opacity: 0, duration: 0.12, ease: 'power2.inOut',
-        }, 0.52);
-        // (90% → 100%): flatten the pill edges — seamless hand-off.
-        wsTl.to(waterShape, { borderRadius: 0, duration: 0.08, ease: 'power2.inOut' }, 0.9);
+        }, 0.58);
+        // The statement is dark-on-white, so it stays readable straight
+        // through the wipe and rides the white all the way to the hand-off —
+        // when the pin releases it simply scrolls up into the twin headline.
+        // (No fade-out: a blank white beat would read as a broken section.)
+        // (90% → 97%): flatten the pill edges — seamless hand-off.
+        wsTl.to(waterShape, { borderRadius: 0, duration: 0.07, ease: 'power2.inOut' }, 0.9);
       }
 
       return () => {
@@ -583,6 +587,11 @@
     // the giant desktop circle needs the wide stage — the phone reads the
     // black features band instead
     gsap.set('#twinCircle', { display: 'none' });
+    // reduced motion: everything simply visible, nothing animates on scroll
+    if (reduced) {
+      gsap.set('.twin-para p, .twin-featureElements, .twin-strip', { opacity: 1, transform: 'none' });
+      return undefined;
+    }
     const revs = [];
     gsap.utils.toArray('.twin-para p, .twin-featureElements').forEach((el) => {
       revs.push(gsap.fromTo(el, { opacity: 0, y: 24 }, {
