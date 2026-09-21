@@ -144,7 +144,6 @@
     gsap.ticker.lagSmoothing(0);
   }
 
-  const isDesktop = () => window.innerWidth > 1050;
 
   /* ---------- word swap helper ---------- */
   function makeCycler(el, words, hold, exit) {
@@ -209,6 +208,7 @@
     }
     const sm = window.innerWidth <= 500;
     const md = window.innerWidth <= 650;
+    const mobile = window.innerWidth <= 767;
     const tl = gsap.timeline();
     tl.set(heroTitle, { yPercent: 120 })
       .set(heroText, { opacity: 0, y: 30 })
@@ -218,11 +218,13 @@
       // or the bars animate "in" yet stay hidden.
       .set(topNav, { y: 0, yPercent: -100 })
       .set(bottomBar, { y: 0, yPercent: 100 })
-      .set(heroHand, { opacity: 0, y: sm ? 120 : md ? 140 : 240 })
+      .set(heroHand, { opacity: 0, y: mobile ? 90 : sm ? 120 : md ? 140 : 240 })
       .to(heroTitle, { yPercent: 0, duration: 1.1, ease: 'power4', stagger: 0.12 })
       .to(heroText, { opacity: 1, y: 0, duration: 0.9, ease: 'power3' }, '-=0.55')
       .to(heroCta, { opacity: 1, scale: 1, duration: 0.7, ease: 'power3' }, '-=0.45')
-      .to(heroHand, { opacity: 1, y: sm ? 50 : md ? 60 : 100, rotation: 0, duration: 1.4, ease: 'power3' }, '-=0.8')
+      // on mobile the hand rests exactly on its CSS position (it sits in flow
+      // below the title); desktop keeps its composed offset.
+      .to(heroHand, { opacity: 1, y: mobile ? 0 : sm ? 50 : md ? 60 : 100, rotation: 0, duration: 1.4, ease: 'power3' }, '-=0.8')
       .to(topNav, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.7')
       .to(bottomBar, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.8');
     makeCycler(document.getElementById('heroCarousel'), ['know', 'see', 'trust'], 2600, 0.5);
@@ -321,11 +323,15 @@
     if (l && getComputedStyle(l).display !== 'none') l.remove();
   }, loaderBudget);
 
-  /* ---------- scroll progress (bottom bar) ---------- */
+  /* ---------- scroll progress (bottom bar) ----------
+     Desktop-only: on the phone the bar is replaced by the minimal
+     .scrollCue ("scroll ↓"), so the percentage trigger is never created. */
   const fill = document.getElementById('scrollFill');
   const pct = document.getElementById('scrollPct');
-  if (fill && pct) {
-    ScrollTrigger.create({
+  const mm = gsap.matchMedia();
+  mm.add('(min-width: 768px)', () => {
+    if (!(fill && pct)) return;
+    const st = ScrollTrigger.create({
       start: 0,
       end: 'max',
       onUpdate: (self) => {
@@ -333,7 +339,8 @@
         pct.textContent = Math.round(self.progress * 100) + '%';
       },
     });
-  }
+    return () => st.kill();
+  });
 
   /* ---------- floating cta ---------- */
   const floatCta = document.getElementById('floatingCta');
@@ -344,6 +351,47 @@
       onEnter: () => floatCta.classList.add('visible'),
       onLeaveBack: () => floatCta.classList.remove('visible'),
     });
+  }
+
+  /* ---------- mobile menu (burger) ---------- */
+  const burger = document.getElementById('navBurger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (burger && mobileMenu) {
+    const menuLinks = mobileMenu.querySelectorAll('.mobileMenu-link');
+    let menuOpen = false;
+    const setMenu = (open) => {
+      menuOpen = open;
+      burger.classList.toggle('is-open', open);
+      burger.setAttribute('aria-expanded', String(open));
+      burger.setAttribute('aria-label', open ? 'close menu' : 'open menu');
+      mobileMenu.classList.toggle('is-open', open);
+      mobileMenu.setAttribute('aria-hidden', String(!open));
+      document.documentElement.classList.toggle('menu-open', open);
+      if (lenis) (open ? lenis.stop() : lenis.start());
+      if (open && !reduced) {
+        gsap.fromTo(menuLinks, { y: 34, opacity: 0 }, {
+          y: 0, opacity: 1, duration: 0.55, ease: 'power3', stagger: 0.07, delay: 0.05, overwrite: true,
+        });
+      } else if (!open) {
+        gsap.killTweensOf(menuLinks);
+        gsap.set(menuLinks, { clearProps: 'all' });
+      }
+    };
+    burger.addEventListener('click', () => setMenu(!menuOpen));
+    menuLinks.forEach((a) => a.addEventListener('click', () => setMenu(false)));
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menuOpen) setMenu(false);
+    });
+  }
+
+  /* ---------- mobile scroll cue: fades once the hero is left ---------- */
+  const scrollCue = document.getElementById('scrollCue');
+  if (scrollCue) {
+    const updateCue = () => {
+      scrollCue.classList.toggle('is-hidden', window.scrollY > window.innerHeight * 0.55);
+    };
+    window.addEventListener('scroll', updateCue, { passive: true });
+    updateCue();
   }
 
   /* ---------- sticky hero (sofihealth-style pinned intro) ----------
@@ -360,16 +408,21 @@
     anticipatePin: 1,
   });
   if (!reduced) {
-    const heroPin = {
-      trigger: '#hero',
-      start: 'top top',
-      end: '+=100%',
-      scrub: true,
-      ease: 'none',
-    };
-    gsap.to('#heroHand', { yPercent: 26, scrollTrigger: heroPin });
-    gsap.to('.hero-title', { yPercent: -14, scrollTrigger: heroPin });
-    gsap.to('.hero-text, .hero-cta, .hero-apkBtn', { yPercent: -8, scrollTrigger: heroPin });
+    // Softer depth on the phone: the hand sits in flow below the title, so a
+    // desktop-sized parallax would tear the composition apart.
+    mm.add({ isMobile: '(max-width: 767px)', isDesktop: '(min-width: 768px)' }, (ctx) => {
+      const { isMobile } = ctx.conditions;
+      const heroPin = {
+        trigger: '#hero',
+        start: 'top top',
+        end: '+=100%',
+        scrub: true,
+        ease: 'none',
+      };
+      gsap.to('#heroHand', { yPercent: isMobile ? 10 : 26, scrollTrigger: { ...heroPin } });
+      gsap.to('.hero-title', { yPercent: isMobile ? -6 : -14, scrollTrigger: { ...heroPin } });
+      gsap.to('.hero-text, .hero-cta, .hero-apkBtn', { yPercent: isMobile ? -4 : -8, scrollTrigger: { ...heroPin } });
+    });
   }
 
   /* ---------- water stick: title fill + capsule white wipe ---------- */
@@ -381,11 +434,10 @@
   if (waterCanvas) waterCanvas.style.display = 'none';
 
   if (!reduced && waterSection && waterShape) {
-    // The resting capsule is sized by CSS (width ~280px, height ~380px on desktop,
-    // smaller on mobile). We start it at a tiny dot scale, grow it to its natural
-    // resting capsule size for the text-fill portion of the scroll, then expand
-    // vertically → horizontally to cover the viewport and hand off cleanly to the
-    // next section which is already on the same #f7f7f7 background.
+    // The resting capsule is sized by CSS per breakpoint. We start it at a tiny
+    // dot scale, grow it to its natural resting size for the text-fill portion
+    // of the scroll, then expand to cover the viewport and hand off cleanly to
+    // the next section which is already on the same #f7f7f7 background.
     const scaleToFullY = () => {
       const h = waterShape.offsetHeight;
       // need to reach (at minimum) the viewport diagonal so corners never show
@@ -395,85 +447,98 @@
       const w = waterShape.offsetWidth;
       return Math.max((window.innerWidth * 2.2) / w, 12);
     };
+    // mobile: one proportional blow-out — portrait screens read a vertical
+    // pill stretching to the corners far better than a two-step tall→wide grow
+    const scaleToCover = () => Math.max(scaleToFullX(), scaleToFullY());
 
-    // Start state: tiny centered dot. We let GSAP own the translate + scale so
-    // the element is perfectly centered and scaleX/scaleY animate from a known
-    // baseline — letting us grow vertically first, then horizontally (SoFi-
-    // style pill wipe).
-    gsap.set(waterShape, {
-      xPercent: -50,
-      yPercent: -50,
-      scaleX: 0.04,
-      scaleY: 0.04,
-      transformOrigin: 'center center',
+    // Start state. Desktop: a tiny centered dot that blooms into the capsule.
+    // Mobile: the capsule already rests at its composed size — the section
+    // slides into view as a finished composition (small white vertical
+    // capsule + statement), then scroll grows it over the viewport.
+    // GSAP owns the translate + scale so the element stays perfectly centered.
+    const armCapsule = (asDot) => {
+      gsap.set(waterShape, {
+        // the stylesheet centres the shape with translate(-50%,-50%), which
+        // GSAP reads as pixel offsets — zero them and own the centring with
+        // xPercent/yPercent only, or the capsule lands half off-screen
+        x: 0,
+        y: 0,
+        xPercent: -50,
+        yPercent: -50,
+        scaleX: asDot ? 0.04 : 1,
+        scaleY: asDot ? 0.04 : 1,
+        transformOrigin: 'center center',
+        borderRadius: 2000,
+      });
+      gsap.set('.waterStick-icon', { opacity: 1, scale: 1 });
+      gsap.set('.waterStick-title', { opacity: 1, y: 0 });
+      gsap.set('.waterStick-splitedText', { opacity: 1 });
+    };
+
+    mm.add({ isMobile: '(max-width: 767px)', isDesktop: '(min-width: 768px)' }, (ctx) => {
+      const { isMobile } = ctx.conditions;
+      armCapsule(!isMobile);
+
+      // Single pinned timeline covering the whole dark→light transition.
+      const wsTl = gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: {
+          trigger: '#waterStick',
+          start: 'top top',
+          end: isMobile ? '+=150%' : '+=180%',
+          scrub: 1,
+          pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      if (!isMobile) {
+        // ---------- desktop: the original composition, untouched ----------
+        // Phase 1 (0 → 20%): dot grows to its natural resting capsule size.
+        wsTl.to(waterShape, { scaleX: 1, scaleY: 1, ease: 'power2.out', duration: 0.2 }, 0);
+        // Phase 2 (15% → 55%): icon arrives while the capsule rests.
+        wsTl.fromTo('.waterStick-icon',
+          { opacity: 0, scale: 0.4 },
+          { opacity: 1, scale: 1, duration: 0.2, ease: 'power2.out' },
+          0.12
+        );
+        // Phase 3 (55% → 78%): grow TALL first.
+        wsTl.to(waterShape, { scaleY: scaleToFullY, ease: 'power2.inOut', duration: 0.23 }, 0.55);
+        // Phase 4 (73% → 95%): grow WIDE, text + icon fade out.
+        wsTl.to(waterShape, { scaleX: scaleToFullX, ease: 'power3.inOut', duration: 0.22 }, 0.73);
+        wsTl.to(['.waterStick-icon', '.waterStick-splitedText'], {
+          opacity: 0, duration: 0.18, ease: 'power2.inOut',
+        }, 0.75);
+        // Phase 5 (92% → 100%): flatten the radius for a seamless hand-off.
+        wsTl.to(waterShape, { borderRadius: 0, duration: 0.08, ease: 'power2.inOut' }, 0.92);
+      } else {
+        // ---------- mobile: recomposed for the portrait viewport ----------
+        // The capsule + statement rest fully composed (armCapsule above);
+        // the scroll grows that capsule over the viewport:
+        wsTl.to({}, { duration: 0.42 }); // hold — time to read
+        // (42% → 72%): the capsule grows proportionally past the viewport
+        // diagonal — corners never show, and there is no intermediate state
+        // where the text sits half on white and half on black.
+        wsTl.to(waterShape, { scale: scaleToCover, ease: 'power2.inOut', duration: 0.3 }, 0.42);
+        // The copy leaves as the white takes over.
+        wsTl.to(['.waterStick-icon', '.waterStick-splitedText', '.waterStick-meta'], {
+          opacity: 0, duration: 0.12, ease: 'power2.inOut',
+        }, 0.52);
+        // (90% → 100%): flatten the pill edges — seamless hand-off.
+        wsTl.to(waterShape, { borderRadius: 0, duration: 0.08, ease: 'power2.inOut' }, 0.9);
+      }
+
+      return () => {
+        wsTl.scrollTrigger && wsTl.scrollTrigger.kill();
+        wsTl.kill();
+      };
     });
-
-    // Single pinned timeline covering the whole dark→light transition.
-    const wsTl = gsap.timeline({
-      defaults: { ease: 'none' },
-      scrollTrigger: {
-        trigger: '#waterStick',
-        start: 'top top',
-        end: '+=180%',
-        scrub: 1,
-        pin: true,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-      },
-    });
-
-    // Phase 1 (0 → 20%): dot grows to its natural resting capsule size
-    // (scaleX and scaleY together → rounded capsule, matching the original
-    // resting shape the user saw before waves were removed).
-    wsTl.to(waterShape, {
-      scaleX: 1,
-      scaleY: 1,
-      ease: 'power2.out',
-      duration: 0.2,
-    }, 0);
-
-    // Phase 2 (15% → 55%): the statement deliberately stays grey while the
-    // icon arrives and the capsule rests behind it.
-    wsTl.fromTo('.waterStick-icon',
-      { opacity: 0, scale: 0.4 },
-      { opacity: 1, scale: 1, duration: 0.2, ease: 'power2.out' },
-      0.12
-    );
-
-    // Phase 3 (55% → 78%): grow TALL first — capsule stretches vertically past
-    // the top and bottom of the viewport while staying narrow.
-    wsTl.to(waterShape, {
-      scaleY: () => scaleToFullY(),
-      ease: 'power2.inOut',
-      duration: 0.23,
-    }, 0.55);
-
-    // Phase 4 (73% → 95%): grow WIDE — capsule blows out horizontally, covering
-    // the viewport completely. Simultaneously fade the text + icon out so the
-    // wipe feels clean rather than cutting hard.
-    wsTl.to(waterShape, {
-      scaleX: () => scaleToFullX(),
-      ease: 'power3.inOut',
-      duration: 0.22,
-    }, 0.73);
-    wsTl.to(['.waterStick-icon', '.waterStick-splitedText'], {
-      opacity: 0,
-      duration: 0.18,
-      ease: 'power2.inOut',
-    }, 0.75);
-
-    // Phase 5 (92% → 100%): flatten border-radius to 0 so there are no pill
-    // edges left once full-screen — seamless hand-off to the next section.
-    wsTl.to(waterShape, {
-      borderRadius: 0,
-      duration: 0.08,
-      ease: 'power2.inOut',
-    }, 0.92);
   }
 
-  /* ---------- pinned twin section ---------- */
-  if (isDesktop()) {
-    gsap.set('#twinCircle', { xPercent: -50, yPercent: -50, scale: 0 });
+  /* ---------- pinned twin section (desktop) / flowing story (mobile) ---------- */
+  mm.add('(min-width: 1051px)', () => {
+    gsap.set('#twinCircle', { xPercent: -50, yPercent: -50, scale: 0, display: 'block' });
     const featOrder = [
       '.twin-feature--long',
       '.twin-feature--connect',
@@ -508,15 +573,37 @@
         .fromTo(sel + ' h2', { y: 24, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out', duration: 0.35 }, at + 0.2)
         .fromTo(sel + ' p', { y: 16, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out', duration: 0.35 }, at + 0.28);
     });
-  } else {
+    return () => {
+      tl.scrollTrigger && tl.scrollTrigger.kill();
+      tl.kill();
+    };
+  });
+
+  mm.add('(max-width: 1050px)', () => {
+    // the giant desktop circle needs the wide stage — the phone reads the
+    // black features band instead
+    gsap.set('#twinCircle', { display: 'none' });
+    const revs = [];
     gsap.utils.toArray('.twin-para p, .twin-featureElements').forEach((el) => {
-      gsap.fromTo(el, { opacity: 0, y: 24 }, {
+      revs.push(gsap.fromTo(el, { opacity: 0, y: 24 }, {
         opacity: 1, y: 0, duration: 0.7, ease: 'power2.out',
         scrollTrigger: { trigger: el, start: 'top 85%' },
-      });
+      }));
     });
-    gsap.set('#twinCircle', { display: 'none' });
-  }
+    // the dictionary strip is real content — reveal it with the band
+    const strip = document.querySelector('.twin-strip');
+    let stripRev = null;
+    if (strip) {
+      stripRev = gsap.fromTo(strip, { opacity: 0, y: 48 }, {
+        opacity: 1, y: 0, duration: 0.9, ease: 'power2.out',
+        scrollTrigger: { trigger: '.twin-videoHolder', start: 'top 88%' },
+      });
+    }
+    return () => {
+      revs.forEach((r) => { r.scrollTrigger && r.scrollTrigger.kill(); r.kill(); });
+      if (stripRev) { stripRev.scrollTrigger && stripRev.scrollTrigger.kill(); stripRev.kill(); }
+    };
+  });
 
   /* ---------- twin story ---------- */
   if (!reduced) {

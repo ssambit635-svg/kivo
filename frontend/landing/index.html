@@ -6,7 +6,7 @@
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
-  <link rel="stylesheet" href="/styles.css?v=6">
+  <link rel="stylesheet" href="/styles.css?v=7">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -53,7 +53,24 @@
       <a class="topNav-apkBtn" href="/download/apk" download="kivo.apk">download app (apk)</a>
       <a class="topNav-link" href="/doctor/">for doctors</a>
     </div>
+    <!-- mobile-only: the desktop actions collapse into this menu -->
+    <button class="topNav-burger" id="navBurger" type="button" aria-label="open menu" aria-expanded="false" aria-controls="mobileMenu">
+      <span></span><span></span>
+    </button>
   </header>
+
+  <!-- ============ mobile menu (full-screen, black) ============ -->
+  <div class="mobileMenu" id="mobileMenu" aria-hidden="true">
+    <nav class="mobileMenu-nav" aria-label="mobile">
+      <a class="mobileMenu-link" href="/m/"><span class="mobileMenu-num">01</span>mobile app</a>
+      <a class="mobileMenu-link" href="/download/apk" download="kivo.apk"><span class="mobileMenu-num">02</span>download app (apk)</a>
+      <a class="mobileMenu-link" href="/doctor/"><span class="mobileMenu-num">03</span>for doctors</a>
+    </nav>
+    <div class="mobileMenu-foot">
+      <span>©2026</span>
+      <span>never a diagnosis — awareness, always</span>
+    </div>
+  </div>
 
   <!-- ============ floating vertical cta (blend difference) ============ -->
   <a class="floatingCta" id="floatingCta" href="/download/apk" download="kivo.apk">download apk</a>
@@ -68,6 +85,12 @@
       <span class="bottomBar-line"><span class="bottomBar-fill" id="scrollFill"></span></span>
       <span class="bottomBar-pct" id="scrollPct">0%</span>
     </div>
+  </div>
+
+  <!-- ============ mobile scroll cue (replaces the desktop bottom bar) ============ -->
+  <div class="scrollCue" id="scrollCue" aria-hidden="true">
+    <span>scroll</span>
+    <svg viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1.5v10.5"/><path d="M2.2 8.4 6 12.2l3.8-3.8"/></svg>
   </div>
 
   <main class="container">
@@ -97,10 +120,14 @@
 
     <!-- ============ black interlude (water/stick video) ============ -->
     <section class="waterStick" id="waterStick">
+      <!-- mobile-only editorial metadata (desktop never shows it) -->
+      <div class="waterStick-meta" aria-hidden="true"><span>002 — scan</span><span>©2026</span></div>
       <svg class="waterStick-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="20" cy="20" r="14"/><circle cx="20" cy="20" r="4"/><line x1="20" y1="2" x2="20" y2="8"/><line x1="20" y1="32" x2="20" y2="38"/></svg>
       <div class="waterStick-holder">
         <div class="waterStick-splitedText" data-text="kivo measures the impact of every result to improve the way you understand your body">
-          <h2 class="waterStick-title">kivo measures the impact of every result to improve the way you understand your body</h2>
+          <!-- the tail span renders inline on desktop (identical composition);
+               on mobile it drops below as the smaller second line -->
+          <h2 class="waterStick-title">kivo measures the impact of every result <span class="waterStick-tail">to improve the way you understand your body</span></h2>
           <h2 class="waterStick-title waterStick-filler" aria-hidden="true">kivo measures the impact of every result to improve the way you understand your body</h2>
         </div>
         <div class="waterStick-shape">
@@ -116,7 +143,7 @@
         <div class="twin-holder">
           <div class="twin-textHolder">
             <div class="twin-titleHolder">
-              <div class="twin-title twin-title--black"><h2 id="twinBlackTitle">it all starts with a<br>kivo companion</h2></div>
+              <div class="twin-title twin-title--black"><h2 id="twinBlackTitle">it all starts with a<br> kivo companion</h2></div>
             </div>
             <div class="twin-para twin-para--one"><p>your labs are scattered across reports, printers, and memory. kivo gathers every result into one verified kivo — each value checked against the standard dictionary before it ever counts.</p></div>
             <div class="twin-para twin-para--two"><p>then it does what no single report can: it shows the movement. your baselines, your drift, your context — measured, never guessed.</p></div>
@@ -559,7 +586,7 @@
   <script src="/vendor/gsap.min.js?v=2"></script>
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
-  <script src="/js/twin-visualizer.js?v=2"></script>
-  <script src="/js/main.js?v=6"></script>
+  <script src="/js/twin-visualizer.js?v=3"></script>
+  <script src="/js/main.js?v=7"></script>
 </body>
 </html>

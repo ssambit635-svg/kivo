@@ -554,7 +554,12 @@ img,svg{display:block}
   transform-origin:center center;
   margin:0;
 }
-.no-js .waterStick-shape{transform:translate(-50%,-50%) scale(1)}
+.no-js .waterStick-shape,.no-motion .waterStick-shape{transform:translate(-50%,-50%) scale(1)}
+/* prefers-reduced-motion: the timeline never arms, so the capsule must rest
+   at its full composed size straight from the stylesheet */
+@media (prefers-reduced-motion:reduce){
+  .waterStick-shape{transform:translate(-50%,-50%) scale(1)}
+}
 .waterStick-shape canvas{display:none}
 
 /* ============ twin pinned section (stick) ============ */
@@ -1925,4 +1930,456 @@ img,svg{display:block}
   .waterStick-shape{height:clamp(180px,44dvh,260px)}
   .community{padding-block:90px}
   .learn{padding-block:90px}
+}
+
+/* ============================================================
+   mobile-only chrome — hidden on every viewport >= 768px
+   (burger menu, scroll cue, interlude metadata)
+   ============================================================ */
+.topNav-burger{display:none}
+.mobileMenu{display:none}
+.scrollCue{display:none}
+.waterStick-meta{display:none}
+
+/* ============================================================
+   MOBILE RECOMPOSITION — kivo designed for the phone (<= 767px)
+   Same brand, same content, same black/white editorial rhythm.
+   Every major section becomes an intentional full-viewport
+   composition instead of a compressed desktop band.
+   Desktop (>= 768px) is untouched.
+   ============================================================ */
+@media only screen and (max-width:767px){
+
+  /* ---- global mobile ground ---- */
+  :root{--pad-x:22px}
+  html,body{overflow-x:clip}
+  body{font-size:15px;line-height:1.45}
+  .ctaLink{width:100%;max-width:340px;min-height:52px}
+
+  /* ---- 1. header: kivo + burger, nothing else ---- */
+  .topNav{
+    padding:calc(14px + env(safe-area-inset-top,0px)) var(--pad-x) 14px;
+    max-width:none;
+  }
+  .topNav-actions{display:none}
+  .topNav-burger{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    width:44px;height:44px;
+    margin-right:-10px;
+    background:none;
+    border:none;
+    padding:0;
+    cursor:pointer;
+  }
+  .topNav-burger span{
+    display:block;
+    width:23px;height:2px;
+    background:#fff;
+    transition:transform .35s cubic-bezier(.4,0,.2,1);
+    will-change:transform;
+  }
+  .topNav-burger.is-open span:first-child{transform:translateY(4px) rotate(45deg)}
+  .topNav-burger.is-open span:last-child{transform:translateY(-4px) rotate(-45deg)}
+
+  /* full-screen black menu behind the header (header stays on top) */
+  .mobileMenu{
+    display:flex;
+    flex-direction:column;
+    position:fixed;
+    inset:0;
+    z-index:5;
+    background:#050505;
+    padding:calc(110px + env(safe-area-inset-top,0px)) var(--pad-x) calc(26px + env(safe-area-inset-bottom,0px));
+    visibility:hidden;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .4s ease,visibility 0s linear .4s;
+  }
+  .mobileMenu.is-open{
+    visibility:visible;
+    opacity:1;
+    pointer-events:auto;
+    transition:opacity .4s ease;
+  }
+  .mobileMenu-nav{display:flex;flex-direction:column;gap:8px}
+  .mobileMenu-link{
+    color:#f7f7f7;
+    font-size:clamp(32px,9vw,44px);
+    line-height:1.06;
+    letter-spacing:-.03em;
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    min-height:44px;
+  }
+  .mobileMenu-num{font-size:10px;letter-spacing:.08em;color:#6f6f6f;flex:none}
+  .mobileMenu-foot{
+    margin-top:auto;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    font-size:10px;
+    letter-spacing:.02em;
+    color:#6f6f6f;
+  }
+  html.menu-open,html.menu-open body{overflow:hidden}
+
+  /* ---- 12. scroll cue: replaces the desktop bottom bar ---- */
+  .scrollCue{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    position:fixed;
+    left:50%;
+    bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    transform:translateX(-50%);
+    z-index:6;
+    mix-blend-mode:difference;
+    color:#fff;
+    font-size:10px;
+    line-height:10px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    transition:opacity .4s ease;
+    pointer-events:none;
+  }
+  .scrollCue svg{width:10px;height:12px}
+  .scrollCue svg{animation:cueNudge 1.8s ease-in-out infinite}
+  .scrollCue.is-hidden{opacity:0}
+  @keyframes cueNudge{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(3px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .scrollCue svg{animation:none}
+  }
+  /* the cue never sits on top of the open menu */
+  html.menu-open .scrollCue{opacity:0}
+
+  /* desktop micro UI never belongs on the phone */
+  .bottomBar{display:none}
+  .floatingCta{display:none}
+
+  /* ---- 2. hero: one full-viewport composition ----
+     type on top, hand + phone below, copy and one primary CTA
+     at the bottom — never a squeezed desktop band. */
+  .hero{
+    height:auto;
+    min-height:100vh;
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    /* bottom padding reserves the hand's stage (art is ~97vw tall) so the
+       copy and the visual never collide — vertical stacking, no overlap */
+    padding:calc(72px + env(safe-area-inset-top,0px)) var(--pad-x) calc(96vw + env(safe-area-inset-bottom,0px) + 10px);
+  }
+  .hero-title{
+    position:static;
+    left:auto;top:auto;
+    font-size:clamp(64px,17.5vw,104px);
+    line-height:.92;
+    margin-top:1vh;
+  }
+  .hero-img{
+    position:absolute;
+    left:0;right:0;bottom:-4px;top:auto;
+    height:auto;
+    min-height:0;
+    margin:0;
+    justify-content:flex-start;
+    align-items:flex-end;
+    z-index:1;
+    pointer-events:none;
+  }
+  /* the artwork is wider than the screen: anchored left so the phone reads
+     whole, while the arm runs off the bottom/right edge */
+  .hero-hand{
+    position:static;
+    width:118vw;
+    max-width:none;
+    height:auto;
+    transform:none;
+  }
+  .hero-text{
+    position:static;
+    transform:none;
+    margin:0 0 4px;
+    width:min(320px,100%);
+    max-width:100%;
+    text-align:left;
+    font-size:14.5px;
+    line-height:1.5;
+    z-index:2;
+  }
+  .hero-ctaGroup{
+    position:static;
+    transform:none;
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+    margin-top:16px;
+    z-index:2;
+  }
+  .hero-cta,.hero-apkBtn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-height:52px;
+    padding:15px 24px;
+  }
+
+  /* short landscape phones: stack hero, shrink art, keep the capsule inside
+     the frame — the portrait reserves no longer apply */
+  @media (max-height:520px){
+    .hero{
+      min-height:auto;
+      padding:calc(64px + env(safe-area-inset-top,0px)) var(--pad-x) 28px;
+    }
+    .hero-img{position:static;min-height:0;margin:10px 0 0;justify-content:flex-end}
+    .hero-hand{position:static;width:min(56vw,320px);height:auto;margin-left:auto}
+    .waterStick-shape{width:min(64vw,320px);height:min(74vh,290px)}
+    .waterStick-title{font-size:clamp(24px,6vw,34px)}
+    .waterStick-tail{font-size:13px}
+    .twinStory-visualizer{height:min(78vh,420px)}
+  }
+
+  /* ---- 3/4. black interlude: capsule + statement, full viewport ---- */
+  .waterStick{
+    height:100vh;
+    height:100svh;
+    min-height:100svh;
+    padding-block:0;
+  }
+  .waterStick-meta{
+    display:flex;
+    justify-content:space-between;
+    position:absolute;
+    top:calc(76px + env(safe-area-inset-top,0px));
+    left:var(--pad-x);
+    right:var(--pad-x);
+    z-index:3;
+    font-size:10px;
+    line-height:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#4d4d4d;
+    pointer-events:none;
+  }
+  /* the brand glyph parks above the capsule (on desktop it sits beside the
+     statement — a composition that needs width the phone does not have) */
+  .waterStick-icon{
+    position:absolute;
+    top:calc(128px + env(safe-area-inset-top,0px));
+    left:50%;
+    transform:translateX(-50%);
+    margin:0;
+    color:#4d4d4d;
+  }
+  .waterStick-splitedText{width:calc(100vw - 44px)}
+  /* dark statement ON the white capsule: the capsule is sized to back the
+     whole text block, so contrast never breaks */
+  .waterStick-title{font-size:clamp(32px,9.5vw,44px);line-height:1.04;color:#121212}
+  .waterStick-tail{
+    display:block;
+    margin-top:1.1em;
+    font-size:14.5px;
+    line-height:1.5;
+    letter-spacing:-.005em;
+    color:#4d4d4d;
+  }
+  /* the capsule: viewport-relative, not a desktop pixel size */
+  .waterStick-shape{
+    width:min(93vw,372px);
+    height:clamp(340px,116vw,460px);
+  }
+
+  /* ---- pinned twin section, static on mobile: read top → bottom ---- */
+  .stickWrap{overflow:clip}
+  .twin{
+    height:auto;
+    min-height:100vh;
+    min-height:100svh;
+    padding-top:calc(88px + env(safe-area-inset-top,0px));
+    overflow:visible;
+  }
+  .twin-textHolder{
+    grid-template-columns:1fr;
+    grid-template-rows:none;
+    row-gap:26px;
+    padding-inline:var(--pad-x);
+    padding-bottom:64px;
+  }
+  .twin-titleHolder{grid-row:auto;grid-column:1/-1}
+  .twin-title h2{
+    font-size:clamp(50px,15vw,72px);
+    line-height:.95;
+    white-space:normal;
+  }
+  .twin-title h2 br{display:none}
+  .twin-para{width:min(340px,100%);font-size:15px;line-height:1.5}
+  .twin-para--one,.twin-para--two{grid-row:auto;grid-column:1/-1;align-self:auto}
+
+  /* features: one full-bleed black band, stacked */
+  .twin-features{
+    position:static;
+    transform:none;
+    grid-template-columns:1fr;
+    grid-template-rows:none;
+    gap:0;
+    padding:52px var(--pad-x) 56px;
+    background:#000;
+  }
+  .twin-feature--long .twin-featureElements,
+  .twin-feature--connect .twin-featureElements,
+  .twin-feature--personal .twin-featureElements,
+  .twin-feature--plain .twin-featureElements{grid-column:1/-1;justify-self:stretch;align-self:auto}
+  .twin-featureElements{
+    gap:12px;
+    padding:26px 0 2px;
+    margin-top:26px;
+    border-top:1px solid rgba(247,247,247,.22);
+  }
+  .twin-feature--long .twin-featureElements{border-top:0;margin-top:0;padding-top:0}
+  .twin-featureElements h2{font-size:clamp(29px,8vw,36px);line-height:1.02;white-space:normal;padding-bottom:0}
+  .twin-featureElements p{width:min(340px,100%);font-size:14px;line-height:1.5;color:rgba(247,247,247,.75);padding-right:0}
+
+  /* the value strip is real content — it belongs on the phone too */
+  .twin-videoHolder{
+    display:block;
+    position:static;
+    transform:none;
+    width:auto;
+    height:auto;
+    padding:0 var(--pad-x) 64px;
+    background:#000;
+  }
+  .twin-video{display:flex;justify-content:center}
+  .twin-strip{
+    width:min(330px,100%);
+    box-shadow:none;
+    border:1px solid rgba(247,247,247,.16);
+  }
+
+  /* ---- twin story: label → ticker → live twin → verify ---- */
+  /* enough head-room that the section label never slides under the
+     fixed header when the section top reaches the viewport top */
+  .twinStory{margin-top:0;overflow:clip}
+  .twinStory-wrapper{padding-bottom:88px}
+  /* head-room inside the section: when its top reaches the viewport top the
+     label must sit below the fixed header, never underneath it */
+  .twinStory-illustrationHolder{height:auto;min-height:0;display:block;margin-bottom:0;padding-top:118px}
+  .twinStory-illustrationText{margin-top:0}
+  .twinStory-illustrationText p{
+    position:static;
+    padding-inline:var(--pad-x);
+    font-size:15px;
+    line-height:1.45;
+  }
+  .twinStory-titleHolder{
+    position:static;
+    transform:none;
+    margin-top:14px;
+    height:clamp(60px,16vw,96px);
+    display:flex;
+    align-items:center;
+  }
+  .twinStory-tickerWord{font-size:clamp(50px,14vw,86px)}
+  .twinStory-tickerSep{font-size:clamp(38px,11vw,64px)}
+  .twinStory-illustration{
+    position:relative;
+    left:auto;right:auto;top:auto;bottom:auto;
+    transform:none;
+    width:100%;
+    max-width:none;
+    height:auto;
+    aspect-ratio:auto;
+    margin:26px 0 0;
+  }
+  .twinStory-visualizer{
+    max-height:none;
+    height:clamp(420px,72vh,600px);
+    height:clamp(420px,72svh,600px);
+    width:100%;
+  }
+  .twin-switcher{
+    display:flex;
+    width:calc(100% - 4px);
+    overflow-x:auto;
+    scrollbar-width:none;
+    justify-content:flex-start;
+    margin-bottom:10px;
+  }
+  .twin-switcher::-webkit-scrollbar{display:none}
+  .twin-switchBtn{flex:none;padding:8px 12px}
+  .twin-statusBadge{top:10px;left:12px;font-size:8.5px;padding:4px 8px}
+  .twin-hudCard{
+    top:auto;
+    bottom:56px;
+    left:12px;
+    right:auto;
+    width:min(232px,66%);
+    padding:10px 12px;
+  }
+  .twin-hudTitle{font-size:12px}
+  .twin-hudValue{font-size:18px}
+  .twin-actions{bottom:12px;gap:6px}
+  .twin-actionBtn{padding:7px 10px;font-size:10px;min-height:32px}
+  .twin-actionBtn svg{width:11px;height:11px}
+  .twin-hint{bottom:0;font-size:8.5px}
+  .twinStory-information{padding-inline:var(--pad-x);display:block;margin-top:44px}
+  .twinStory-divider{margin-bottom:24px}
+  .twinStory-informationTitle p{font-size:15px}
+  .twinStory-informationText{margin-top:18px}
+  .twinStory-informationText p{font-size:14.5px;line-height:1.5;margin-bottom:22px}
+
+  /* ---- markers: editorial stack ---- */
+  .markers{padding-top:96px;padding-bottom:96px}
+  .markers-wrapper{padding-inline:var(--pad-x)}
+  .markers-text{display:block}
+  .markers-text h2{font-size:clamp(58px,17.5vw,92px);line-height:.95}
+  .markers-cta{margin-top:22px;padding-right:0}
+  .markers-cta p{font-size:14.5px;line-height:1.5;margin-bottom:22px}
+  .markers-cardHolder{margin-top:56px}
+  .markerCard-top h2{font-size:clamp(46px,13.5vw,64px);line-height:1}
+  .markerCard-imageHolder svg{width:min(220px,62%);height:52px}
+
+  /* ---- application: title → copy → phone → copy ---- */
+  .appSection-wrapper{padding-top:96px}
+  .appSection-title{padding-inline:var(--pad-x)}
+  .appSection-title h2{font-size:clamp(40px,11vw,56px);line-height:1.02}
+  .appSection-screensHolder{margin-top:52px;padding-inline:var(--pad-x)}
+  .appSection-screens{row-gap:32px}
+  .appScreen-cta,.appSection-text--two{width:min(340px,100%)}
+  .appScreen-cta p,.appSection-text--two p{font-size:14.5px;line-height:1.5}
+  .phone{width:min(76vw,292px);height:calc(min(76vw,292px) * 2.162)}
+
+  /* ---- learn / stats / community: keep the rhythm, fix the scale ---- */
+  .learn{padding-top:120px;padding-bottom:104px}
+  .learn-wrapper h2{font-size:clamp(42px,12.5vw,64px);line-height:.96}
+  .learn-wrapper p{width:min(320px,calc(100vw - 44px));margin:18px auto 0;font-size:14.5px;line-height:1.5}
+
+  .stats{padding-block:40px 72px}
+  .stats-wrapper{padding-inline:14px;gap:12px}
+
+  .community{min-height:0;padding-block:96px 88px}
+  .community-wrapper{padding-inline:var(--pad-x)}
+  .community-headline h2{font-size:clamp(38px,12vw,58px);line-height:.96}
+  .community-headline p{font-size:14.5px;line-height:1.5}
+  .community-listHolder{padding-bottom:70px}
+  .quote h2{font-size:clamp(22px,6.6vw,28px);line-height:1.18}
+  .quote p{font-size:15px;margin-top:22px}
+  .community-prev,.community-next{width:48px;height:48px}
+  .community-list > .ctaLink{margin-top:36px}
+
+  /* ---- footer ---- */
+  .footer-holder{padding:72px var(--pad-x) calc(90px + env(safe-area-inset-bottom,0px))}
+  .footer-titles{margin-bottom:76px}
+  .footer-title p{font-size:clamp(38px,11vw,60px)}
+  .footer-col a{min-height:32px}
 }
