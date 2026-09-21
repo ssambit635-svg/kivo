@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
@@ -48,12 +48,42 @@
   <!-- ============ top navigation (blend difference) ============ -->
   <header class="topNav" id="topNav">
     <a class="topNav-logo" href="/">kivo</a>
-    <div class="topNav-actions">
+    <div class="topNav-actions" id="topNavActions">
       <a class="topNav-link" href="/m/">mobile app</a>
       <a class="topNav-apkBtn" href="/download/apk" download="kivo.apk">download app (apk)</a>
       <a class="topNav-link" href="/doctor/">for doctors</a>
     </div>
+    <button class="topNav-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+      <span class="topNav-toggleBar"></span>
+      <span class="topNav-toggleBar"></span>
+    </button>
   </header>
+
+  <!-- ============ mobile drawer navigation ============ -->
+  <div class="mobileDrawer" id="mobileDrawer" aria-hidden="true">
+    <div class="mobileDrawer-backdrop" id="mobileDrawerBackdrop"></div>
+    <div class="mobileDrawer-panel">
+      <div class="mobileDrawer-header">
+        <span class="mobileDrawer-brand">kivo</span>
+        <button class="mobileDrawer-close" id="menuClose" aria-label="Close menu">✕</button>
+      </div>
+      <nav class="mobileDrawer-nav">
+        <a class="mobileDrawer-link" href="/m/">mobile app</a>
+        <a class="mobileDrawer-link" href="/download/apk" download="kivo.apk">download app (apk)</a>
+        <a class="mobileDrawer-link" href="/doctor/">for doctors</a>
+        <a class="mobileDrawer-link" href="#waterStick">the measure</a>
+        <a class="mobileDrawer-link" href="#hero">see better</a>
+        <a class="mobileDrawer-link" href="#twinSection">companion twin</a>
+        <a class="mobileDrawer-link" href="#markers">clinical markers</a>
+        <a class="mobileDrawer-link" href="#statsSection">verified numbers</a>
+        <a class="mobileDrawer-link" href="/app/">patient dashboard</a>
+      </nav>
+      <div class="mobileDrawer-footer">
+        <a class="mobileDrawer-ctaBtn" href="/m/">launch mobile app</a>
+        <p class="mobileDrawer-note">never a diagnosis — awareness, always</p>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ floating vertical cta (blend difference) ============ -->
   <a class="floatingCta" id="floatingCta" href="/download/apk" download="kivo.apk">download apk</a>
@@ -67,13 +97,57 @@
       <span class="bottomBar-scroll">scroll down</span>
       <span class="bottomBar-line"><span class="bottomBar-fill" id="scrollFill"></span></span>
       <span class="bottomBar-pct" id="scrollPct">0%</span>
+      <span class="bottomBar-mobileScroll">SCROLL ↓</span>
     </div>
   </div>
 
   <main class="container">
 
+    <!-- ============ mobile intro (black full screen) ============ -->
+    <section class="mobileHero" id="mobileHero" aria-label="Intro">
+      <div class="mobileHero-wrapper">
+        <div class="mobileHero-meta">
+          <span class="mobileHero-tag">DIGITAL HEALTH COMPANION</span>
+          <span class="mobileHero-code">KIVO // 01</span>
+        </div>
+        <div class="mobileHero-body">
+          <h1 class="mobileHero-headline">
+            <span>YOUR HEALTH</span>
+            <span>ISN'T A</span>
+            <span>SNAPSHOT.</span>
+          </h1>
+          <p class="mobileHero-sub">kivo reads your lab results into continuous context — measured, never guessed.</p>
+        </div>
+        <div class="mobileHero-footer">
+          <div class="mobileHero-scrollPrompt">
+            <span>SCROLL</span>
+            <span class="mobileHero-arrow">↓</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ mobile scan section (white full screen) ============ -->
+    <section class="mobileScan" id="mobileScan" aria-label="Scan">
+      <div class="mobileScan-wrapper">
+        <div class="mobileScan-metaTop">
+          <span class="mobileScan-number">001</span>
+          <span class="mobileScan-year">©2026</span>
+        </div>
+        <div class="mobileScan-center">
+          <h2 class="mobileScan-title">SCAN</h2>
+          <p class="mobileScan-caption">lab reports · paper · direct pdf</p>
+        </div>
+        <div class="mobileScan-metaBot">
+          <span class="mobileScan-hint">AUTOMATIC EXTRACTION // ZERO CLOUD LEAK</span>
+          <span class="mobileScan-arrow">↓</span>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ hero ============ -->
     <section class="hero" id="hero">
+      <div class="hero-twinTag" aria-hidden="true">twin // 002</div>
       <h1 class="hero-title">
         <span class="hero-titleRow">
           <span class="hero-titleCarousel" id="heroCarousel">know</span>
@@ -100,7 +174,10 @@
       <svg class="waterStick-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="20" cy="20" r="14"/><circle cx="20" cy="20" r="4"/><line x1="20" y1="2" x2="20" y2="8"/><line x1="20" y1="32" x2="20" y2="38"/></svg>
       <div class="waterStick-holder">
         <div class="waterStick-splitedText" data-text="kivo measures the impact of every result to improve the way you understand your body">
-          <h2 class="waterStick-title">kivo measures the impact of every result to improve the way you understand your body</h2>
+          <h2 class="waterStick-title">
+            <span class="waterStick-titleLead">kivo measures the impact of every result</span>
+            <span class="waterStick-titleFollow">to improve the way you understand your body</span>
+          </h2>
           <h2 class="waterStick-title waterStick-filler" aria-hidden="true">kivo measures the impact of every result to improve the way you understand your body</h2>
         </div>
         <div class="waterStick-shape">

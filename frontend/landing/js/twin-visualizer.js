@@ -866,9 +866,28 @@
       }
     }
 
-    // Main animation loop
+    // Main animation loop with viewport visibility awareness for high mobile performance
+    let isVisible = true;
+    let animFrameId = null;
+
+    if ('IntersectionObserver' in window && canvas) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          isVisible = entry.isIntersecting;
+          if (isVisible && !animFrameId) {
+            animFrameId = requestAnimationFrame(animate);
+          }
+        });
+      }, { rootMargin: '120px' });
+      observer.observe(canvas);
+    }
+
     function animate() {
-      requestAnimationFrame(animate);
+      if (!isVisible && 'IntersectionObserver' in window) {
+        animFrameId = null;
+        return;
+      }
+      animFrameId = requestAnimationFrame(animate);
       time += 0.016;
 
       // Auto orbit inertia
