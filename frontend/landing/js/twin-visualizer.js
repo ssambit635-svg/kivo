@@ -207,7 +207,7 @@
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, isCompact ? 1.5 : 2);
       width = rect.width;
       height = rect.height;
       canvas.width = Math.round(width * dpr);
@@ -215,12 +215,22 @@
       center = { x: width / 2, y: height / 2 };
       radius = Math.min(width, height) * 0.38;
     }
+    // Compact profile for phones: fewer background particles and a lower
+    // pixel-ratio cap keep the canvas smooth on mid-range devices.
+    const isCompact = window.matchMedia('(max-width: 767px)').matches;
     resize();
     window.addEventListener('resize', resize, { passive: true });
+    // The canvas lives inside a layout that settles late (loader, pins,
+    // breakpoint changes) — track its actual box, not just window resizes.
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => resize());
+      ro.observe(canvas.parentElement || canvas);
+    }
 
     // Floating background particles for 3D sphere
     const bgParticles = [];
-    for (let i = 0; i < 50; i++) {
+    const PARTICLE_COUNT = isCompact ? 22 : 50;
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
       const u = Math.random();
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
@@ -275,6 +285,13 @@
       if (hudCard) hudCard.classList.remove('twin-hudCard--hidden');
     }
     updateHUD(MARKERS[0]);
+    // When the dictionary lands, refresh the card with the real values. On
+    // phones the card then stays hidden until a node is tapped — there is no
+    // hover to drive it, and a permanently empty card reads as broken.
+    document.addEventListener('kivo:data', () => {
+      updateHUD(selectedMarker);
+      if (isCompact && hudCard) hudCard.classList.add('twin-hudCard--hidden');
+    });
 
     // Mode Switcher handler
     function setMode(newMode) {
@@ -866,9 +883,19 @@
       }
     }
 
+    // Pause the whole render loop while the canvas is off screen — the twin
+    // should not burn battery from three sections away.
+    let visualizerInView = true;
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver((entries) => {
+        visualizerInView = entries[0] && entries[0].isIntersecting;
+      }, { rootMargin: '120px' }).observe(canvas);
+    }
+
     // Main animation loop
     function animate() {
       requestAnimationFrame(animate);
+      if (!visualizerInView) return;
       time += 0.016;
 
       // Auto orbit inertia
