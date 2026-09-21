@@ -47,7 +47,7 @@ async function nativeShell(page) {
   await page.addInitScript(() => { window.KivoNative = { isNative: () => true }; });
   await page.route('**/native/**', async route => {
     const name = new URL(route.request().url()).pathname.slice('/native/'.length) || 'index.html';
-    const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png' };
+    const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2' };
     const filePath = path.join(FRONTEND_ROOT, name);
     try {
       const body = await fs.readFile(filePath);
