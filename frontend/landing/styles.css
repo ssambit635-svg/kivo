@@ -106,10 +106,10 @@ img,svg{display:block}
   padding:22px 26px 0;
 }
 .ph-brand{font-size:18px;line-height:18px;letter-spacing:-.02em}
-.ph-date{font-size:12px;line-height:12px;color:#b3b3b3}
+.ph-date{font-size:12px;line-height:12px;color:#6f6f6f}
 .ph-greeting{padding:18px 26px 0}
 .ph-greetingTitle{font-size:17px;line-height:20px;letter-spacing:-.02em;margin-bottom:4px}
-.ph-greetingSub{font-size:12px;line-height:14px;color:#b3b3b3}
+.ph-greetingSub{font-size:12px;line-height:14px;color:#6f6f6f}
 .ph-cards{padding:16px 26px 0;display:flex;flex-direction:column;gap:12px}
 .ph-card{
   background:#fff;
@@ -121,7 +121,7 @@ img,svg{display:block}
 .ph-cardName{font-size:14px;line-height:14px;letter-spacing:-.01em}
 .ph-cardValue{font-size:14px;line-height:14px}
 .ph-cardBottom{margin-top:6px}
-.ph-cardDelta{font-size:11px;line-height:12px;color:#b3b3b3}
+.ph-cardDelta{font-size:11px;line-height:12px;color:#6f6f6f}
 .ph-cardDelta--up{color:#000}
 .ph-spark{
   width:100%;
@@ -134,7 +134,7 @@ img,svg{display:block}
   margin:14px 26px 0;
   font-size:10.5px;
   line-height:12px;
-  color:#b3b3b3;
+  color:#6f6f6f;
   text-align:center;
 }
 .ph-tabs{
@@ -513,6 +513,12 @@ img,svg{display:block}
   height:140vw;
   min-width:140vh;
   min-height:140vh;
+  /* vmax, not vw: on a tall/narrow window 140vw is SHORTER than the viewport
+     diagonal, so the iris stopped short of the corners and the white copy
+     landed on the light-grey stage behind it (invisible). 160vmax is longer
+     than any viewport diagonal (√2 · vmax ≈ 141vmax), so it always covers. */
+  width:160vmax;
+  height:160vmax;
   border-radius:50%;
   background:#000;
   transform:translate(-50%,-50%) scale(0);
@@ -605,6 +611,13 @@ img,svg{display:block}
   height:130vw;
   min-width:130vh;
   min-height:130vh;
+  /* Same corner bug as the water iris, and this one hid real copy: the two
+     BOTTOM feature blocks ("built around you" / "yours to keep") sit in the
+     lower corners, exactly where 130vw ran out on a tall window — white type
+     on the #f7f7f7 stage = 1.07:1 contrast = invisible. 160vmax always
+     outruns the viewport diagonal, so the black stage reaches every corner. */
+  width:160vmax;
+  height:160vmax;
   border-radius:50%;
   background:#000;
   transform:translate(-50%,-50%) scale(0);
@@ -647,7 +660,10 @@ img,svg{display:block}
   font-size:15px;
   line-height:18px;
   letter-spacing:-.005em;
-  color:#a0a0a0;
+  /* was #a0a0a0 (2.44:1 on the #f7f7f7 stage — too faint to read). These two
+     paragraphs only ever sit on the LIGHT stage (the timeline fades them out
+     before the black iris closes), so they get a dark, readable grey. */
+  color:#6a6a6a;
   width:310px;
   max-width:100%;
 }
@@ -666,6 +682,11 @@ img,svg{display:block}
   grid-template-rows:1fr 1fr;
   gap:20px;
   padding-inline:52px;
+  /* the topNav and the bottomBar are fixed overlays ~64px tall: without this
+     inset the top row sat under the logo and the bottom row ("built around
+     you" / "yours to keep") under the scroll bar, both blend-difference'd
+     into each other. */
+  padding-block:clamp(76px,11vh,116px);
   pointer-events:none;
   z-index:3;
 }
@@ -674,6 +695,25 @@ img,svg{display:block}
   display:flex;
   flex-direction:column;
   gap:22px;
+  position:relative;
+  isolation:isolate;
+}
+/* Contrast safety net. This section's copy is white and its stage is an
+   animated black iris — if any part of a block ever ends up off the iris
+   (mid-bloom, an odd viewport, a browser that bails on the pin) white lands
+   on #f7f7f7 and disappears. The soft black wash behind each block keeps the
+   white type at ≥7:1 wherever it sits, and is invisible on top of the iris
+   (black on black). Removed again in the no-js / no-motion fallback below,
+   where the stage stays light and the copy goes dark instead.
+   Each block shrink-wraps its own copy (justify-self:start/end), so one
+   centred wash is enough — it bleeds a little past the text on all sides. */
+.twin-featureElements::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-36px -44px -32px;
+  background:radial-gradient(118% 108% at 50% 50%,rgba(0,0,0,.82) 0%,rgba(0,0,0,.6) 46%,rgba(0,0,0,.2) 72%,rgba(0,0,0,0) 90%);
+  pointer-events:none;
 }
 .twin-feature--long .twin-featureElements{grid-column:2/span 5;justify-self:start;align-self:start}
 .twin-feature--connect .twin-featureElements{grid-column:7/-1;justify-self:end;align-self:start}
@@ -702,13 +742,20 @@ img,svg{display:block}
 }
 .twin-feature--connect .twin-featureDot,.twin-feature--plain .twin-featureDot{left:auto;right:0}
 .twin-featureElements h2{
-  font-size:52px;
-  line-height:48px;
+  /* was a fixed 52px + nowrap: below ~1300px the headline was wider than its
+     grid cell, so the right-hand blocks ("always connected", "yours to keep")
+     ran off the section and got clipped by .twin{overflow:hidden} — half the
+     words simply never rendered. clamp() keeps the desktop size and lets the
+     type shrink (and, worst case, wrap) instead of being cut off. */
+  font-size:clamp(28px,3.6vw,52px);
+  line-height:1.02;
   letter-spacing:-.02em;
   font-weight:500;
   color:#fff;
-  white-space:nowrap;
+  white-space:normal;
+  overflow-wrap:break-word;
   padding-bottom:.13em;
+  text-wrap:balance;
 }
 .twin-featureElements p{
   font-size:15px;
@@ -798,7 +845,10 @@ img,svg{display:block}
   font-size:clamp(160px,20vw,340px);
   line-height:.86;
   letter-spacing:-.035em;
-  color:#dedede;
+  /* was #dedede — 1.26:1 against the #f7f7f7 stage, i.e. the biggest
+     headline on the page was effectively invisible. #8f8f8f clears 3:1 for
+     display type and still sits behind the illustration as a watermark. */
+  color:#8f8f8f;
   font-weight:500;
   white-space:nowrap;
 }
@@ -903,7 +953,11 @@ img,svg{display:block}
   padding-bottom:20px;
   margin-inline:20px;
 }
-.markerCard-cta p{font-size:14px;line-height:16px;color:#b3b3b3;min-width:0}
+/* inherit + opacity (not a fixed #b3b3b3): the card flips to a #121212
+   background on hover, and a hardcoded light grey is 2.1:1 on white while a
+   hardcoded dark grey would then be unreadable on the dark card. Inheriting
+   the card's own colour keeps it ≥5:1 in BOTH states. */
+.markerCard-cta p{font-size:14px;line-height:16px;color:inherit;opacity:.72;min-width:0}
 .markerCard-cta p span{color:inherit}
 .markerCard-cta div{flex:none;width:18px;height:18px}
 .markerCard-cta div svg{width:100%;height:auto}
@@ -1341,6 +1395,28 @@ img,svg{display:block}
 .no-motion .footer-title-sm,.no-motion .footer-col a,.no-motion .footer-copyright{opacity:1;transform:none}
 .no-motion .twin-featureDivider{transform:none}
 .no-motion .waterStick-filler{clip-path:inset(0)}
+/* Pinned twin, no animation engine: the black iris never blooms, so the stage
+   stays #f7f7f7 and the white feature copy would be invisible (1.07:1). Flip
+   the whole block to dark-on-light — headline, body, icon, divider and dot —
+   and drop the black safety wash, which only exists to protect white type.
+   Same rules cover reduced motion (the animation engine adds .no-motion) and
+   the noscript block in the markup covers scripting turned off entirely.
+
+   Scoped to >=768px on purpose: below that the stylesheet recomposes this
+   section as a solid BLACK column (no iris at all), where the white copy is
+   already correct. An unscoped dark-on-light flip would have painted black
+   headlines onto that black column. */
+@media (min-width:768px){
+  .no-js .twin-circleBackground,.no-motion .twin-circleBackground{display:none}
+  .no-js .twin-featureElements::before,.no-motion .twin-featureElements::before{display:none}
+  .no-js .twin-featureElements,.no-motion .twin-featureElements{opacity:1}
+  .no-js .twin-featureElements h2,.no-motion .twin-featureElements h2{color:#000}
+  .no-js .twin-featureElements p,.no-motion .twin-featureElements p{color:#3d3d3d}
+  .no-js .twin-iconHolder,.no-motion .twin-iconHolder{color:#121212}
+  .no-js .twin-featureDivider,.no-motion .twin-featureDivider{background:rgba(18,18,18,.3);transform:scaleX(1)}
+  .no-js .twin-featureDot,.no-motion .twin-featureDot{background:#121212}
+  .no-js .twin-para p,.no-motion .twin-para p{opacity:1;transform:none}
+}
 
 /* ============ responsive ============ */
 @media(min-width:2250px){
@@ -1513,7 +1589,7 @@ img,svg{display:block}
   .twin-title h2{font-size:min(150px,24dvh)}
   .twin-textHolder{row-gap:40px}
   .twin-featureElements{gap:14px}
-  .twin-featureElements h2{font-size:40px;line-height:38px}
+  .twin-featureElements h2{font-size:min(40px,3.4vw);line-height:1.05}
   .twin-iconHolder{width:42px;height:42px}
 }
 
@@ -1890,10 +1966,17 @@ img,svg{display:block}
     display:none !important;
   }
   .waterStick-shape{
-    width:clamp(190px,52vw,260px);
-    height:clamp(190px,52vw,260px);
+    /* This section is BLACK on mobile. A solid #f7f7f7 disc here meant the
+       dark headline was readable only where it crossed the disc (190-260px
+       wide) and invisible the moment a line ran past it onto the black —
+       plus the light wave strokes drawn in #waterCanvas disappeared
+       completely. It is now a dark translucent pod, sized to sit behind the
+       whole 320px text block, so the light copy reads on every pixel. */
+    width:clamp(280px,86vw,420px);
+    height:clamp(280px,86vw,420px);
     border-radius:50%;
-    background:#f7f7f7;
+    background:radial-gradient(circle at 50% 45%,rgba(247,247,247,.15),rgba(247,247,247,.05) 58%,rgba(247,247,247,0) 78%);
+    border:1px solid rgba(247,247,247,.16);
     position:absolute;
     left:50%;
     top:50%;
@@ -1914,24 +1997,34 @@ img,svg{display:block}
   .waterStick-title{
     margin:0;
   }
+  /* The white clip-reveal duplicate (.waterStick-filler) is a desktop trick:
+     it re-types the whole sentence at 40-64px over the stacked mobile
+     headline, so on phones the two versions landed on top of each other in
+     different sizes. Mobile keeps ONE headline — light on black, always
+     legible. */
+  .waterStick-filler{
+    display:none !important;
+  }
   .waterStick-titleLead{
     display:block;
     font-size:clamp(1.7rem,7.5vw,2.4rem);
     line-height:.98;
     letter-spacing:-.03em;
     font-weight:600;
-    color:#000;
+    color:#f7f7f7;
     text-transform:uppercase;
+    text-shadow:0 2px 24px rgba(0,0,0,.6);
   }
   .waterStick-titleFollow{
     display:block;
     font-size:13px;
     line-height:1.45;
-    color:rgba(0,0,0,.75);
+    color:rgba(247,247,247,.86);
     margin-top:12px;
     font-weight:400;
     text-transform:none;
     letter-spacing:-.005em;
+    text-shadow:0 2px 18px rgba(0,0,0,.6);
   }
 
   /* 5. Desktop Micro UI Removal */

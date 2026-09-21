@@ -838,7 +838,9 @@ input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;b
   padding:26px 14px;border:1.5px dashed var(--line);
   border-radius:18px;line-height:1.6;
 }
-.empty .btn-ic{color:var(--muted-2)}
+/* --muted-2 is 2.6:1 on the white empty-state disc; --muted clears 3:1 so the
+   icon is actually visible (icons are held to the non-text contrast bar). */
+.empty .btn-ic{color:var(--muted)}
 .suggestion-chips{display:flex;gap:8px;flex-wrap:wrap}
 .suggestion-chips button{
   background:#fff;border:1px solid var(--line);color:var(--ink-2);

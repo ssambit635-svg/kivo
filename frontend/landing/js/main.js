@@ -4,6 +4,15 @@
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* Reduced-motion visitors never run the scroll timelines below, so anything
+     those timelines were responsible for revealing has to be handed back to
+     CSS. The .no-motion block in styles.css is exactly that fallback: the
+     loader goes, the pinned twin keeps its light stage and switches its white
+     feature copy to dark-on-light (white on #f7f7f7 is 1.07:1 — invisible),
+     and the water iris opens statically. Without this class the reduced path
+     left that copy white on a light background. */
+  if (reduced) document.documentElement.classList.add('no-motion');
+
   /* ---------- the page's data layer --------------------------------------
    * Every figure, name, LOINC code and reference range on this page comes from
    * the two public knowledge catalogues:
@@ -144,7 +153,8 @@
     gsap.ticker.lagSmoothing(0);
   }
 
-  const isDesktop = () => window.innerWidth >= 600;
+  // Matches the (max-width:767px) recomposition in styles.css.
+  const isDesktop = () => window.innerWidth >= 768;
 
   /* ---------- word swap helper ---------- */
   function makeCycler(el, words, hold, exit) {
@@ -412,9 +422,17 @@
 
   /* ---------- responsive GSAP ScrollTrigger engine ---------- */
   ScrollTrigger.matchMedia({
-    // Desktop, Laptop & Sandbox Preview (>= 600px):
+    // Desktop, Laptop & Sandbox Preview (>= 768px):
     // SoFi-style scroll circle opening right after the home page + pinned twin
-    "(min-width: 600px)": function() {
+    //
+    // 768, not 600: styles.css recomposes the page for phones at
+    // (max-width:767px) — the twin becomes a plain static black column and the
+    // iris is display:none. Between 600 and 767px the desktop timeline used to
+    // run against that mobile layout: it pinned a height:auto section, animated
+    // a circle that was not there, and held the feature copy at opacity:0 until
+    // a scrub position the broken pin could never reach. The breakpoints now
+    // match the stylesheet.
+    "(min-width: 768px)": function() {
       if (!reduced) {
         // Hero parallax depth as user scrolls
         gsap.to('#heroHand', {
@@ -486,25 +504,54 @@
         '.twin-feature--personal',
         '.twin-feature--plain',
       ];
+      /* ---- the twin timeline, as an explicit contrast contract ------------
+       * The stage starts LIGHT (#f7f7f7) and this section's feature copy is
+       * WHITE, so the beats are ordered so that no white type is ever on
+       * screen before its black stage is:
+       *   1. the black headline slides out and the two light-stage paragraphs
+       *      (dark grey, #6a6a6a) get a real, readable hold;
+       *   2. those paragraphs are gone before the iris grows into them;
+       *   3. the black iris blooms to FULL size (160vmax — every corner, any
+       *      aspect ratio);
+       *   4. only then does white copy appear, one feature at a time.
+       * The old timings overlapped 3 and 4: the top features arrived at
+       * scale ≈ 0.5 and the bottom two ("built around you" / "yours to keep")
+       * at scale ≈ 0.85-0.97 — white type still landing on light grey corners,
+       * i.e. invisible. Every number below is a [start, end] pair on one
+       * scrubbed timeline, so the ordering is readable at a glance. */
+      const BEAT = {
+        titleOut:  [0.00, 0.50], // black headline leaves the light stage
+        paraIn:    [0.02, 0.44], // the two light-stage paragraphs arrive
+        paraOut:   [0.80, 1.10], // …and leave, before the iris reaches them
+        iris:      [0.95, 2.00], // black stage blooms to full coverage
+        strip:     [1.85, 2.45], // dark marker card (reads on light or black)
+        firstFeat: 2.10,         // first WHITE feature — iris is already full
+        featStep:  0.25,
+        hold:      3.75,         // timeline length: last beat + a resting hold
+      };
+      const span = (b) => b[1] - b[0];
       const tl = gsap.timeline({
         defaults: { ease: 'none' },
         scrollTrigger: {
           trigger: '#stickWrap',
           start: 'top top',
-          end: '+=250%',
+          // 320%, not 250%: ordering the beats so white type never lands on
+          // the light stage costs a little more scroll room. Pacing per beat
+          // stays close to the original (~0.85 viewport heights each).
+          end: '+=320%',
           scrub: 1,
           pin: '.twin',
           anticipatePin: 1,
         },
       });
-      tl.to('#twinBlackTitle', { x: '-100vw', duration: 1.1 }, 0)
-        .to('#twinCircle', { scale: 1, ease: 'power2.inOut', duration: 1.5 }, 0.2)
-        .fromTo('.twin-para--one p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.4 }, 0.55)
-        .fromTo('.twin-para--two p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.4 }, 0.65)
-        .to('.twin-para p', { opacity: 0, duration: 0.5, ease: 'power2.in' }, 1.35)
-        .fromTo('.twin-strip', { opacity: 0, y: 80 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.6 }, 0.85);
+      tl.to('#twinBlackTitle', { x: '-100vw', ease: 'power2.inOut', duration: span(BEAT.titleOut) }, BEAT.titleOut[0])
+        .fromTo('.twin-para--one p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.38 }, BEAT.paraIn[0])
+        .fromTo('.twin-para--two p', { opacity: 0, y: 30 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.38 }, BEAT.paraIn[0] + 0.04)
+        .to('.twin-para p', { opacity: 0, duration: span(BEAT.paraOut), ease: 'power2.in' }, BEAT.paraOut[0])
+        .to('#twinCircle', { scale: 1, ease: 'power2.inOut', duration: span(BEAT.iris) }, BEAT.iris[0])
+        .fromTo('.twin-strip', { opacity: 0, y: 80 }, { opacity: 1, y: 0, ease: 'power2.out', duration: span(BEAT.strip) }, BEAT.strip[0]);
       featOrder.forEach((sel, idx) => {
-        const at = 0.95 + idx * 0.22;
+        const at = BEAT.firstFeat + idx * BEAT.featStep;
         const right = idx % 2 === 1;
         const div = document.querySelector(sel + ' .twin-featureDivider');
         const dist = () => Math.max(0, div ? div.clientWidth - 5 : 100);
@@ -514,10 +561,16 @@
           .fromTo(sel + ' h2', { y: 24, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out', duration: 0.35 }, at + 0.2)
           .fromTo(sel + ' p', { y: 16, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out', duration: 0.35 }, at + 0.28);
       });
+      // Rest on the finished state. Without this the last feature ("yours to
+      // keep") only reached full opacity on the exact frame the pin released,
+      // so it was gone before it could be read.
+      tl.set('#twinCircle', { scale: 1 }, BEAT.hold);
     },
 
-    // Mobile (< 600px): clean circular expansion and unpinned readable cards
-    "(max-width: 599px)": function() {
+    // Mobile & small tablets (<= 767px): clean circular expansion and
+    // unpinned readable cards. 767px is where styles.css recomposes the page,
+    // so this is where the desktop pin/iris engine has to hand over.
+    "(max-width: 767px)": function() {
       if (reduced) return;
 
       // Section 2: Mobile Hero Intro Entrance

@@ -394,7 +394,10 @@ textarea{resize:vertical;min-height:88px}
 .mile .m-desc{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.45}
 .mile .m-when{color:var(--gold);font-size:11.5px;font-weight:700;margin-top:4px}
 .mile .m-check{color:var(--green);flex:none}
-.mile .m-lock{color:#CBD5E1;flex:none}
+/* was #CBD5E1 — 1.48:1 on the white milestone card, i.e. the lock icon that
+   says "not earned yet" was effectively invisible. --muted keeps it quiet but
+   clearly there (4.8:1). */
+.mile .m-lock{color:var(--muted);flex:none}
 .mile .bar{height:6px;background:var(--bg-2);border-radius:var(--radius-full);overflow:hidden;margin-top:8px;border:1px solid var(--line)}
 .mile .bar > i{display:block;height:100%;background:var(--teal);border-radius:var(--radius-full);transition:width .5s ease}
 .mile .m-prog{font-size:11px;color:var(--muted);margin-top:3px}

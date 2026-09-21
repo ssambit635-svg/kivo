@@ -6,7 +6,7 @@
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
-  <link rel="stylesheet" href="/styles.css?v=7">
+  <link rel="stylesheet" href="/styles.css?v=8">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -16,6 +16,23 @@
     .footer-title-sm,.footer-col a,.footer-copyright{opacity:1;transform:none}
     .footer-divider,.twinStory-divider,.twin-featureDivider{transform:none}
     .waterStick-filler{clip-path:inset(0)}
+    /* No JS = no scroll timelines = the black iris never blooms. The twin's
+       feature copy is white, so on the untouched #f7f7f7 stage it would be
+       invisible (1.07:1). Keep the stage light and turn that copy dark —
+       headline, body, icon, divider, dot — and drop the black wash that only
+       exists to protect white type. Mirrors the no-motion fallback block in
+       the stylesheet, which covers reduced motion and a failed vendor load. */
+    /* >=768px only: below that this section is a solid black column where the
+       white copy is already right, and flipping it dark would hide it again. */
+    @media (min-width:768px){
+      .twin-circleBackground{display:none}
+      .twin-featureElements::before{display:none}
+      .twin-featureElements h2{color:#000}
+      .twin-featureElements p{color:#3d3d3d}
+      .twin-iconHolder{color:#121212}
+      .twin-featureDivider{background:rgba(18,18,18,.3);transform:scaleX(1)}
+      .twin-featureDot{background:#121212}
+    }
   </style></noscript>
 </head>
 <body>
@@ -567,6 +584,6 @@
   <script src="/vendor/gsap.min.js?v=2"></script>
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
-  <script src="/js/main.js?v=8"></script>
+  <script src="/js/main.js?v=9"></script>
 </body>
 </html>
