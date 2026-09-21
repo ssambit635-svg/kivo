@@ -350,11 +350,19 @@ describe('frontend/kivo.apk — is it a package Android will install?', () => {
     expect(schemes.some((s) => s === 'v2' || s === 'v3' || s === 'v3.1')).toBe(true);
   });
 
-  it('is small enough to hand out over a phone network', () => {
-    // The shell has no dependencies and does not bundle the web app (the phone
-    // loads it from the server), so the package stays tens of kilobytes.
+  it('stays hand-out-able over a phone network', () => {
+    // Since the 2026 offline-shell change the APK deliberately bundles the web
+    // app (login + doctor console + photography + fonts + the intro film) so
+    // the app renders fully offline — the phone loads /native/ from assets and
+    // only /api hits the cloud. The package is therefore ~1.5 MB, not tens of
+    // kilobytes, and the guard moves with it:
+    //   * floor — the bundle really made it in (a text-only shell means the
+    //     asset copy broke and every hero/avatar would 404 inside the WebView);
+    //   * ceiling — still small enough to share over a phone network. If a
+    //     change pushes past this, shrink the payload (recompress images,
+    //     trim the film) instead of raising the bar again.
     const kb = buf.length / 1024;
-    expect(kb).toBeGreaterThan(10);
-    expect(kb, `kivo.apk is ${kb.toFixed(0)} KB — did someone bundle the frontend into it?`).toBeLessThan(1024);
+    expect(kb, 'APK is suspiciously light — did the bundled web shell go missing?').toBeGreaterThan(256);
+    expect(kb, `kivo.apk is ${kb.toFixed(0)} KB — past the 3072 KB share-over-the-network budget`).toBeLessThan(3072);
   });
 });

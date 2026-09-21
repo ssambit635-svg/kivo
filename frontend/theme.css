@@ -1376,3 +1376,93 @@ body:not(.js-dead) #intro{animation:introFailsafe 5.2s ease 4.2s forwards}
   .intro-logo{animation:none}
   .intro-k-arm,.intro-k-leg,.intro-word,.intro-tag{transition-duration:.01s}
 }
+
+/* ==========================================================================
+   POLISH PASS — final-fit details over Verdant (2026 · APK + web)
+   Additive only: keyboard focus, springy press feedback, chat motion,
+   autofill/WebView grooming. Nothing here restyles a component from
+   scratch — it tightens what shipped, and every rule gives way to the
+   reduced-motion block above.
+   ========================================================================== */
+
+/* --- keyboard focus: a jade ring for tab users, never for taps --- */
+:focus-visible{outline:none}
+.btn:focus-visible,.nav-item:focus-visible,.nav-fab:focus-visible,.qa:focus-visible,
+.tab:focus-visible,.demo-btn:focus-visible,.chip-btn:focus-visible,.ob-opt:focus-visible,
+.ob-skip:focus-visible,.ob-back:focus-visible,.link-row:focus-visible,.short-card:focus-visible,
+#topbar-avatar:focus-visible,#topbar-apk:focus-visible,.pw-toggle:focus-visible,
+.suggestion-chips button:focus-visible,.care-teaser-card:focus-visible{
+  outline:3px solid rgba(14,122,93,.5);
+  outline-offset:2px;
+}
+a:focus-visible{outline:3px solid rgba(14,122,93,.5);outline-offset:2px;border-radius:10px}
+
+/* --- press feedback: the :active scales now travel on a spring --- */
+.qa,.demo-btn,.chip-btn,.ob-opt,.short-card,.care-teaser-card,.suggestion-chips button{
+  transition:transform .16s cubic-bezier(.2,.8,.2,1),
+             box-shadow .2s ease, background .2s ease,
+             border-color .2s ease, color .2s ease, opacity .2s ease;
+}
+.link-row{transition:border-color .2s ease,color .2s ease,background .2s ease,transform .16s ease}
+.link-row:active{transform:scale(.985)}
+
+/* --- dock: the active underline grows in, inactive items breathe --- */
+.nav-item::after{
+  content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:4px;height:3px;border-radius:99px;background:var(--grad-mint);
+  opacity:0;transition:width .3s cubic-bezier(.34,1.56,.64,1),opacity .18s ease;
+}
+.nav-item.active::after{width:18px;opacity:1}
+.nav-item,.nav-fab,.qa,.tab{user-select:none;-webkit-user-select:none}
+
+/* --- chat: only the newest bubble arrives (the log stays still) --- */
+.chat-msg:last-child{animation:msgIn .32s cubic-bezier(.2,.8,.2,1) both}
+@keyframes msgIn{from{opacity:0;transform:translateY(9px) scale(.985)}to{opacity:1;transform:none}}
+.chat{scroll-margin-bottom:24px}
+
+/* --- onboarding: the progress bar glides between steps --- */
+#ob-bar{transition:width .38s cubic-bezier(.2,.8,.2,1)}
+
+/* --- disabled is a state, not a surprise --- */
+.btn:disabled{opacity:.55;box-shadow:none;cursor:not-allowed;transform:none}
+.btn:disabled:active{transform:none}
+
+/* --- Android autofill keeps the paper palette (no blue/yellow flash) --- */
+input:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 60px #FAFBF8 inset;
+  -webkit-text-fill-color:var(--ink);
+  caret-color:var(--teal);
+  transition:background-color 9999s ease-in-out 0s;
+}
+
+/* --- hero wordmark: one more stop of legibility over bright photos --- */
+.hero-shade{
+  background:linear-gradient(200deg, rgba(15,27,61,.06) 0%, rgba(15,27,61,.38) 46%, rgba(11,18,44,.86) 92%),
+             linear-gradient(to top, rgba(11,18,44,.35), transparent 34%);
+}
+
+/* --- pointer users get hover affordances that never fight :active --- */
+@media(hover:hover) and (pointer:fine){
+  .btn.primary:not(:active):not(:disabled):hover{transform:translateY(-1px)}
+  .btn.secondary:not(:active):not(:disabled):hover,
+  .btn.ghost:not(:active):not(:disabled):hover{transform:translateY(-1px)}
+  .qa:not(:active):hover{transform:translateY(-2px)}
+  .link-row:not(:active):hover{background:var(--teal-ghost)}
+  .demo-btn:not(:active):hover{border-color:rgba(14,122,93,.4)}
+  .short-card:not(:active):hover,.care-teaser-card:not(:active):hover{transform:translateY(-2px)}
+  .chip-btn:not(:active):hover{border-color:rgba(14,122,93,.4)}
+}
+
+/* --- wide-screen fit: the phone column floats on a quiet stage --- */
+@media(min-width:768px){
+  body::before{
+    background:
+      radial-gradient(46rem 30rem at 8% -10%, rgba(14,122,93,.07), transparent 60%),
+      radial-gradient(40rem 28rem at 102% 12%, rgba(201,153,47,.06), transparent 58%),
+      var(--bg);
+  }
+}
+
+/* --- pull-to-refresh + rubber-band stay inside the app feel --- */
+html{overscroll-behavior-y:none}
+body{overscroll-behavior-y:contain}

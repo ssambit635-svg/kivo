@@ -14,24 +14,60 @@ async function signIn(page, email = 'demo@kivo.dev', password = 'Kivo!Demo#2026'
 
 // The 2026 Celeste redesign retired the topbar logout pill; signing out now
 // lives in Profile (avatar -> Sign out), so the journeys follow the real UX.
+//
+// Two screens own the app on their own schedule:
+//   * the cinematic opening intro (#intro) — first tab open, up to ~4.3 s;
+//   * personalization onboarding (#onboarding) + the welcome card
+//     (#bot-welcome) — they land ~0.5 s AFTER the session does, and skipping
+//     onboarding reveals the welcome card.
+// A helper that only removes overlays it happens to see races both of them and
+// loses on a slow CI runner (exactly how PR #38 went red), so:
+//   * skipIntro taps the film away as soon as it shows up;
+//   * settled polls until the screen has been CLEAR for a full second.
+async function skipIntro(page) {
+  const intro = page.locator('#intro');
+  // bootIntro retires #intro before 'load' fires (reduced motion, or the
+  // once-per-tab seen flag on this journey's later navigations), so an absent
+  // element means there is no film to skip — don't wait for one.
+  if ((await intro.count()) === 0) return;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await intro.click({ timeout: 2000 }); // a tap anywhere skips the film
+    } catch { /* already gone, or not up yet */ }
+    const gone = await intro.waitFor({ state: 'detached', timeout: 3000 }).then(() => true).catch(() => false);
+    if (gone) return;
+  }
+  // The film ends on its own even if every tap raced the listener.
+  await intro.waitFor({ state: 'detached', timeout: 7000 }).catch(() => {});
+}
+
 async function settled(page) {
-  // the first-light splash owns the screen for ~2s after boot
+  // the first-light splash dies as soon as the intro takes over — wait it out anyway
   await page.locator('#splash').waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
-  // personalization onboarding + the AI robot welcome own the screen for
-  // fresh profiles; the journeys under test live behind them.
-  const dismiss = async () => page.evaluate(() => {
+  const covered = () => page.evaluate(() =>
+    !!document.getElementById('onboarding') || !!document.getElementById('bot-welcome'));
+  const dismiss = () => page.evaluate(() => {
     for (const id of ['onboarding', 'bot-welcome']) {
       const n = document.getElementById(id);
       if (n && n.parentNode) n.parentNode.removeChild(n);
     }
     document.body.style.overflow = '';
   });
-  for (let i = 0; i < 6; i++) {
-    const covered = await page.evaluate(() =>
-      !!document.getElementById('onboarding') || !!document.getElementById('bot-welcome'));
-    if (!covered) break;
-    await dismiss();
-    await page.waitForTimeout(600); // let the skip->bot cascade settle
+  const deadline = Date.now() + 12000;
+  let clearAt = null;
+  while (Date.now() < deadline) {
+    if (await covered()) {
+      clearAt = null; // an overlay just showed up — drop it and keep watching
+      await dismiss();
+      await page.waitForTimeout(350);
+    } else if (clearAt === null) {
+      clearAt = Date.now(); // first clean sample; confirm it stays clean
+      await page.waitForTimeout(400);
+    } else if (Date.now() - clearAt >= 1100) {
+      return; // clear and stable — the journeys can have the screen
+    } else {
+      await page.waitForTimeout(250);
+    }
   }
 }
 
@@ -63,6 +99,7 @@ test('old mobile URL opens login, not sample data; patient features use the API'
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/m/');
+  await skipIntro(page); // don't pay the brand film in every journey
   await expect(page).toHaveURL(/\/app\/$/);
   await expect(page.locator('#auth-view')).toBeVisible();
   await expect(page.locator('#dash-view')).toBeHidden();
@@ -87,6 +124,7 @@ test('bundled native login appears even with no API; no server picker or downloa
   await nativeShell(page);
   await page.route('**/api/**', route => route.abort('internetdisconnected'));
   await page.goto('/native/?login=1');
+  await skipIntro(page); // don't pay the brand film in every journey
   await expect(page.locator('#auth-view')).toBeVisible();
   await expect(page.locator('.download-apk-btn')).toBeHidden();
   await expect(page.locator('#dash-view')).toBeHidden();
@@ -104,6 +142,7 @@ test('native cold launch KEEPS the session — only signing out ends it', async 
   // Older APK builds still append ?login=1 on every cold start; that must no
   // longer throw the device session away (the "sign in again every launch" bug).
   await page.goto('/native/?login=1');
+  await skipIntro(page); // don't pay the brand film in every journey
   await expect(page.locator('#dash-view')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('mt.tokens'))).not.toBeNull();
 
@@ -125,6 +164,7 @@ test('sleeping cloud recovers without replaying sign-in POST', async ({ page }) 
   });
   page.on('request', r => { if (r.url().endsWith('/api/auth/login')) loginCalls += 1; });
   await page.goto('/app/');
+  await skipIntro(page); // don't pay the brand film in every journey
   await signIn(page);
   await expect(page.locator('#auth-view')).toBeVisible();
   await expect(page.locator('#dash-view')).toBeVisible({ timeout: 15000 });
@@ -134,6 +174,7 @@ test('sleeping cloud recovers without replaying sign-in POST', async ({ page }) 
 
 test('doctor toggles to Doctor sign-in with a certificate number and lands in the console', async ({ page }) => {
   await page.goto('/app/');
+  await skipIntro(page); // don't pay the brand film in every journey
   await page.locator('#role-doctor').click();
   await expect(page.locator('#row-regno')).toBeVisible();
 
@@ -158,6 +199,7 @@ test('doctor toggles to Doctor sign-in with a certificate number and lands in th
 
 test('a doctor account on the Patient toggle is sent to the Doctor toggle, not signed in as a patient', async ({ page }) => {
   await page.goto('/app/');
+  await skipIntro(page); // don't pay the brand film in every journey
   await signIn(page, 'dr.mohan@kivo.dev', 'Kivo!Doctor#2026');
   await expect(page.locator('#row-regno')).toBeVisible();
   await expect(page.locator('#auth-error')).toContainText('doctor account');
@@ -166,6 +208,7 @@ test('a doctor account on the Patient toggle is sent to the Doctor toggle, not s
 
 test('create-account form creates a real account and member', async ({ page }) => {
   await page.goto('/app/');
+  await skipIntro(page); // don't pay the brand film in every journey
   await page.locator('#tab-register').click();
   await page.locator('#in-name').fill('Hackathon Test');
   await signIn(page, `browser-${Date.now()}@kivo.test`, 'Kivo!Browser#2026');

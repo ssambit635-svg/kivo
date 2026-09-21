@@ -883,7 +883,9 @@
   function renderChat(){
     var host=$('ask-chat'); if(!host) return; host.innerHTML='';
     state.chat.forEach(function(m){ var d=el('div',{class:'chat-msg '+m.role}); d.textContent=m.text; if(m.role==='bot'&&m.disclaimer) d.appendChild(el('div',{class:'muted', text:m.disclaimer, style:'margin-top:6px; font-size:11px;'})); host.appendChild(d); });
-    host.scrollTop=host.scrollHeight;
+    // the page scrolls, not .chat — bring the newest bubble into view instead
+    var last=host.lastElementChild;
+    if(last&&last.scrollIntoView){ try{ last.scrollIntoView({behavior:'smooth', block:'nearest'}); }catch(e){} }
   }
   function doAsk(){
     var input=$('ask-input'); if(!input) return; var text=(input.value||'').trim(); if(!text||!state.member) return;
