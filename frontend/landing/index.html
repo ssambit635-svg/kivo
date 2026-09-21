@@ -6,7 +6,7 @@
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
-  <link rel="stylesheet" href="/styles.css?v=6">
+  <link rel="stylesheet" href="/styles.css?v=7">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -22,10 +22,6 @@
 
   <!-- ============ preloader ============ -->
   <div class="loader" id="loader" aria-hidden="true">
-    <!-- opening brand film: sits between the black covers and the words;
-         the loader flips to its dark palette the moment it plays -->
-    <video class="loader-video" src="/img/intro.mp4" muted playsinline disablepictureinpicture preload="auto"></video>
-    <div class="loader-videoTint"></div>
     <div class="loader-coverTop"></div>
     <div class="loader-coverBot"></div>
     <div class="loader-contentHolder">
@@ -171,8 +167,9 @@
 
     <!-- ============ black interlude (water/stick video) ============ -->
     <section class="waterStick" id="waterStick">
-      <svg class="waterStick-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="20" cy="20" r="14"/><circle cx="20" cy="20" r="4"/><line x1="20" y1="2" x2="20" y2="8"/><line x1="20" y1="32" x2="20" y2="38"/></svg>
+      <div class="waterStick-circleBackground" id="waterCircle"></div>
       <div class="waterStick-holder">
+        <svg class="waterStick-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="20" cy="20" r="14"/><circle cx="20" cy="20" r="4"/><line x1="20" y1="2" x2="20" y2="8"/><line x1="20" y1="32" x2="20" y2="38"/></svg>
         <div class="waterStick-splitedText" data-text="kivo measures the impact of every result to improve the way you understand your body">
           <h2 class="waterStick-title">
             <span class="waterStick-titleLead">kivo measures the impact of every result</span>
@@ -266,91 +263,25 @@
         <div class="twinStory-illustrationHolder">
           <div class="twinStory-illustrationText">
             <p>inside every report, a signal worth understanding</p>
-            <div class="twinStory-titleHolder" id="twinStoryTitleHolder" aria-hidden="true">
-              <div class="twinStory-tickerTrack" id="twinStoryTickerTrack">
-                <span class="twinStory-tickerWord">the kivo companion</span>
-                <span class="twinStory-tickerSep">—</span>
-                <span class="twinStory-tickerWord">continuous context</span>
-                <span class="twinStory-tickerSep">—</span>
-                <span class="twinStory-tickerWord">clinical precision</span>
-                <span class="twinStory-tickerSep">—</span>
-                <span class="twinStory-tickerWord">verified baselines</span>
-                <span class="twinStory-tickerSep">—</span>
-                <span class="twinStory-tickerWord">the kivo companion</span>
-                <span class="twinStory-tickerSep">—</span>
-                <span class="twinStory-tickerWord">continuous context</span>
-                <span class="twinStory-tickerSep">—</span>
-                <span class="twinStory-tickerWord">clinical precision</span>
-                <span class="twinStory-tickerSep">—</span>
-                <span class="twinStory-tickerWord">verified baselines</span>
-                <span class="twinStory-tickerSep">—</span>
-              </div>
+            <div class="twinStory-titleHolder" id="twinStoryTitleHolder">
+              <h2>the kivo companion</h2>
             </div>
           </div>
-          <div class="twinStory-illustration twinStory-visualizer" id="twinVisualizer">
-            <!-- Mode Switcher Tabs (Choose between 3 interactive options) -->
-            <div class="twin-switcher" role="tablist" aria-label="Digital Twin Visualization Mode">
-              <button type="button" class="twin-switchBtn twin-switchBtn--active" data-mode="mesh" role="tab" aria-selected="true" id="tabMesh">
-                <span class="twin-switchNum">01</span>
-                <span class="twin-switchLabel">3D Biometric Mesh</span>
-              </button>
-              <button type="button" class="twin-switchBtn" data-mode="radar" role="tab" aria-selected="false" id="tabRadar">
-                <span class="twin-switchNum">02</span>
-                <span class="twin-switchLabel">Hex Radar</span>
-              </button>
-              <button type="button" class="twin-switchBtn" data-mode="neural" role="tab" aria-selected="false" id="tabNeural">
-                <span class="twin-switchNum">03</span>
-                <span class="twin-switchLabel">Neural Graph</span>
-              </button>
-            </div>
-
-            <!-- Interactive Canvas & Overlays -->
-            <div class="twin-canvasWrap" id="twinCanvasWrap">
-              <canvas id="twinVisualizerCanvas" class="twin-canvas"></canvas>
-
-              <!-- Live HUD Card (Updates on hover/tap) -->
-              <!-- Filled from the public lab dictionary on load (see
-                   js/twin-visualizer.js) — the placeholders stay until the
-                   real entry arrives rather than showing invented numbers. -->
-              <div class="twin-hudCard" id="twinHudCard" aria-live="polite">
-                <div class="twin-hudHeader">
-                  <span class="twin-hudLoinc" id="twinHudLoinc">loinc// —</span>
-                  <span class="twin-hudBadge" id="twinHudBadge">—</span>
-                </div>
-                <div class="twin-hudBody">
-                  <div class="twin-hudTitle" id="twinHudTitle">—</div>
-                  <div class="twin-hudValueRow">
-                    <span class="twin-hudValue" id="twinHudValue">—</span>
-                    <span class="twin-hudDelta" id="twinHudDelta">—</span>
-                  </div>
-                  <div class="twin-hudRange" id="twinHudRange">—</div>
-                </div>
-              </div>
-
-              <!-- Top left: what the canvas is showing right now -->
-              <div class="twin-statusBadge">
-                <span class="twin-statusDot"></span>
-                <span class="twin-statusText" id="twinStatusText">VERIFIED TWIN MODEL // OPTION 01</span>
-              </div>
-
-              <!-- Bottom Interactive Action Toolbar -->
-              <div class="twin-actions">
-                <button type="button" class="twin-actionBtn" id="twinBtnPulse" title="Trigger Laser Scan Wave" aria-label="Trigger Laser Scan Wave">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2"/></svg>
-                  <span>pulse scan</span>
-                </button>
-                <button type="button" class="twin-actionBtn" id="twinBtnOrbit" title="Toggle Auto-Orbit" aria-label="Toggle Auto-Orbit">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 8A6 6 0 1 1 8 2M14 2v6h-6"/></svg>
-                  <span>auto-orbit: on</span>
-                </button>
-                <button type="button" class="twin-actionBtn" id="twinBtnRecalibrate" title="Recalibrate Baselines" aria-label="Recalibrate Baselines">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5l6 6 6-6"/></svg>
-                  <span>recalibrate</span>
-                </button>
-              </div>
-
-              <div class="twin-hint">drag to orbit 3d · hover nodes to inspect · tap to pulse</div>
-            </div>
+          <div class="twinStory-illustration">
+            <svg viewBox="0 0 780 790" fill="none">
+              <circle cx="390" cy="395" r="360" stroke="#dedede" stroke-width="1"/>
+              <circle cx="390" cy="395" r="262" stroke="#121212" stroke-width="1" stroke-dasharray="2 6"/>
+              <circle cx="390" cy="395" r="164" stroke="#121212" stroke-width="1"/>
+              <path d="M30 395h250l40-90 55 190 50-130 40 40h60l35-70 45 140 40-100h115" stroke="#121212" stroke-width="2"/>
+              <circle cx="390" cy="395" r="6" fill="#121212"/>
+              <circle cx="652" cy="395" r="5" fill="#121212"/>
+              <circle cx="485" cy="231" r="5" fill="#121212"/>
+              <circle cx="295" cy="559" r="5" fill="#121212"/>
+              <circle cx="390" cy="133" r="5" fill="#121212"/>
+              <circle cx="128" cy="395" r="5" fill="#121212"/>
+              <text x="52" y="120" fill="#121212" font-size="14" letter-spacing="-0.005em">camera</text>
+              <text x="556" y="150" fill="#121212" font-size="14" letter-spacing="-0.005em">ocr</text>
+            </svg>
           </div>
         </div>
         <div class="twinStory-information">
@@ -636,7 +567,6 @@
   <script src="/vendor/gsap.min.js?v=2"></script>
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
-  <script src="/js/twin-visualizer.js?v=2"></script>
-  <script src="/js/main.js?v=6"></script>
+  <script src="/js/main.js?v=8"></script>
 </body>
 </html>
