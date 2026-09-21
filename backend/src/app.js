@@ -140,7 +140,11 @@ export function createApp(container) {
 
   // Landing assets at the root (/styles.css, /js/…, /vendor/…, /fonts/…,
   // /models/…). index:false — the root route above owns '/'.
+  // /img serves the shared frontend/img folder (brand film, campaign photos)
+  // so the landing page and the patient app never carry duplicate binaries.
   if (landingDir) {
+    const sharedImgDir = path.join(frontendDir, 'img');
+    if (fs.existsSync(sharedImgDir)) app.use('/img', express.static(sharedImgDir, { maxAge: 0 }));
     app.use('/', express.static(landingDir, { index: false, maxAge: 0 }));
   }
 

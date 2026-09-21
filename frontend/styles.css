@@ -603,3 +603,10 @@ textarea{resize:vertical;min-height:88px}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
 }
+
+/* brand K mark (matches the new launcher logo geometry) */
+.brand-logo svg,.splash-logo svg{width:60%;height:60%;display:block}
+
+/* keyboard focus ring — mouse/touch clicks never show it */
+:focus-visible{outline:3px solid rgba(14,122,93,.55);outline-offset:2px;border-radius:6px}
+.btn:focus-visible,.tab:focus-visible,.qa:focus-visible{outline-offset:3px;border-radius:12px}

@@ -7,8 +7,8 @@
   "scope": "/app/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F5F7FC",
-  "theme_color": "#F5F7FC",
+  "background_color": "#F6F7F3",
+  "theme_color": "#F6F7F3",
   "categories": ["health", "productivity"],
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

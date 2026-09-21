@@ -147,11 +147,16 @@ dependencies {
 
 // Bundle the REAL patient/doctor UI, not the old sample-data /m mockup.
 // A separate /native/ URL avoids any legacy /app service-worker cache.
+// Images and fonts ship too: the app must render fully offline — hero cards,
+// welcome photo, doctor avatars and the self-hosted fonts are part of the UI,
+// not patient data. /native/ keeps the PWA service worker from caching them
+// twice; the interceptor serves the same bytes the website serves.
 def bundledWeb = layout.buildDirectory.dir('generated/kivoAssets')
 tasks.register('bundleWeb', Sync) {
     from(rootProject.file('../frontend')) {
         include '*.html', '*.css', '*.js', 'manifest.webmanifest', 'icons/**', 'doctor/**'
-        exclude 'sw.js'
+        include 'img/**', 'fonts/**'
+        exclude 'sw.js', 'kivo.apk'
     }
     into(bundledWeb.map { it.dir('web') })
 }

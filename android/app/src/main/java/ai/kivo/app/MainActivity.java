@@ -757,7 +757,14 @@ public class MainActivity extends Activity {
         if (relative.isEmpty()) relative = "index.html";
         if ("doctor/".equals(relative)) relative += "index.html";
         if (relative.contains("..") || relative.contains("\\") || relative.startsWith("/")) return null;
-        if (relative.matches("(?:index\\.html|[a-z-]+\\.(?:js|css)|manifest\\.webmanifest|icons/[a-z0-9-]+\\.png|doctor/(?:index\\.html|doctor\\.(?:js|css)))")) return relative;
+        // Shipped UI = code + brand icons + photography + intro film + self-hosted
+        // fonts. Without img/ and fonts/ the app renders text-only offline — every
+        // hero, avatar and welcome card would 404 inside the WebView.
+        if (relative.matches("(?:index\\.html|[a-z-]+\\.(?:js|css)|manifest\\.webmanifest"
+                + "|icons/[a-z0-9-]+\\.png"
+                + "|img/[a-z0-9-]+\\.(?:jpg|jpeg|png|webp|mp4)"
+                + "|fonts/[a-z0-9-]+\\.woff2"
+                + "|doctor/(?:index\\.html|doctor\\.(?:js|css)))")) return relative;
         return null;
     }
 
@@ -766,7 +773,18 @@ public class MainActivity extends Activity {
         if (asset.endsWith(".js")) return "application/javascript";
         if (asset.endsWith(".css")) return "text/css";
         if (asset.endsWith(".png")) return "image/png";
+        if (asset.endsWith(".jpg") || asset.endsWith(".jpeg")) return "image/jpeg";
+        if (asset.endsWith(".webp")) return "image/webp";
+        if (asset.endsWith(".mp4")) return "video/mp4";
+        if (asset.endsWith(".woff2")) return "font/woff2";
         return "application/manifest+json";
+    }
+
+    /** Text assets travel with a charset; binaries (photos, video, fonts) must not. */
+    private static String assetEncoding(String asset) {
+        if (asset.endsWith(".html") || asset.endsWith(".js") || asset.endsWith(".css")
+                || asset.endsWith(".webmanifest")) return "UTF-8";
+        return null;
     }
 
     /* ------------------------------------------------------------------ */
@@ -788,7 +806,7 @@ public class MainActivity extends Activity {
                     + "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; "
                     + "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
             try {
-                return new WebResourceResponse(assetMime(asset), "UTF-8", 200, "OK", headers,
+                return new WebResourceResponse(assetMime(asset), assetEncoding(asset), 200, "OK", headers,
                         getAssets().open("web/" + asset));
             } catch (IOException missing) {
                 // Never fall through to a backend 404/JSON screen for a UI asset.

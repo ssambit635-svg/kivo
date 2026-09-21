@@ -160,6 +160,55 @@
     }
   }
 
+  /* ------------------------------------------------------------------ opening intro */
+
+  /* Plays the brand film + building-K once per tab/app open. The real
+     splash (fast, quiet) still runs underneath, so the app is interactive
+     the moment the intro leaves — and the intro can never trap it: a tap
+     skips, a dead video skips, a JS failure hits the CSS failsafe. */
+  var INTRO_SEEN_KEY = 'kivo.intro.seen.v1';
+
+  function bootIntro() {
+    var el = $('intro');
+    killSplash();
+    if (!el) return;
+    var reduced = false;
+    try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    var seen = false;
+    try { seen = sessionStorage.getItem(INTRO_SEEN_KEY) === '1'; } catch (e) {}
+    if (reduced || seen) {
+      if (el.parentNode) el.parentNode.removeChild(el);
+      return;
+    }
+    try { sessionStorage.setItem(INTRO_SEEN_KEY, '1'); } catch (e) {}
+
+    var done = false;
+    function end() {
+      if (done) return;
+      done = true;
+      el.classList.add('gone');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 700);
+    }
+    el.addEventListener('click', end);
+
+    var v = $('intro-video');
+    if (v) {
+      v.addEventListener('playing', function () {
+        el.classList.add('has-video');
+      });
+      v.addEventListener('ended', function () { el.classList.add('video-done'); });
+      var p = v.play();
+      if (p && p.catch) p.catch(function () { /* no video — logo-only intro */ });
+      // the film never outstays its welcome
+      setTimeout(function () { el.classList.add('video-done'); }, 3200);
+    }
+
+    // choreography: film in → K builds → name arrives → progress runs out
+    setTimeout(function () { el.classList.add('k-built'); }, 420);
+    setTimeout(function () { el.classList.add('word-in', 'bar-run'); }, 900);
+    setTimeout(end, 4300);
+  }
+
   /* ------------------------------------------------------------------ router */
 
   var PAGES = ['home', 'insights', 'ask', 'profile'];
@@ -293,8 +342,8 @@
     wrap.innerHTML =
       '<div class="welcome-card">' +
       '<div class="welcome-photo">' +
-      '<img src="./img/welcome.jpg" alt="" />' +
-      '<span class="welcome-brand"><span class="brand-logo" aria-hidden="true">k</span><b>kivo</b></span>' +
+      '<img src="./img/welcome.jpg" alt="" loading="lazy" decoding="async" />' +
+      '<span class="welcome-brand"><span class="brand-logo" aria-hidden="true"><svg class="brand-mark" viewBox="249 160 502 680" fill="#fff" aria-hidden="true"><path d="M249 160h159v680H249z"/><path d="M395 660 718 434 698 404 516 404 315 544Z"/><path d="M310 656 532 840 751 840 400 548Z"/></svg></span><b>kivo</b></span>' +
       '</div>' +
       '<div class="welcome-body">' +
       '<span class="welcome-kicker">' + (cfg.kicker || 'your health twin') + '</span>' +
@@ -743,7 +792,7 @@
     if (!view.querySelector('.care-banner')) {
       var ban = document.createElement('div');
       ban.className = 'care-banner';
-      ban.innerHTML = '<img src="./img/walk.jpg" alt="" />' +
+      ban.innerHTML = '<img src="./img/walk.jpg" alt="" loading="lazy" decoding="async" />' +
         '<b>Care, in every sense — <em>doctors who see your twin.</em></b>';
       view.insertBefore(ban, view.firstChild);
     }
@@ -755,6 +804,8 @@
         var img = document.createElement('img');
         img.src = docPhotoFor(who ? who.textContent : '');
         img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
         av.innerHTML = '';
         av.appendChild(img);
       }
@@ -773,6 +824,8 @@
         var pimg = document.createElement('img');
         pimg.src = src;
         pimg.alt = '';
+        pimg.loading = 'lazy';
+        pimg.decoding = 'async';
         poster.insertBefore(pimg, poster.firstChild);
       }
     }
@@ -821,7 +874,7 @@
     if (!auth || !auth.parentNode || auth.parentNode.querySelector('.auth-hero')) return;
     var h = document.createElement('div');
     h.className = 'auth-hero';
-    h.innerHTML = '<img src="./img/auth-hero.jpg" alt="" />' +
+    h.innerHTML = '<img src="./img/auth-hero.jpg" alt="" loading="lazy" decoding="async" />' +
       '<div class="auth-hero-shade"></div>' +
       '<div class="auth-hero-copy">' +
       '<span class="hero-greet">your body, alive</span>' +
@@ -851,7 +904,7 @@
 
     // initial chrome state (auth or restored session)
     setTimeout(syncChrome, 60);
-    setTimeout(killSplash, 1100);
+    setTimeout(bootIntro, 0);
   }
 
   function paintFill(inp) {

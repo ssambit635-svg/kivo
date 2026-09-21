@@ -233,6 +233,32 @@ img,svg{display:block}
 .loader-word{opacity:0}
 .loader-word:first-child{opacity:1}
 
+/* ---- opening brand film (between covers and words) ---- */
+.loader-video{
+  position:absolute;inset:0;z-index:1;
+  width:100%;height:100%;
+  object-fit:cover;
+  opacity:0;
+  transition:opacity .9s ease;
+  pointer-events:none;
+}
+.loader-videoTint{
+  position:absolute;inset:0;z-index:1;
+  background:radial-gradient(70rem 46rem at 50% 42%, rgba(7,34,25,0) 30%, rgba(5,24,17,.66) 100%);
+  opacity:0;
+  transition:opacity .9s ease;
+  pointer-events:none;
+}
+.loader.has-film{background:#072219}
+.loader.has-film .loader-video{opacity:1}
+.loader.has-film .loader-videoTint{opacity:1}
+.loader.film-done .loader-video,.loader.film-done .loader-videoTint{opacity:0}
+.loader.has-film .loader-coverTop,
+.loader.has-film .loader-coverBot{background:#04150F}
+.loader.has-film .loader-textHolder p{color:#F2F7F0}
+.loader.has-film .loader-numberIndicator p,
+.loader.has-film .loader-year p{color:#CFE8DC}
+
 /* ============ top nav ============ */
 .topNav{
   position:fixed;

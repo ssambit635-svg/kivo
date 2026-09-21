@@ -170,6 +170,19 @@
 
   /* ---------- preloader ---------- */
   const loader = document.getElementById('loader');
+  /* Opening brand film: flips the loader to its dark palette while it plays,
+     fades back when it ends. Reduced-motion users never see it (the loader
+     itself is removed below), and every failure path keeps it harmless. */
+  const film = document.querySelector('.loader-video');
+  if (loader && film && !reduced) {
+    film.addEventListener('playing', () => loader.classList.add('has-film'));
+    const filmOver = () => loader.classList.add('film-done');
+    film.addEventListener('ended', filmOver);
+    film.addEventListener('error', filmOver);
+    const fp = film.play && film.play();
+    if (fp && fp.catch) fp.catch(filmOver);
+    setTimeout(filmOver, 6000); // the film never outstays the word timeline
+  }
   const heroTitle = gsap.utils.toArray('.hero-titleCarousel, .hero-titleBetter');
   const heroText = document.getElementById('heroText');
   // Both hero buttons live in .hero-ctaGroup: the primary CTA and the APK
