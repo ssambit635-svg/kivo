@@ -194,3 +194,22 @@
 
 /* Animations */
 @keyframes floatY{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
+
+/* --- polish pass (2026): keyboard focus + press feedback, patient-app parity --- */
+:focus-visible{outline:none}
+.doc-nav-item:focus-visible,.doc-body .btn:focus-visible,.doc-body .tab:focus-visible,
+.doc-act:focus-visible,.doc-tile:focus-visible{
+  outline:3px solid rgba(14,122,93,.5);
+  outline-offset:2px;
+}
+.doc-nav-item:active,.doc-body .btn:active{transform:scale(.97)}
+.doc-nav-item,.doc-tile,.doc-act{user-select:none;-webkit-user-select:none}
+.doc-body .btn:disabled{opacity:.55;box-shadow:none;cursor:not-allowed}
+.doc-body .btn:disabled:active{transform:none}
+/* Android autofill keeps the paper palette here too */
+.doc-body input:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 60px #FAFBF8 inset;
+  -webkit-text-fill-color:var(--ink);
+  caret-color:var(--doc-accent);
+}
+.doc-body{overscroll-behavior-y:contain}

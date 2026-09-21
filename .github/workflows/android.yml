@@ -407,12 +407,10 @@ jobs:
       # build report in the repo is what makes a failure debuggable from
       # anywhere (Action logs are only readable by a logged-in human), and
       # frontend/kivo.apk is what the backend actually serves at /download/apk.
-      #
-      # This commit is NOT marked skip-ci on purpose: the backend suite asserts
-      # the package at frontend/kivo.apk is installable, so it must re-run on
-      # the commit that delivers it. The loop is broken instead by excluding
-      # android/BUILD_REPORT.md from this workflow's own path filters, so a
-      # report-only push never wakes this workflow again.
+      # The commit is marked [skip ci]: GITHUB_TOKEN pushes cannot wake other
+      # workflows on main anyway (GitHub's recursion guard), and on pull
+      # requests they would only pile up "action_required" runs that read as
+      # stuck checks on the PR.
       # ------------------------------------------------------------------
       - name: Collect the build report
         if: always()
@@ -574,11 +572,15 @@ jobs:
             STATUS="verified"
           fi
           echo "commit status: ${STATUS}"
-          # Deliberately NOT marked skip-ci: this push carries frontend/kivo.apk,
-          # and the backend suite has a test that asserts the package it serves is
-          # installable. Re-running is the point. (This workflow does not re-run:
-          # android/BUILD_REPORT.md is excluded from its own path filters.)
-          git commit --quiet -m "chore(android): ${STATUS} APK build from CI"
+          # Marked [skip ci] on purpose. The old comment said the backend suite
+          # should re-run on this push because it asserts frontend/kivo.apk is
+          # installable — but pushes made with GITHUB_TOKEN never trigger other
+          # workflows on main (GitHub's recursion guard), and on a pull request
+          # they only park as "action_required" runs that nobody approves, which
+          # reads as a stuck red check on the PR. The delivered APK is instead
+          # gated by the NEXT code push (whose suite runs against this commit)
+          # and by this workflow's own apksigner/androguard/verify_bundle gates.
+          git commit --quiet -m "chore(android): ${STATUS} APK build from CI [skip ci]"
           if git push --quiet origin "HEAD:${BRANCH}"; then
             echo "Pushed to ${BRANCH}."
           else
