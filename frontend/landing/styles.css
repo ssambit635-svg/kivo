@@ -491,13 +491,14 @@ img,svg{display:block}
   will-change:transform,opacity;
 }
 
-/* ============ the weave (live webgl threads, black interlude) ============
-   Pure lines — the strands carry the whole moment, no copy or chips on top. */
+/* ============ the weave (live color-bends, silk-on-paper interlude) ======
+   Silky WebGL light ribbons over the page's paper white. Pure light —
+   no copy or chips on top, the bends carry the whole moment. */
 .weave{
   height:100vh;
   height:100dvh;
   min-height:620px;
-  background:#000;
+  background:#f7f7f7;
   position:relative;
   overflow:hidden;
 }
@@ -514,11 +515,11 @@ img,svg{display:block}
   inset:0;
   touch-action:pan-y; /* keep vertical page scroll on touch; drag steers the weave */
 }
-/* Degraded (no WebGL / vendor blocked): a calm static glow in place of the
-   live threads so the section never reads as an empty black void. */
+/* Degraded (no WebGL / vendor blocked): a calm static sheen in place of the
+   live bends so the section never reads as an empty paper void. */
 .weave--fallback{
   background:
-    radial-gradient(52% 30% at 50% 56%, rgba(22,199,149,.20), transparent 72%),
+    radial-gradient(52% 30% at 50% 56%, rgba(22,199,149,.16), transparent 72%),
     radial-gradient(30% 22% at 32% 48%, rgba(227,169,60,.12), transparent 70%),
     radial-gradient(30% 22% at 70% 52%, rgba(47,125,225,.10), transparent 70%);
 }
@@ -1644,7 +1645,7 @@ img,svg{display:block}
   .hero{min-height:560px}
   .hero-title{font-size:min(200px,30vh);font-size:min(200px,30dvh);line-height:1;top:100px}
   .hero-text{top:auto;bottom:120px}
-  .hero-hand{width:min(640px,52vw);transform:translate(0,0) rotate(0deg) scaleX(1)}
+  /* Keep the full-sized hand on short laptop screens too. */
 }
 
 /* short desktop windows: keep the pinned twin inside the frame */
@@ -2002,14 +2003,14 @@ img,svg{display:block}
     text-transform:uppercase;
   }
 
-  /* 4. The weave (live threads) — full-bleed on phones, finger steers it.
-     Pure lines, no copy or chips. */
+  /* 4. The weave (live color-bends) — full-bleed on phones, finger steers
+     the silk's parallax. Pure light, no copy or chips. */
   .weave{
     min-height:100svh;
     min-height:100dvh;
     height:100svh;
     height:100dvh;
-    background:#000;
+    background:#f7f7f7;
     position:relative;
     overflow:hidden;
     box-sizing:border-box;
@@ -2663,30 +2664,11 @@ img,svg{display:block}
   .learn{padding-block:90px}
 }
 
-/* ============ laptop hero hand — right, whole, clear of the type ============
-   Typical laptop windows (and the short-height rule above) parked a 74vw hand
-   over the headline and pushed it down into overflow:hidden, so the wrist
-   was cut off. Keep it in the right column, fully inside the frame, and
-   clear of both the headline and the centered buttons. */
-@media only screen and (min-width:1100px) and (max-width:2000px) and (min-height:521px){
-  .hero-img{
-    right:16px;
-    bottom:0;
-    width:min(680px, calc(50vw - 250px));
-    height:auto;
-    max-height:calc(100dvh - 64px);
-    align-items:flex-end;
-    justify-content:flex-end;
-  }
-  .hero-hand{
-    width:100%;
-    height:auto;
-    max-height:calc(100dvh - 72px);
-    object-fit:contain;
-    object-position:right bottom;
-    transform:translate(0,0) rotate(0deg) scaleX(1);
-  }
-}
+/* ============ laptop hero hand =============================================
+   The hand keeps the base rules above (min(920px,74vw), anchored bottom-right,
+   cropped by the hero's overflow:hidden so it "enters" the frame). A previous
+   laptop override shrank it to a sliver — the SoFi-style cropped hand is the
+   intended look, so no laptop-size override lives here any more. */
 
 /* ============ phone: apk is visible on open, page is shorter and alive ============ */
 .mobileApk{display:none}

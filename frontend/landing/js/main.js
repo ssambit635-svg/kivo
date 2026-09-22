@@ -415,23 +415,33 @@
     // weave and the twin here made a phone-width window feel endless.
     "(min-width: 768px)": function() {
       if (!reduced) {
-        // Hero parallax depth as user scrolls
-        gsap.to('#heroHand', {
-          yPercent: 18,
-          ease: 'none',
+        // Hold the home frame briefly while its layers move at different
+        // speeds. Animate the image wrapper, not the hand itself: the intro
+        // owns the hand transform. MatchMedia reverts the pin on phones.
+        const heroDepth = gsap.timeline({
+          defaults: { ease: 'none' },
           scrollTrigger: {
+            id: 'hero-depth',
             trigger: '#hero',
             start: 'top top',
-            end: 'bottom top',
-            scrub: 1,
+            end: () => '+=' + Math.round(window.innerHeight * 0.55),
+            pin: true,
+            scrub: 0.8,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
           },
         });
+        heroDepth
+          .to('#heroImg', { yPercent: 12 }, 0)
+          .to('.hero-title', { yPercent: -14 }, 0)
+          .to('.hero-text', { yPercent: -45 }, 0)
+          .to('.hero-ctaGroup', { y: -18 }, 0);
 
-        // 1. The weave — pinned glowing-threads interlude (was the circle
-        //    opening), pure lines: no copy, no chips. The live canvas runs
-        //    itself (threads.js); scroll only morphs the weave via
-        //    KivoThreads.setScroll — strands rise, multiply and tighten
-        //    while the section is held.
+        // 1. The weave — pinned color-bends interlude: silky WebGL light
+        //    ribbons in the kivo palette (vanilla port of React Bits
+        //    <ColorBends /> in colorbends.js). The canvas runs itself;
+        //    scroll morphs the bends via KivoBends.setScroll — the bands
+        //    rotate, tighten and brighten while the section is held.
         ScrollTrigger.create({
           trigger: '#weaveSection',
           start: 'top top',
@@ -439,7 +449,7 @@
           pin: true,
           anticipatePin: 1,
           onUpdate: (self) => {
-            const weave = window.KivoThreads && window.KivoThreads.get();
+            const weave = window.KivoBends && window.KivoBends.get();
             if (weave) weave.setScroll(Math.max(0, (self.progress - 0.18) / 0.82));
           },
         });
@@ -514,15 +524,15 @@
         }
       );
 
-      // Section 4: The weave — pinned threads interlude, pure lines: no
-      // copy, no chips. On touch the finger itself steers the pinch point
-      // (threads.js pointer events).
+      // Section 4: The weave — color-bends interlude (vanilla port of React
+      // Bits <ColorBends />, see colorbends.js). On touch the finger itself
+      // steers the pointer parallax via the canvas pointer events.
       ScrollTrigger.create({
         trigger: '#weaveSection',
         start: 'top 80%',
         end: 'bottom 20%',
         onUpdate: (self) => {
-          const weave = window.KivoThreads && window.KivoThreads.get();
+          const weave = window.KivoBends && window.KivoBends.get();
           if (weave) weave.setScroll(Math.max(0, (self.progress - 0.2) / 0.8));
         },
       });
