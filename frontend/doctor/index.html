@@ -4,11 +4,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light" />
-  <meta name="theme-color" content="#0F766E" />
+  <meta name="theme-color" content="#F6F7F3" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="robots" content="noindex" />
-  <title>kivo doctor console</title>
+  <title>kivo doctor</title>
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/app/icons/icon-192.png" />
   <link rel="stylesheet" href="/app/styles.css" />
+  <link rel="stylesheet" href="/app/theme.css" />
   <link rel="stylesheet" href="./doctor.css" />
 </head>
 <body class="doc-body">
@@ -16,15 +21,18 @@
     <div class="brand">
       <span id="doc-logo" class="brand-logo doc-logo" aria-hidden="true"><svg class="brand-mark" viewBox="249 160 502 680" fill="#fff" aria-hidden="true"><path d="M249 160h159v680H249z"/><path d="M395 660 718 434 698 404 516 404 315 544Z"/><path d="M310 656 532 840 751 840 400 548Z"/></svg></span>
       <div class="brand-text">
-        <h1>kivo <span class="doc-tag">doctor</span></h1>
-        <p id="doc-subtitle">Console for verified doctors</p>
+        <h1>kivo</h1>
+        <p id="doc-subtitle">doctor</p>
       </div>
     </div>
-    <div id="doc-userbox" class="userbox hidden">
-      <span id="doc-user-icon" class="user-icon" aria-hidden="true">D</span>
-      <span id="doc-user-name" class="user-email"></span>
-      <button id="doc-logout" class="btn ghost sm" type="button">
-        <span id="doc-logout-icon" class="btn-ic" aria-hidden="true">↪</span>Out
+    <div id="doc-userbox" class="doc-who hidden">
+      <span id="doc-user-icon" class="doc-avatar" aria-hidden="true">D</span>
+      <span class="doc-who-text">
+        <span id="doc-who-hi" class="doc-who-hi">Good morning</span>
+        <span id="doc-user-name" class="doc-who-name"></span>
+      </span>
+      <button id="doc-logout" class="doc-logout" type="button" aria-label="Sign out">
+        <span id="doc-logout-icon" class="btn-ic" aria-hidden="true"></span>
       </button>
     </div>
   </header>
@@ -32,12 +40,14 @@
   <main class="main doc-main">
     <!-- ================= AUTH / APPLY ================= -->
     <section id="doc-auth" class="card auth-card">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-        <span class="brand-logo doc-logo" style="width:48px;height:48px;border-radius:14px"><svg class="brand-mark" viewBox="249 160 502 680" fill="#fff" aria-hidden="true"><path d="M249 160h159v680H249z"/><path d="M395 660 718 434 698 404 516 404 315 544Z"/><path d="M310 656 532 840 751 840 400 548Z"/></svg></span>
-        <div>
-          <h2 id="doc-auth-heading">Doctor sign in</h2>
-          <p class="muted">Patient charts open only while a patient shares them — and only for the booked consultation.</p>
-        </div>
+      <div class="doc-auth-photo" aria-hidden="true">
+        <img src="/app/img/welcome.jpg" alt="">
+        <div class="doc-auth-photo-shade"></div>
+      </div>
+      <div class="auth-brand">
+        <span class="brand-logo doc-logo" aria-hidden="true"><svg class="brand-mark" viewBox="249 160 502 680" fill="#fff" aria-hidden="true"><path d="M249 160h159v680H249z"/><path d="M395 660 718 434 698 404 516 404 315 544Z"/><path d="M310 656 532 840 751 840 400 548Z"/></svg></span>
+        <h2 id="doc-auth-heading">Doctor sign in</h2>
+        <p class="muted">Patient charts open only while a patient shares them — and only for the booked consultation.</p>
       </div>
 
       <div id="doc-role-tabs" class="tabs role-tabs" role="tablist" aria-label="Sign in as">
@@ -59,7 +69,7 @@
           <span>Password</span>
           <div class="field-with-icon">
             <input id="doc-password" type="password" autocomplete="current-password" placeholder="••••••••••••" required />
-            <button type="button" class="pw-toggle" id="doc-toggle-pw" aria-label="Show password">👁</button>
+            <button type="button" class="pw-toggle" id="doc-toggle-pw" aria-label="Show password"></button>
           </div>
         </label>
         <label class="field">
@@ -95,7 +105,7 @@
           <label class="field"><span>Password (12+ chars)</span>
             <div class="field-with-icon">
               <input id="ap-password" type="password" autocomplete="new-password" placeholder="Kivo!Doctor#2026" required />
-              <button type="button" class="pw-toggle" id="ap-toggle-pw" aria-label="Show">👁</button>
+              <button type="button" class="pw-toggle" id="ap-toggle-pw" aria-label="Show password"></button>
             </div>
           </label>
           <label class="field"><span>Specialty</span><select id="ap-specialty"></select></label>
@@ -168,10 +178,26 @@
 
       <!-- Bottom nav for doctor (mobile) -->
       <nav class="bottom-nav doc-bottom-nav" aria-label="Doctor primary">
-        <button class="nav-item active" type="button" data-view="dashboard" data-bottom="dashboard"><span class="nav-ic">◍</span><span class="nav-label">Home</span></button>
-        <button class="nav-item" type="button" data-view="consults" data-bottom="consults"><span class="nav-ic">✉</span><span class="nav-label">Consults</span></button>
-        <button class="nav-item" type="button" data-view="studio" data-bottom="studio"><span class="nav-ic">▶</span><span class="nav-label">Studio</span></button>
-        <button class="nav-item" type="button" data-view="profile" data-bottom="profile"><span class="nav-ic">◍</span><span class="nav-label">Profile</span></button>
+        <button class="nav-item active" type="button" data-view="dashboard" data-bottom="dashboard">
+          <span class="nav-ic" data-ic="home" aria-hidden="true"></span>
+          <span class="nav-label">Home</span>
+        </button>
+        <button class="nav-item" type="button" data-view="consults" data-bottom="consults">
+          <span class="nav-ic" data-ic="message-square" aria-hidden="true"></span>
+          <span class="nav-label">Consults</span>
+          <em id="nav-consults-dot" class="doc-dot hidden"></em>
+        </button>
+        <button class="nav-fab" type="button" data-view="studio" data-bottom="studio" aria-label="Shorts studio">
+          <span class="nav-ic" data-ic="video" aria-hidden="true"></span>
+        </button>
+        <button class="nav-item" type="button" data-view="earnings" data-bottom="earnings">
+          <span class="nav-ic" data-ic="wallet" aria-hidden="true"></span>
+          <span class="nav-label">Earnings</span>
+        </button>
+        <button class="nav-item" type="button" data-view="profile" data-bottom="profile">
+          <span class="nav-ic" data-ic="user" aria-hidden="true"></span>
+          <span class="nav-label">Profile</span>
+        </button>
       </nav>
     </section>
   </main>

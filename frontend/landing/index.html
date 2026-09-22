@@ -6,7 +6,7 @@
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
-  <link rel="stylesheet" href="/styles.css?v=11">
+  <link rel="stylesheet" href="/styles.css?v=12">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -55,6 +55,14 @@
     </button>
   </header>
 
+  <!-- Phone header can't host this pill: the nav blends with the page, which
+       made a filled button disappear. It sits outside that blend so the
+       installer is visible the moment the site opens. -->
+  <a class="mobileApk" href="/download/apk" download="kivo.apk">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span>download apk</span>
+  </a>
+
   <!-- ============ mobile drawer navigation ============ -->
   <div class="mobileDrawer" id="mobileDrawer" aria-hidden="true">
     <div class="mobileDrawer-backdrop" id="mobileDrawerBackdrop"></div>
@@ -75,7 +83,8 @@
         <a class="mobileDrawer-link" href="/app/">patient dashboard</a>
       </nav>
       <div class="mobileDrawer-footer">
-        <a class="mobileDrawer-ctaBtn" href="/m/">launch mobile app</a>
+        <a class="mobileDrawer-ctaBtn" href="/download/apk" download="kivo.apk">download apk</a>
+        <a class="mobileDrawer-ctaBtn mobileDrawer-ctaGhost" href="/m/">launch mobile app</a>
         <p class="mobileDrawer-note">never a diagnosis — awareness, always</p>
       </div>
     </div>
@@ -113,6 +122,10 @@
             <span>SNAPSHOT.</span>
           </h1>
           <p class="mobileHero-sub">kivo reads your lab results into continuous context — measured, never guessed.</p>
+          <a class="mobileHero-apk" href="/download/apk" download="kivo.apk">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>download apk</span>
+          </a>
         </div>
         <div class="mobileHero-footer">
           <div class="mobileHero-scrollPrompt">
@@ -593,6 +606,6 @@
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
   <script src="/js/threads.js?v=1"></script>
-  <script src="/js/main.js?v=11"></script>
+  <script src="/js/main.js?v=12"></script>
 </body>
 </html>
