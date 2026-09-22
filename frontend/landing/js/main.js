@@ -537,36 +537,180 @@
     }
   });
 
-  /* ---------- twin story ---------- */
+  /* ---------- care+ pricing ---------- */
   if (!reduced) {
-    gsap.fromTo('.twinStory-illustrationText p', { opacity: 0, y: 24 }, {
+    gsap.fromTo('.pricing-title', { opacity: 0, y: 34 }, {
+      opacity: 1, y: 0, duration: 0.9, ease: 'power3',
+      scrollTrigger: { trigger: '#pricing', start: 'top 70%' },
+    });
+    gsap.fromTo('.pricing-lede p', { opacity: 0, y: 24 }, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3', stagger: 0.12,
+      scrollTrigger: { trigger: '#pricing', start: 'top 70%' },
+    });
+    // clearProps keeps the cards' own tilt transform free for pointer motion.
+    gsap.fromTo('.pCard', { opacity: 0, y: 60 }, {
+      opacity: 1, y: 0, duration: 1, ease: 'power3', stagger: 0.14,
+      clearProps: 'transform,opacity',
+      scrollTrigger: { trigger: '#pricingGrid', start: 'top 80%' },
+    });
+    gsap.fromTo('.pricing-foot', { opacity: 0, y: 16 }, {
       opacity: 1, y: 0, duration: 0.8, ease: 'power3',
-      scrollTrigger: { trigger: '#twinStory', start: 'top 60%' },
+      clearProps: 'transform,opacity',
+      scrollTrigger: { trigger: '.pricing-foot', start: 'top 95%' },
     });
-    // Horizontal background text moving right to left
-    gsap.fromTo('#twinStoryTitleHolder', { x: '12vw' }, {
-      x: '-12vw',
-      ease: 'none',
-      scrollTrigger: {
-        trigger: '#twinStory',
-        start: 'top bottom',
-        end: 'bottom top',
-        scrub: 0.8,
-      },
-    });
-    gsap.fromTo('.twinStory-illustration', { opacity: 0, scale: 0.94 }, {
-      opacity: 1, scale: 1, duration: 1.2, ease: 'power3.out',
-      scrollTrigger: { trigger: '#twinStory', start: 'top 60%' },
-    });
-    gsap.to('.twinStory-divider', {
-      scaleX: 1, duration: 1.1, ease: 'power3.inOut',
-      scrollTrigger: { trigger: '.twinStory-information', start: 'top 80%' },
-    });
-    gsap.fromTo('.twinStory-informationTitle p, .twinStory-informationText p, .twinStory-informationText .ctaLink',
-      { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3', stagger: 0.12,
-        scrollTrigger: { trigger: '.twinStory-information', start: 'top 75%' } });
   }
+
+  /* ---------- pricing interactivity (tilt · spotlight · toggle) ---------- */
+  (() => {
+    const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg>';
+
+    /* The exact plan catalog the app sells (backend/src/services/care/plans.js),
+       re-typed here so the page can never quote a price the product doesn't. */
+    const PLUS = {
+      monthly: {
+        amount: '199',
+        period: '/ month',
+        note: 'you pay ₹199 every month. cancel any time.',
+        tagline: 'a doctor on your chart, every month',
+        badge: '4 async consultations / month',
+        features: [
+          '4 async doctor consultations a month',
+          'full doctor shorts library (unlimited)',
+          'chart shared with the doctor only when you book',
+          'priority in the consultation queue',
+        ],
+      },
+      yearly: {
+        amount: '1,499',
+        period: '/ year',
+        note: 'you pay ₹1,499 once a year — ₹125 a month, ₹889 saved.',
+        tagline: 'best value — two months free',
+        badge: '48 async consultations / year',
+        features: [
+          'everything in care+ monthly',
+          '48 consultations a year (4/month)',
+          'full shorts library + yearly health review',
+          'family member add-on at no extra cost',
+        ],
+      },
+    };
+
+    /* — 3d tilt + cursor spotlight (fine pointers only) — */
+    const fine = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+    if (fine && !reduced) {
+      document.querySelectorAll('[data-tilt]').forEach((card) => {
+        let raf = 0;
+        card.addEventListener('pointermove', (e) => {
+          const r = card.getBoundingClientRect();
+          const px = (e.clientX - r.left) / r.width;
+          const py = (e.clientY - r.top) / r.height;
+          cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(() => {
+            card.style.setProperty('--mx', (px * 100).toFixed(2) + '%');
+            card.style.setProperty('--my', (py * 100).toFixed(2) + '%');
+            card.style.setProperty('--ry', ((px - 0.5) * 7).toFixed(2) + 'deg');
+            card.style.setProperty('--rx', ((0.5 - py) * 7).toFixed(2) + 'deg');
+          });
+        });
+        card.addEventListener('pointerleave', () => {
+          cancelAnimationFrame(raf);
+          card.style.setProperty('--rx', '0deg');
+          card.style.setProperty('--ry', '0deg');
+        });
+      });
+
+      /* — magnetic buttons — */
+      document.querySelectorAll('[data-magnetic]').forEach((btn) => {
+        let raf = 0;
+        btn.addEventListener('pointermove', (e) => {
+          const r = btn.getBoundingClientRect();
+          const x = (e.clientX - r.left - r.width / 2) * 0.22;
+          const y = (e.clientY - r.top - r.height / 2) * 0.3;
+          cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(() => {
+            btn.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+          });
+        });
+        btn.addEventListener('pointerleave', () => {
+          cancelAnimationFrame(raf);
+          btn.style.transform = 'translate(0,0)';
+        });
+      });
+    }
+
+    /* — monthly / yearly toggle — */
+    const toggle = document.querySelector('.pToggle');
+    const grid = document.getElementById('pricingGrid');
+    if (!toggle || !grid) return;
+    const thumb = toggle.querySelector('.pToggle-thumb');
+    const buttons = Array.prototype.slice.call(toggle.querySelectorAll('.pToggle-btn'));
+    const amountEl = grid.querySelector('[data-plus-amount]');
+    const periodEl = grid.querySelector('[data-plus-period]');
+    const noteEl = grid.querySelector('[data-plus-note]');
+    const taglineEl = grid.querySelector('[data-plus-tagline]');
+    const badgeEl = grid.querySelector('[data-plus-badge]');
+    const priceEl = grid.querySelector('[data-plus-price]');
+    const featsEl = grid.querySelector('[data-plus-features]');
+
+    function syncThumb() {
+      const on = toggle.querySelector('.pToggle-btn.is-on');
+      if (!on || !thumb) return;
+      thumb.style.width = on.offsetWidth + 'px';
+      thumb.style.transform = 'translateX(' + on.offsetLeft + 'px)';
+    }
+
+    function featuresHtml(list) {
+      return list.map((f) => '<li>' + CHECK + '<span>' + f + '</span></li>').join('');
+    }
+
+    function setBilling(key) {
+      const plan = PLUS[key];
+      if (!plan) return;
+      buttons.forEach((b) => {
+        const on = b.dataset.billing === key;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      syncThumb();
+
+      const swap = () => {
+        amountEl.textContent = plan.amount;
+        periodEl.textContent = plan.period;
+        noteEl.textContent = plan.note;
+        taglineEl.textContent = plan.tagline;
+        badgeEl.textContent = plan.badge;
+      };
+
+      if (reduced) {
+        swap();
+        featsEl.innerHTML = featuresHtml(plan.features);
+        return;
+      }
+
+      /* price flips out, swaps at the blind midpoint, flips back in */
+      priceEl.classList.remove('is-flip');
+      void priceEl.offsetWidth;
+      priceEl.classList.add('is-flip');
+      window.setTimeout(swap, 230);
+
+      /* feature rows drift out, then stagger back in */
+      featsEl.classList.add('is-swap');
+      window.setTimeout(() => {
+        featsEl.innerHTML = featuresHtml(plan.features);
+        const rows = Array.prototype.slice.call(featsEl.children);
+        rows.forEach((li, i) => { li.style.transitionDelay = i * 65 + 'ms'; });
+        requestAnimationFrame(() => featsEl.classList.remove('is-swap'));
+        window.setTimeout(() => rows.forEach((li) => { li.style.transitionDelay = ''; }), 800);
+      }, 240);
+    }
+
+    buttons.forEach((b) => b.addEventListener('click', () => setBilling(b.dataset.billing)));
+
+    syncThumb();
+    window.addEventListener('resize', syncThumb);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncThumb);
+    window.addEventListener('load', syncThumb);
+  })();
 
   /* ---------- marker cards ---------- */
   if (!reduced) {
