@@ -6,7 +6,7 @@
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
-  <link rel="stylesheet" href="/styles.css?v=10">
+  <link rel="stylesheet" href="/styles.css?v=11">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -14,7 +14,8 @@
     .community-list{opacity:1;transform:none}
     .quote:first-child{opacity:1;transform:none}
     .footer-title-sm,.footer-col a,.footer-copyright{opacity:1;transform:none}
-    .footer-divider,.twinStory-divider,.twin-featureDivider{transform:none}
+    .footer-divider,.twin-featureDivider{transform:none}
+    .pToggle{display:none}
   </style></noscript>
 </head>
 <body>
@@ -247,41 +248,74 @@
       </section>
     </div>
 
-    <!-- ============ twin story (passiflora) ============ -->
-    <section class="twinStory" id="twinStory">
-      <div class="twinStory-wrapper">
-        <div class="twinStory-illustrationHolder">
-          <div class="twinStory-illustrationText">
-            <p>inside every report, a signal worth understanding</p>
-            <div class="twinStory-titleHolder" id="twinStoryTitleHolder">
-              <h2>the kivo companion</h2>
+    <!-- ============ care+ pricing (interactive) ============ -->
+    <!-- Plan names, prices, taglines and feature lines are the exact catalog
+         from the app (backend/src/services/care/plans.js): free twin ₹0,
+         care+ ₹199/month, care+ ₹1,499/year. Nothing invented. -->
+    <section class="pricing" id="pricing" aria-label="Care+ pricing">
+      <div class="pricing-wrapper">
+        <div class="pricing-head">
+          <h2 class="pricing-title">pricing //</h2>
+          <div class="pricing-lede">
+            <p>what you pay. what you get.</p>
+            <p>your twin is free, forever. care+ adds the doctor on your chart — the exact plans and prices from inside the app.</p>
+          </div>
+        </div>
+
+        <div class="pricing-grid" id="pricingGrid">
+
+          <!-- ── free twin ─────────────────────────────────────────── -->
+          <article class="pCard pCard--free" data-tilt>
+            <div class="pCard-glow" aria-hidden="true"></div>
+            <div class="pCard-sheen" aria-hidden="true"></div>
+            <header class="pCard-head">
+              <h3 class="pCard-name">free twin</h3>
+              <p class="pCard-tagline">your digital health twin, forever free</p>
+            </header>
+            <div class="pCard-price">
+              <span class="pCard-currency">₹</span><span class="pCard-amount">0</span><span class="pCard-period">forever</span>
             </div>
-          </div>
-          <div class="twinStory-illustration">
-            <svg viewBox="0 0 780 790" fill="none">
-              <circle cx="390" cy="395" r="360" stroke="#dedede" stroke-width="1"/>
-              <circle cx="390" cy="395" r="262" stroke="#121212" stroke-width="1" stroke-dasharray="2 6"/>
-              <circle cx="390" cy="395" r="164" stroke="#121212" stroke-width="1"/>
-              <path d="M30 395h250l40-90 55 190 50-130 40 40h60l35-70 45 140 40-100h115" stroke="#121212" stroke-width="2"/>
-              <circle cx="390" cy="395" r="6" fill="#121212"/>
-              <circle cx="652" cy="395" r="5" fill="#121212"/>
-              <circle cx="485" cy="231" r="5" fill="#121212"/>
-              <circle cx="295" cy="559" r="5" fill="#121212"/>
-              <circle cx="390" cy="133" r="5" fill="#121212"/>
-              <circle cx="128" cy="395" r="5" fill="#121212"/>
-              <text x="52" y="120" fill="#121212" font-size="14" letter-spacing="-0.005em">camera</text>
-              <text x="556" y="150" fill="#121212" font-size="14" letter-spacing="-0.005em">ocr</text>
-            </svg>
-          </div>
+            <p class="pCard-note">you pay nothing, ever. no trial, no card.</p>
+            <ul class="pCard-features">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg><span>unlimited report scans + health twin</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg><span>trends, health score and milestones</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg><span>free preview of doctor shorts</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg><span>ask-the-twin questions on your own data</span></li>
+            </ul>
+            <a class="pCard-cta pCard-cta--ghost" href="/app/" data-magnetic>open the free twin</a>
+          </article>
+
+          <!-- ── kivo care+ ────────────────────────────────────────── -->
+          <article class="pCard pCard--plus" data-tilt>
+            <div class="pCard-orb" aria-hidden="true"></div>
+            <div class="pCard-glow" aria-hidden="true"></div>
+            <div class="pCard-sheen" aria-hidden="true"></div>
+            <div class="pCard-badge"><span class="pCard-badgeDot" aria-hidden="true"></span><span data-plus-badge>4 async consultations / month</span></div>
+            <header class="pCard-head">
+              <h3 class="pCard-name">kivo care+</h3>
+              <p class="pCard-tagline" data-plus-tagline>a doctor on your chart, every month</p>
+              <div class="pToggle" role="group" aria-label="billing period">
+                <span class="pToggle-thumb" aria-hidden="true"></span>
+                <button class="pToggle-btn is-on" type="button" data-billing="monthly" aria-pressed="true">monthly</button>
+                <button class="pToggle-btn" type="button" data-billing="yearly" aria-pressed="false">yearly</button>
+              </div>
+            </header>
+            <div class="pCard-price" data-plus-price>
+              <span class="pCard-currency">₹</span><span class="pCard-amount" data-plus-amount>199</span><span class="pCard-period" data-plus-period>/ month</span>
+            </div>
+            <p class="pCard-note" data-plus-note>you pay ₹199 every month. cancel any time.</p>
+            <ul class="pCard-features" data-plus-features>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg><span>4 async doctor consultations a month</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg><span>full doctor shorts library (unlimited)</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg><span>chart shared with the doctor only when you book</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg><span>priority in the consultation queue</span></li>
+            </ul>
+            <a class="pCard-cta pCard-cta--solid" href="/app/" data-magnetic>start care+</a>
+          </article>
+
         </div>
-        <div class="twinStory-information">
-          <div class="twinStory-divider" id="twinStoryDivider"></div>
-          <div class="twinStory-informationTitle"><p>read, then verify</p></div>
-          <div class="twinStory-informationText">
-            <p>the camera reads the report. every line is matched to the standard lab dictionary — <span data-kivo="aliases">—</span> recognised names and aliases — and only then does it touch your twin.</p>
-            <div><a class="ctaLink" href="/app/">open the app</a></div>
-          </div>
-        </div>
+
+        <p class="pricing-foot">every plan keeps the free kivo · demo billing — no card, upi id or bank detail is ever collected.</p>
       </div>
     </section>
 
@@ -520,17 +554,18 @@
           <p class="footer-title-sm">kivo</p>
           <a href="/app/">the app</a>
           <a href="/doctor/">for doctors</a>
-          <a href="#twinStory">how it works</a>
+          <a href="#twinSection">how it works</a>
         </div>
         <div class="footer-col footer-col--product">
           <p class="footer-title-sm">product</p>
           <a href="#twinSection">the twin</a>
+          <a href="#pricing">care+ pricing</a>
           <a href="#markers">markers</a>
           <a href="#statsSection">the numbers</a>
         </div>
         <div class="footer-col footer-col--learn">
           <p class="footer-title-sm">learn</p>
-          <a href="#twinStory">verify first</a>
+          <a href="#twinSection">verify first</a>
           <a href="#community">personal baselines</a>
           <a href="#community">the safety line</a>
         </div>
@@ -558,6 +593,6 @@
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
   <script src="/js/threads.js?v=1"></script>
-  <script src="/js/main.js?v=10"></script>
+  <script src="/js/main.js?v=11"></script>
 </body>
 </html>

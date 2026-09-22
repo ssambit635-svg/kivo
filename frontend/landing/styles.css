@@ -698,79 +698,294 @@ img,svg{display:block}
 .twin-stripLoinc{color:#7a7f8f;font-size:11px}
 .twin-stripFoot{font-size:11px;line-height:12px;color:#7a7f8f;text-align:center}
 
-/* ============ twin story (passiflora) ============ */
-.twinStory{overflow:hidden;margin-top:210px}
-.twinStory-wrapper{max-width:2560px;margin:0 auto;overflow:hidden;padding-bottom:165px}
-.twinStory-illustrationHolder{
-  height:100vh;
-  height:100dvh;
-  min-height:560px;
-  display:flex;
-  align-items:center;
-  position:relative;
-  margin-bottom:260px;
-}
-.twinStory-illustrationText{position:relative;width:100%}
-.twinStory-illustrationText p{
-  padding-inline:52px;
-  font-size:15px;
-  line-height:18px;
-  letter-spacing:-.005em;
-  color:#121212;
-  position:absolute;
-  left:0;
-  top:60px;
-  z-index:2;
-}
-.twinStory-titleHolder{
-  position:absolute;
-  left:0;
-  top:50%;
-  transform:translateY(-50%);
-  width:100%;
-  overflow:hidden;
-  pointer-events:none;
-}
-.twinStory-titleHolder h2{
-  font-size:clamp(160px,20vw,340px);
-  line-height:.86;
-  letter-spacing:-.035em;
-  color:#dedede;
-  font-weight:500;
-  white-space:nowrap;
-}
-.twinStory-illustration{
-  position:absolute;
-  left:50%;
-  top:52%;
-  transform:translate(-50%,-50%);
-  width:780px;
-  height:780px;
-  max-width:94vw;
-}
-.twinStory-illustration svg{width:100%;height:100%}
-.twinStory-illustration circle:nth-child(2){animation:dash 30s linear infinite}
-@keyframes dash{to{stroke-dashoffset:1000}}
-.twinStory-information{
-  padding-inline:52px;
+/* ============ care+ pricing (interactive) ============ */
+@property --spin{syntax:"<angle>";initial-value:0deg;inherits:false}
+.pricing{overflow:hidden;margin-top:210px;padding-bottom:165px}
+.pricing-wrapper{max-width:2560px;margin:0 auto;padding-inline:52px}
+.pricing-head{
   display:grid;
   grid-template-columns:repeat(12,minmax(0,1fr));
   gap:20px;
+  align-items:end;
+  margin-bottom:72px;
 }
-.twinStory-divider{
-  height:1px;
+.pricing-title{
+  grid-column:1/span 7;
+  font-size:clamp(56px,8vw,150px);
+  line-height:.9;
+  letter-spacing:-.04em;
+  font-weight:500;
+  color:#121212;
+}
+.pricing-lede{
+  grid-column:9/span 3;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  font-size:15px;
+  line-height:19px;
+  letter-spacing:-.005em;
+  color:#121212;
+}
+.pricing-lede p:last-child{color:#8a8a8a}
+
+.pricing-grid{
+  display:grid;
+  grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);
+  gap:24px;
+  max-width:1280px;
+  margin:0 auto;
+  align-items:stretch;
+}
+
+/* — the cards: shared shell — */
+.pCard{
+  --rx:0deg;
+  --ry:0deg;
+  --lift:0px;
+  --mx:50%;
+  --my:50%;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  border-radius:32px;
+  padding:44px 40px 40px;
+  overflow:hidden;
+  isolation:isolate;
+  background:#ffffff;
+  border:1px solid #e6e6e6;
+  color:#121212;
+  transform:perspective(1300px) translateY(var(--lift)) rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style:preserve-3d;
+  transition:transform .55s cubic-bezier(.2,.8,.2,1),box-shadow .55s ease,border-color .55s ease;
+  box-shadow:0 2px 6px rgba(18,18,18,.03);
+}
+.pCard:hover{
+  --lift:-8px;
+  border-color:#d4d4d4;
+  box-shadow:0 34px 70px -34px rgba(18,18,18,.28);
+}
+/* cursor spotlight */
+.pCard-glow{
+  position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;
+  transition:opacity .45s ease;
+  background:radial-gradient(420px circle at var(--mx) var(--my),rgba(18,18,18,.07),transparent 62%);
+}
+.pCard:hover .pCard-glow{opacity:1}
+/* sheen sweep on hover */
+.pCard-sheen{
+  position:absolute;top:0;bottom:0;left:-80%;width:55%;z-index:1;pointer-events:none;opacity:0;
+  transform:skewX(-18deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+}
+.pCard:hover .pCard-sheen{animation:sheenSweep 1.15s ease}
+@keyframes sheenSweep{
+  0%{left:-80%;opacity:0}
+  12%{opacity:1}
+  100%{left:135%;opacity:0}
+}
+
+.pCard-head{position:relative;z-index:2}
+.pCard-name{
+  margin:0 0 8px;
+  font-size:22px;line-height:26px;
+  letter-spacing:-.02em;font-weight:500;
+}
+.pCard-tagline{font-size:15px;line-height:19px;letter-spacing:-.005em;color:rgba(18,18,18,.55)}
+.pCard-price{
+  position:relative;z-index:2;
+  display:flex;align-items:baseline;gap:10px;
+  margin:34px 0 6px;
+  transform-origin:50% 100%;
+}
+.pCard-price.is-flip{animation:priceFlip .52s cubic-bezier(.45,0,.2,1)}
+@keyframes priceFlip{
+  0%{transform:rotateX(0);opacity:1}
+  40%{transform:rotateX(65deg);opacity:0}
+  60%{transform:rotateX(-65deg);opacity:0}
+  100%{transform:rotateX(0);opacity:1}
+}
+.pCard-currency{font-size:30px;font-weight:600;letter-spacing:-.02em}
+.pCard-amount{
+  font-size:clamp(64px,6.5vw,96px);
+  line-height:.92;
+  letter-spacing:-.05em;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.pCard-period{font-size:15px;letter-spacing:-.005em;color:rgba(18,18,18,.5)}
+.pCard-note{
+  position:relative;z-index:2;
+  min-height:17px;
+  margin-bottom:6px;
+  font-size:13px;line-height:17px;letter-spacing:-.005em;
+  color:rgba(18,18,18,.5);
+}
+.pCard-features{
+  list-style:none;
+  margin:18px 0 0;
+  padding:24px 0 0;
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;gap:15px;
+  flex:1;
+  border-top:1px solid rgba(18,18,18,.1);
+}
+.pCard-features li{
+  display:flex;align-items:flex-start;gap:12px;
+  font-size:15px;line-height:19px;letter-spacing:-.005em;
+  transition:opacity .4s ease,transform .4s ease;
+}
+.pCard-features li svg{
+  flex:none;
+  width:16px;height:16px;
+  margin-top:1px;
+  opacity:.85;
+}
+.pCard-features.is-swap li{opacity:0;transform:translateY(10px)}
+.pCard-cta{
+  position:relative;z-index:2;
+  margin-top:32px;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:100%;max-width:254px;height:60px;
+  border-radius:56px;
+  font-size:15px;line-height:15px;font-weight:500;letter-spacing:-.005em;
+  transition:background .3s ease,color .3s ease,box-shadow .4s ease,transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.pCard-cta--ghost{border:1px solid #000;background:transparent;color:#000}
+.pCard-cta--ghost:hover{background:#000;color:#fff}
+.pCard-cta--solid{background:#f7f7f7;color:#121212;border:1px solid #f7f7f7}
+.pCard-cta--solid:hover{background:#ffffff;box-shadow:0 16px 44px -14px rgba(255,255,255,.32)}
+
+/* — free twin — */
+.pCard--free .pCard-features li svg{color:#121212}
+
+/* — kivo care+: the premium black card — */
+.pCard--plus{
   background:#121212;
-  grid-column:2/span 10;
-  transform:scaleX(0);
-  transform-origin:left;
-  margin-bottom:20px;
-  align-self:center;
+  border-color:#2c2c2c;
+  color:#f7f7f7;
 }
-.twinStory-informationTitle{grid-column:2/span 3}
-.twinStory-informationTitle p{font-size:15px;line-height:18px;letter-spacing:-.005em;color:#121212}
-.twinStory-informationText{grid-column:9/span 3}
-.twinStory-informationText p{font-size:15px;line-height:18px;letter-spacing:-.005em;color:#121212;margin-bottom:20px}
-.twinStory-informationText .ctaLink{width:254px}
+.pCard--plus:hover{
+  border-color:#3d3d3d;
+  box-shadow:0 44px 90px -38px rgba(18,18,18,.65);
+}
+/* rotating hairline glow around the border */
+.pCard--plus::before{
+  content:"";
+  position:absolute;inset:0;z-index:3;pointer-events:none;
+  border-radius:inherit;padding:1px;
+  background:conic-gradient(from var(--spin),
+    rgba(255,255,255,0) 0 52%,
+    rgba(255,255,255,.5) 70%,
+    rgba(110,231,183,.4) 78%,
+    rgba(255,255,255,0) 92%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  opacity:.45;
+  transition:opacity .5s ease;
+  animation:spinGlow 7s linear infinite;
+}
+.pCard--plus:hover::before{opacity:.95}
+@keyframes spinGlow{to{--spin:360deg}}
+/* soft aurora orb (ties to the app's verdant jade) */
+.pCard-orb{
+  position:absolute;z-index:0;pointer-events:none;
+  width:380px;height:380px;
+  top:-160px;right:-120px;
+  border-radius:50%;
+  background:radial-gradient(circle at 32% 32%,rgba(110,231,183,.22),rgba(56,189,248,.1) 45%,transparent 70%);
+  filter:blur(30px);
+  animation:orbFloat 9s ease-in-out infinite alternate;
+}
+@keyframes orbFloat{
+  from{transform:translate3d(0,0,0) scale(1)}
+  to{transform:translate3d(-26px,22px,0) scale(1.08)}
+}
+.pCard--plus .pCard-glow{
+  background:radial-gradient(520px circle at var(--mx) var(--my),rgba(255,255,255,.13),transparent 60%);
+}
+.pCard--plus .pCard-sheen{
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
+}
+.pCard--plus .pCard-tagline{color:rgba(247,247,247,.6)}
+.pCard--plus .pCard-period,
+.pCard--plus .pCard-note{color:rgba(247,247,247,.5)}
+.pCard--plus .pCard-features{border-top-color:rgba(247,247,247,.14)}
+.pCard--plus .pCard-features li svg{color:#6ee7b7}
+.pCard--plus .pCard-head{padding-right:200px}
+
+.pCard-badge{
+  position:absolute;top:32px;right:32px;z-index:2;
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;line-height:1;letter-spacing:.01em;
+  padding:10px 16px;border-radius:99px;
+  border:1px solid rgba(247,247,247,.18);
+  background:rgba(247,247,247,.06);
+  color:rgba(247,247,247,.9);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+.pCard-badgeDot{
+  width:6px;height:6px;border-radius:50%;
+  background:#6ee7b7;
+  animation:pulseDot 2.4s ease-out infinite;
+}
+@keyframes pulseDot{
+  0%{box-shadow:0 0 0 0 rgba(110,231,183,.45)}
+  70%{box-shadow:0 0 0 8px rgba(110,231,183,0)}
+  100%{box-shadow:0 0 0 0 rgba(110,231,183,0)}
+}
+
+/* — monthly / yearly toggle — */
+.pToggle{
+  position:relative;
+  display:inline-flex;
+  margin-top:20px;
+  padding:4px;
+  border-radius:99px;
+  border:1px solid rgba(247,247,247,.16);
+  background:rgba(247,247,247,.06);
+}
+.pToggle-thumb{
+  position:absolute;top:4px;bottom:4px;left:0;width:0;
+  border-radius:99px;
+  background:#f7f7f7;
+  transition:transform .45s cubic-bezier(.6,.05,.1,1),width .45s cubic-bezier(.6,.05,.1,1);
+}
+.pToggle-btn{
+  position:relative;z-index:1;
+  border:0;background:none;cursor:pointer;
+  padding:10px 24px;
+  border-radius:99px;
+  font-family:inherit;
+  font-size:13px;line-height:13px;font-weight:500;letter-spacing:-.005em;
+  color:rgba(247,247,247,.6);
+  transition:color .3s ease;
+}
+.pToggle-btn:hover{color:#f7f7f7}
+.pToggle-btn.is-on{color:#121212}
+.pToggle-btn.is-on:hover{color:#121212}
+
+.pricing-foot{
+  max-width:1280px;
+  margin:44px auto 0;
+  text-align:center;
+  font-size:13px;line-height:17px;letter-spacing:-.005em;
+  color:#8a8a8a;
+}
+
+/* reduced motion: static elegance, full function */
+@media (prefers-reduced-motion:reduce){
+  .pCard{transition:box-shadow .3s ease,border-color .3s ease}
+  .pCard:hover{--lift:0px}
+  .pCard--plus::before{animation:none}
+  .pCard-orb{animation:none}
+  .pCard-badgeDot{animation:none}
+  .pCard:hover .pCard-sheen{animation:none}
+  .pCard-price.is-flip{animation:none}
+}
 
 /* ============ markers (capsules) ============ */
 .markers{padding-top:132px;padding-bottom:165px;position:relative}
@@ -1287,17 +1502,14 @@ img,svg{display:block}
   .stats-grid06 .stats-marquee{font-size:64px;line-height:60px}
   .community-headline h2{font-size:240px;line-height:.9}
   .quote h2{width:min(1200px,100%);font-size:56px;line-height:58px}
-  .twinStory-titleHolder h2{font-size:470px;line-height:470px;letter-spacing:-11.75px}
+  .pricing-title{font-size:180px}
   .markers-text h2{font-size:180px;line-height:172px;letter-spacing:-6.3px}
   .markerCard-top h2{font-size:100px;line-height:90px;letter-spacing:-3.5px}
 }
 
 @media only screen and (max-width:1440px){
   .twin-title h2{font-size:min(280px,19.5vw,30dvh)}
-  .twinStory{margin-top:195px}
-  .twinStory-titleHolder h2{font-size:280px;line-height:260px;letter-spacing:-.035em}
-  .twinStory-illustration{width:658px;height:658px}
-  .twinStory-illustrationText p{top:45px}
+  .pricing{margin-top:195px}
   .markers-cardHolder{margin-top:150px}
   .markerCard-top h2{font-size:52px;line-height:48px}
   .markerCard-imageHolder svg{width:74px;height:20px}
@@ -1314,10 +1526,7 @@ img,svg{display:block}
 }
 
 @media only screen and (max-width:1300px){
-  .twinStory{margin-top:172px}
-  .twinStory-illustrationText p{top:26px}
-  .twinStory-titleHolder h2{font-size:220px;line-height:200px}
-  .twinStory-illustration{width:578px;height:578px}
+  .pricing{margin-top:172px}
   .markers{padding-top:98px;padding-bottom:130px}
   .markers-cardHolder{margin-top:130px}
   .appSection-screens{width:min(1040px,100%);column-gap:clamp(40px,5vw,90px)}
@@ -1351,12 +1560,9 @@ img,svg{display:block}
 }
 
 @media only screen and (max-width:1050px){
-  .twinStory-titleHolder h2{font-size:clamp(110px,16vw,200px);line-height:1}
+  .pricing-title{grid-column:1/-1}
+  .pricing-lede{grid-column:1/span 6;margin-top:32px}
   .markers-text h2{font-size:clamp(56px,10vw,100px);line-height:.9}
-  .twinStory-information{grid-template-columns:repeat(6,minmax(0,1fr))}
-  .twinStory-divider{grid-column:1/-1}
-  .twinStory-informationTitle{grid-column:1/span 2}
-  .twinStory-informationText{grid-column:4/span 3}
   .markers-text{grid-template-columns:repeat(6,minmax(0,1fr))}
   .markers-cardHolder{grid-template-columns:repeat(6,minmax(0,1fr));row-gap:20px}
   .markerCard:first-of-type{grid-column:1/span 3}
@@ -1398,9 +1604,7 @@ img,svg{display:block}
 }
 
 @media only screen and (max-width:950px){
-  .twinStory-illustrationHolder{align-items:flex-start;margin-bottom:0}
-  .twinStory-illustrationText{margin-top:160px}
-  .twinStory-illustration{left:auto;right:0;top:auto;bottom:0;transform:none;width:min(calc(100vw - 40px),560px);height:auto;aspect-ratio:1}
+  .pricing-grid{grid-template-columns:minmax(0,1fr);max-width:560px}
   .stats-wrapper{padding-inline:40px}
   /* app section stacks: intro copy → phone → detail copy, all centred */
   .appSection-screensHolder{margin-top:56px;padding-inline:20px}
@@ -2061,47 +2265,7 @@ img,svg{display:block}
     box-sizing:border-box;
   }
 
-  /* 8. Twin Story / Visualizer */
-  .twinStory{
-    margin-top:48px;
-    overflow:hidden;
-  }
-  .twinStory-wrapper{
-    padding:0 22px 64px;
-  }
-  .twinStory-illustrationHolder{
-    height:auto;
-    min-height:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    margin-bottom:40px;
-  }
-  .twinStory-illustrationText{
-    position:static;
-    width:100%;
-    margin-bottom:24px;
-  }
-  .twinStory-illustrationText p{
-    position:static;
-    padding:0;
-    font-size:14px;
-    line-height:1.45;
-  }
-  .twinStory-titleHolder{
-    display:none !important;
-  }
-  .twinStory-illustration{
-    position:relative;
-    left:auto;
-    top:auto;
-    transform:none;
-    width:100%;
-    max-width:100%;
-    height:auto;
-    aspect-ratio:1;
-    margin:0 auto;
-  }
+  /* 8. Twin Visualizer */
   .twin-switcher{
     flex-wrap:wrap;
     justify-content:center;
@@ -2142,28 +2306,6 @@ img,svg{display:block}
     transform:none;
     margin-top:8px;
     text-align:center;
-  }
-  .twinStory-information{
-    padding:0;
-    display:flex;
-    flex-direction:column;
-    gap:16px;
-    margin-top:32px;
-  }
-  .twinStory-divider{
-    display:block;
-    width:100%;
-    transform:none;
-    margin-bottom:16px;
-  }
-  .twinStory-informationTitle p{
-    font-size:15px;
-    font-weight:500;
-  }
-  .twinStory-informationText p{
-    font-size:14px;
-    line-height:1.5;
-    margin-bottom:20px;
   }
 
   /* 9. Markers */
@@ -2433,6 +2575,53 @@ img,svg{display:block}
     line-height:1.5;
     white-space:normal;
     color:rgba(247,247,247,.5);
+  }
+
+  /* 12b. Mobile pricing */
+  .pricing{
+    margin-top:110px;
+    padding-bottom:96px;
+  }
+  .pricing-wrapper{
+    padding-inline:22px;
+  }
+  .pricing-head{
+    display:block;
+    margin-bottom:40px;
+  }
+  .pricing-title{
+    font-size:clamp(56px,15vw,92px);
+    line-height:.9;
+  }
+  .pricing-lede{
+    margin-top:24px;
+  }
+  .pricing-grid{
+    gap:18px;
+  }
+  .pCard{
+    border-radius:26px;
+    padding:32px 24px 28px;
+  }
+  .pCard--plus .pCard-head{
+    padding-right:0;
+  }
+  .pCard-badge{
+    position:static;
+    align-self:flex-start;
+    margin-bottom:18px;
+  }
+  .pCard-price{
+    margin-top:26px;
+  }
+  .pCard-amount{
+    font-size:clamp(56px,17vw,76px);
+  }
+  .pCard-cta{
+    height:56px;
+  }
+  .pricing-foot{
+    margin-top:32px;
   }
 
   /* Preloader Mobile Adjustments */
