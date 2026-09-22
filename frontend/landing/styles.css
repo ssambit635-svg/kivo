@@ -499,7 +499,7 @@ img,svg{display:block}
   background:#000;
   position:relative;
   display:flex;
-  align-items:center;
+  align-items:flex-start; /* copy lifted clear of the thread band, which lives mid-stage */
   justify-content:center;
   overflow:hidden;
   padding-block:48px;
@@ -534,6 +534,7 @@ img,svg{display:block}
   position:relative;
   z-index:2;
   padding-inline:52px;
+  padding-top:clamp(80px,12vh,132px); /* sit the words above the strands' pinch line */
 }
 .weave-meta{
   width:100%;
@@ -557,29 +558,27 @@ img,svg{display:block}
   font-weight:500;
   margin:0;
 }
+/* One bright copy only — the faint ghost letters behind the strands were
+   removed so the weave lines never cross any text. The single copy is also
+   the reveal target: scroll inks it in line by line via .weave-filler's
+   clip-path, exactly as before. */
 .weave-title .weave-titleLead{
   display:block;
   font-size:clamp(44px,5vw,76px);
-  color:rgba(247,247,247,.16);
+  color:#f7f7f7;
 }
 .weave-title .weave-titleFollow{
   display:block;
   font-size:clamp(26px,3vw,44px);
   font-weight:400;
-  color:rgba(247,247,247,.14);
+  color:rgba(247,247,247,.82);
   margin-top:6px;
 }
 .weave-filler{
-  position:absolute;
-  left:0;
-  top:0;
+  position:relative;
   width:100%;
-  height:100%;
   clip-path:inset(0 0 100% 0);
-  pointer-events:none;
 }
-.weave-filler .weave-titleLead{color:#f7f7f7}
-.weave-filler .weave-titleFollow{color:rgba(247,247,247,.82)}
 .weave-moods{
   display:flex;
   flex-wrap:wrap;
@@ -1909,7 +1908,7 @@ img,svg{display:block}
     background:#000;
     padding:max(env(safe-area-inset-top,0px),32px) 22px max(env(safe-area-inset-bottom,0px),28px);
     display:flex;
-    align-items:center;
+    align-items:flex-start; /* keep the words above the strands' pinch line */
     justify-content:center;
     position:relative;
     overflow:hidden;
@@ -1925,6 +1924,7 @@ img,svg{display:block}
     position:relative;
     z-index:2;
     padding-inline:0;
+    padding-top:clamp(48px,9svh,96px);
   }
   .weave-splitedText{
     width:100%;

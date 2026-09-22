@@ -6,7 +6,7 @@
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
-  <link rel="stylesheet" href="/styles.css?v=8">
+  <link rel="stylesheet" href="/styles.css?v=9">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -169,7 +169,10 @@
          WebGL threads (React Bits WebThreads, vanilla port in /js/threads.js).
          The pinch point follows the cursor/finger; scrolling fans the weave
          out; each marker chip re-tunes the rhythm, and the ranges shown are
-         pulled live from the lab dictionary — never typed in. -->
+         pulled live from the lab dictionary — never typed in.
+         The copy block is lifted clear of the thread band (single bright
+         copy only — the old low-opacity ghost letters behind the strands
+         were removed so the lines never cross any text). -->
     <section class="weave" id="weaveSection" aria-label="The weave">
       <div class="weave-stage" id="weaveStage" aria-hidden="true"></div>
       <div class="weave-holder">
@@ -178,11 +181,10 @@
           <span class="weave-code">move — it follows</span>
         </div>
         <div class="weave-splitedText">
-          <h2 class="weave-title">
+          <h2 class="weave-title weave-filler">
             <span class="weave-titleLead">every report,</span>
             <span class="weave-titleFollow">woven into one continuous signal</span>
           </h2>
-          <h2 class="weave-title weave-filler" aria-hidden="true"><span class="weave-titleLead">every report,</span><span class="weave-titleFollow">woven into one continuous signal</span></h2>
         </div>
         <div class="weave-moods" id="weaveMoods" aria-label="Marker rhythms">
           <button type="button" class="weave-mood weave-mood--on" data-mood="weave" aria-pressed="true">the full picture</button>
