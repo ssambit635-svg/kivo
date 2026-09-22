@@ -6,7 +6,7 @@
   <title>kivo — your digital health companion</title>
   <meta name="description" content="kivo reads your lab results into a health companion — every marker mapped, every trend in context. never a diagnosis, always the full picture.">
   <link rel="icon" type="image/png" href="/app/icons/icon-192.png">
-  <link rel="stylesheet" href="/styles.css?v=8">
+  <link rel="stylesheet" href="/styles.css?v=10">
   <noscript><style>
     .loader{display:none}
     .topNav,.bottomBar{transform:none}
@@ -15,7 +15,6 @@
     .quote:first-child{opacity:1;transform:none}
     .footer-title-sm,.footer-col a,.footer-copyright{opacity:1;transform:none}
     .footer-divider,.twinStory-divider,.twin-featureDivider{transform:none}
-    .weave-filler{clip-path:inset(0 0 0 0)}
   </style></noscript>
 </head>
 <body>
@@ -168,30 +167,10 @@
     <!-- ============ the weave (live glowing health-signal threads) ============
          WebGL threads (React Bits WebThreads, vanilla port in /js/threads.js).
          The pinch point follows the cursor/finger; scrolling fans the weave
-         out; each marker chip re-tunes the rhythm, and the ranges shown are
-         pulled live from the lab dictionary — never typed in. -->
+         out while the section is pinned. Pure lines — no copy or chips on
+         top, the strands carry the whole moment. -->
     <section class="weave" id="weaveSection" aria-label="The weave">
       <div class="weave-stage" id="weaveStage" aria-hidden="true"></div>
-      <div class="weave-holder">
-        <div class="weave-meta">
-          <span class="weave-tag">twin // 002 · the weave</span>
-          <span class="weave-code">move — it follows</span>
-        </div>
-        <div class="weave-splitedText">
-          <h2 class="weave-title">
-            <span class="weave-titleLead">every report,</span>
-            <span class="weave-titleFollow">woven into one continuous signal</span>
-          </h2>
-          <h2 class="weave-title weave-filler" aria-hidden="true"><span class="weave-titleLead">every report,</span><span class="weave-titleFollow">woven into one continuous signal</span></h2>
-        </div>
-        <div class="weave-moods" id="weaveMoods" aria-label="Marker rhythms">
-          <button type="button" class="weave-mood weave-mood--on" data-mood="weave" aria-pressed="true">the full picture</button>
-          <button type="button" class="weave-mood" data-mood="hba1c" aria-pressed="false"><span class="weave-moodName">hba1c</span><span class="weave-moodRange" data-weave-range="hba1c">—</span></button>
-          <button type="button" class="weave-mood" data-mood="tsh" aria-pressed="false"><span class="weave-moodName">tsh</span><span class="weave-moodRange" data-weave-range="tsh">—</span></button>
-          <button type="button" class="weave-mood" data-mood="ldl" aria-pressed="false"><span class="weave-moodName">ldl</span><span class="weave-moodRange" data-weave-range="ldl">—</span></button>
-        </div>
-        <p class="weave-hint">each marker has a rhythm — tap one and feel the weave change</p>
-      </div>
     </section>
 
     <!-- ============ pinned twin section (stick) ============ -->
@@ -579,6 +558,6 @@
   <script src="/vendor/ScrollTrigger.min.js?v=2"></script>
   <script src="/vendor/lenis.min.js?v=2"></script>
   <script src="/js/threads.js?v=1"></script>
-  <script src="/js/main.js?v=9"></script>
+  <script src="/js/main.js?v=10"></script>
 </body>
 </html>
