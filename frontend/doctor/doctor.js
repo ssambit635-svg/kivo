@@ -142,13 +142,25 @@
     if(ub) ub.classList.add('hidden');
     if(da) da.classList.remove('hidden');
   }
+  function initials(name){
+    var parts=String(name||'').replace(/^dr\.?\s+/i,'').trim().split(/\s+/).filter(Boolean);
+    if(!parts.length) return 'D';
+    var a=parts[0].charAt(0);
+    var b=parts.length>1?parts[parts.length-1].charAt(0):'';
+    return (a+b).toUpperCase();
+  }
   function showConsole(){
     var da=$('doc-auth'), ub=$('doc-userbox'), dc=$('doc-console');
     if(da) da.classList.add('hidden');
     if(ub) ub.classList.remove('hidden');
     if(dc) dc.classList.remove('hidden');
+    var name=state.doctor?state.doctor.fullName:'';
     var un=$('doc-user-name');
-    if(un) un.textContent=state.doctor?state.doctor.fullName:'';
+    if(un) un.textContent=name;
+    var ic=$('doc-user-icon');
+    if(ic) ic.textContent=initials(name);
+    var hi=$('doc-who-hi');
+    if(hi) hi.textContent=greetingWord();
   }
   function setAuthTab(mode){
     var login=mode==='login';
@@ -270,8 +282,9 @@
         var fresh=state.consultations.find(function(c){ return c.id===state.consultation.consultation.id; });
         if(fresh) state.consultation.consultation=fresh;
       }
-      var badge=$('nav-consults-badge'); var queue=state.overview?state.overview.queue.requested:0;
+      var badge=$('nav-consults-badge'); var dot=$('nav-consults-dot'); var queue=state.overview?state.overview.queue.requested:0;
       if(badge){ badge.textContent=String(queue); badge.classList.toggle('hidden', !queue); }
+      if(dot){ dot.textContent=queue?String(queue):''; dot.classList.toggle('hidden', !queue); }
       renderVerificationBanner(); renderCertificatePanel(); render();
     });
   }
@@ -334,18 +347,36 @@
   function setView(view){
     state.view=view;
     document.querySelectorAll('.doc-nav-item').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view')===view); });
-    document.querySelectorAll('.bottom-nav .nav-item').forEach(function(b){ var v=b.getAttribute('data-view')||b.getAttribute('data-bottom'); b.classList.toggle('active', v===view); });
+    document.querySelectorAll('.bottom-nav button').forEach(function(b){ var v=b.getAttribute('data-view')||b.getAttribute('data-bottom'); b.classList.toggle('active', v===view); });
     render();
+  }
+  function pageHead(title, sub){
+    var who=state.doctor&&state.doctor.fullName?state.doctor.fullName:'Doctor';
+    var head=el('div',{class:'doc-page-head'});
+    head.appendChild(el('p',{class:'doc-kicker', text:who}));
+    head.appendChild(el('h2',{text:title}));
+    if(sub) head.appendChild(el('p',{class:'muted', text:sub}));
+    return head;
   }
   function render(){
     var host=$('doc-view'); if(!host) return; host.innerHTML='';
     if(!state.doctor) return;
-    if(state.doctor.status!=='active'){ host.appendChild(renderProfile()); return; }
+    var titles={consults:['Consults','Patients waiting on you'],studio:['Shorts','What patients watch'],earnings:['Earnings','This practice, this month'],profile:['Profile','How patients see you']};
+    if(state.doctor.status!=='active'){
+      host.appendChild(pageHead('Profile','Finish verification to open the console'));
+      host.appendChild(renderProfile());
+      return;
+    }
+    if(state.view!=='dashboard' && titles[state.view]) host.appendChild(pageHead(titles[state.view][0], titles[state.view][1]));
+    else if(state.view!=='dashboard') host.appendChild(pageHead('Profile','How patients see you'));
     if(state.view==='dashboard') host.appendChild(renderDashboard());
     else if(state.view==='consults') host.appendChild(renderConsults());
     else if(state.view==='studio') host.appendChild(renderStudio());
     else if(state.view==='earnings') host.appendChild(renderEarnings());
     else host.appendChild(renderProfile());
+    host.classList.remove('doc-rise');
+    void host.offsetWidth;
+    host.classList.add('doc-rise');
   }
   function greetingWord(){
     var h=new Date().getHours();
@@ -362,22 +393,42 @@
     var reach=o.reach||(state.earnings&&state.earnings.activity)||{};
     var earnings=state.earnings;
 
-    /* ---- hero greeting ---- */
-    var hero=el('section',{class:'doc-card doc-hero'});
-    var heroMain=el('div',{class:'doc-hero-main'});
-    heroMain.appendChild(el('p',{class:'doc-hero-hi', text:greetingWord()+' · '+shortDate(new Date().toISOString())}));
-    heroMain.appendChild(el('h2',{class:'doc-hero-name', text:d.fullName||'Doctor'}));
-    heroMain.appendChild(el('p',{class:'doc-hero-sub', text:[d.headline, d.city].filter(Boolean).join(' · ')||'kivo doctor network'}));
-    hero.appendChild(heroMain);
-    var heroSide=el('div',{class:'doc-hero-side'});
-    if(o.verification&&o.verification.label) heroSide.appendChild(el('span',{class:'chip teal', text:o.verification.label}));
+    /* ---- hero greeting — same arrival as the patient home ---- */
+    var hero=el('section',{class:'doc-hero', 'aria-label':'Greeting'});
+    hero.appendChild(el('img',{class:'doc-hero-bg', src:'/app/img/welcome.jpg', alt:'', 'aria-hidden':'true'}));
+    hero.appendChild(el('div',{class:'doc-hero-shade'}));
+    var body=el('div',{class:'doc-hero-body'});
+    body.appendChild(el('span',{class:'doc-hero-greet', text:greetingWord()}));
+    var full=d.fullName||'Doctor';
+    var bits=full.trim().split(/\s+/);
+    var nameEl=el('h2',{class:'doc-hero-name'});
+    if(bits.length>1){
+      nameEl.appendChild(document.createTextNode(bits.slice(0,-1).join(' ')+' '));
+      nameEl.appendChild(el('em',{text:bits[bits.length-1]}));
+    }else nameEl.textContent=full;
+    body.appendChild(nameEl);
+    body.appendChild(el('p',{class:'doc-hero-sub', text:[d.headline, d.city].filter(Boolean).join(' · ')||'kivo doctor network'}));
+    var chips=el('div',{class:'doc-hero-chips'});
+    if(o.verification&&o.verification.label) chips.appendChild(el('span',{class:'chip', text:o.verification.label}));
     if(d.rating&&d.rating.count>0){
-      var star=el('span',{class:'chip gold', title:d.rating.count+' patient ratings'});
-      star.appendChild(icon('star',13)); star.appendChild(document.createTextNode(' '+(Math.round(d.rating.average*10)/10)+' ('+d.rating.count+')'));
-      heroSide.appendChild(star);
+      var star=el('span',{class:'chip', title:d.rating.count+' patient ratings'});
+      star.appendChild(icon('star',13)); star.appendChild(document.createTextNode(' '+(Math.round(d.rating.average*10)/10)));
+      chips.appendChild(star);
     }
-    if(d.consultFeeInr!=null) heroSide.appendChild(el('span',{class:'chip grey', text:'₹'+d.consultFeeInr+' consult'}));
-    hero.appendChild(heroSide);
+    if(d.consultFeeInr!=null) chips.appendChild(el('span',{class:'chip', text:'₹'+d.consultFeeInr+' consult'}));
+    if(chips.childNodes.length) body.appendChild(chips);
+    var ctas=el('div',{class:'doc-hero-ctas'});
+    var review=el('button',{class:'btn primary', type:'button'});
+    review.appendChild(icon('message-square',16));
+    review.appendChild(document.createTextNode('Review queue'));
+    review.addEventListener('click',function(){ setView('consults'); });
+    var shorts=el('button',{class:'btn ghost', type:'button'});
+    shorts.appendChild(icon('video',16));
+    shorts.appendChild(document.createTextNode('New short'));
+    shorts.addEventListener('click',function(){ setView('studio'); });
+    ctas.appendChild(review); ctas.appendChild(shorts);
+    body.appendChild(ctas);
+    hero.appendChild(body);
     wrap.appendChild(hero);
 
     /* ---- stat tiles ---- */
@@ -392,7 +443,9 @@
 
     /* ---- quick actions ---- */
     var quick=el('div',{class:'doc-quick'});
-    var qa=function(icName,label,onClick){ var b=el('button',{class:'doc-qa', type:'button'}); b.appendChild(icon(icName,17)); b.appendChild(el('span',{text:label})); b.addEventListener('click',onClick); return b; };
+    var tones=['mint','sky','gold','violet'];
+    var toneI=0;
+    var qa=function(icName,label,onClick){ var b=el('button',{class:'doc-qa '+tones[toneI++%tones.length], type:'button'}); b.appendChild(icon(icName,17)); b.appendChild(el('span',{text:label})); b.addEventListener('click',onClick); return b; };
     quick.appendChild(qa('message-square','Review queue',function(){ setView('consults'); }));
     quick.appendChild(qa('video','Record a short',function(){ setView('studio'); }));
     quick.appendChild(qa('wallet','Earnings',function(){ setView('earnings'); }));
@@ -691,17 +744,18 @@
   /* Easy sign-in helpers for doctor */
   function setupEasyDoctor(){
     var pwToggle=$('doc-toggle-pw'), pwInput=$('doc-password');
-    if(pwToggle&&pwInput){
-      pwToggle.addEventListener('click',function(){
-        var isPw=pwInput.type==='password'; pwInput.type=isPw?'text':'password'; pwToggle.textContent=isPw?'🙈':'👁';
+    function bindPw(btn, input){
+      if(!btn||!input||!Icons) return;
+      btn.innerHTML=Icons.svg('eye',16);
+      btn.addEventListener('click',function(){
+        var isPw=input.type==='password';
+        input.type=isPw?'text':'password';
+        btn.innerHTML=Icons.svg(isPw?'eye-off':'eye',16);
+        btn.setAttribute('aria-label', isPw?'Hide password':'Show password');
       });
     }
-    var apToggle=$('ap-toggle-pw'), apPw=$('ap-password');
-    if(apToggle&&apPw){
-      apToggle.addEventListener('click',function(){
-        var isPw=apPw.type==='password'; apPw.type=isPw?'text':'password'; apToggle.textContent=isPw?'🙈':'👁';
-      });
-    }
+    bindPw(pwToggle, pwInput);
+    bindPw($('ap-toggle-pw'), $('ap-password'));
     var demoFill=$('doc-demo-fill');
     if(demoFill){
       demoFill.addEventListener('click',function(){
@@ -748,9 +802,11 @@
 
   function init(){
     try{
-      Icons.set($('doc-logo'),'stethoscope',22);
-      Icons.set($('doc-user-icon'),'user',16);
-      Icons.set($('doc-logout-icon'),'log-out',15);
+      Icons.set($('doc-logout-icon'),'log-out',16);
+      document.querySelectorAll('.doc-bottom-nav [data-ic]').forEach(function(node){
+        var fab=node.parentElement&&node.parentElement.classList.contains('nav-fab');
+        Icons.set(node, node.getAttribute('data-ic'), fab?22:20);
+      });
       var nd=$('nav-dashboard'); if(nd){ var ic=nd.querySelector('.nav-ic'); if(ic) Icons.set(ic,'activity',18); }
       var nc=$('nav-consults'); if(nc){ var ic2=nc.querySelector('.nav-ic'); if(ic2) Icons.set(ic2,'message-square',18); }
       var ns=$('nav-studio'); if(ns){ var ic3=ns.querySelector('.nav-ic'); if(ic3) Icons.set(ic3,'video',18); }

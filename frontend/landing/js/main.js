@@ -137,7 +137,10 @@
 
   /* ---------- lenis smooth scroll ---------- */
   let lenis = null;
-  if (!reduced && window.Lenis) {
+  /* Phones keep native scroll. Lenis' eased wheel makes a long page feel
+     stuck and static under a finger. */
+  const phoneLayout = window.matchMedia('(max-width: 767px)').matches;
+  if (!reduced && window.Lenis && !phoneLayout) {
     lenis = new Lenis({ duration: 1.15, smoothWheel: true });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add((time) => lenis.raf(time * 1000));
@@ -222,7 +225,9 @@
       .to(heroTitle, { yPercent: 0, duration: 1.1, ease: 'power4', stagger: 0.12 })
       .to(heroText, { opacity: 1, y: 0, duration: 0.9, ease: 'power3' }, '-=0.55')
       .to(heroCta, { opacity: 1, scale: 1, duration: 0.7, ease: 'power3' }, '-=0.45')
-      .to(heroHand, { opacity: 1, y: sm ? 50 : md ? 60 : 100, rotation: 0, duration: 1.4, ease: 'power3' }, '-=0.8')
+      /* Rest at y:0. A leftover downward offset cropped the wrist on laptops
+         (overflow:hidden on the hero) even after the image was moved right. */
+      .to(heroHand, { opacity: 1, y: 0, rotation: 0, duration: 1.4, ease: 'power3' }, '-=0.8')
       .to(topNav, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.7')
       .to(bottomBar, { yPercent: 0, duration: 0.9, ease: 'power3' }, '-=0.8');
     const isMob = window.innerWidth <= 767;
@@ -406,9 +411,9 @@
 
   /* ---------- responsive GSAP ScrollTrigger engine ---------- */
   ScrollTrigger.matchMedia({
-    // Desktop, Laptop & Sandbox Preview (>= 600px):
-    // Pinned weave (live threads) right after the home page + pinned twin
-    "(min-width: 600px)": function() {
+    // Desktop & laptop (>= 768px). Phones use the block below — pinning the
+    // weave and the twin here made a phone-width window feel endless.
+    "(min-width: 768px)": function() {
       if (!reduced) {
         // Hero parallax depth as user scrolls
         gsap.to('#heroHand', {
@@ -478,8 +483,9 @@
       });
     },
 
-    // Mobile (< 600px): pinned weave + unpinned readable cards
-    "(max-width: 599px)": function() {
+    // Mobile (<= 767px): same cutoff as the phone CSS. Weave plays as you
+    // pass it — it is not pinned, so the page doesn't stall on a black screen.
+    "(max-width: 767.98px)": function() {
       if (reduced) return;
 
       // Section 2: Mobile Hero Intro Entrance
@@ -513,10 +519,8 @@
       // (threads.js pointer events).
       ScrollTrigger.create({
         trigger: '#weaveSection',
-        start: 'top top',
-        end: '+=120%',
-        pin: true,
-        anticipatePin: 1,
+        start: 'top 80%',
+        end: 'bottom 20%',
         onUpdate: (self) => {
           const weave = window.KivoThreads && window.KivoThreads.get();
           if (weave) weave.setScroll(Math.max(0, (self.progress - 0.2) / 0.8));
