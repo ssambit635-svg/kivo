@@ -203,6 +203,14 @@ export class AuthService {
    * Rotate an opaque refresh token. Reuse of a rotated/revoked token is a
    * theft signal: the whole family is revoked and the client must log in
    * again.
+   *
+   * EXCEPT within the grace window (`config.refreshGraceSec`): several tabs
+   * and racing retries can legitimately present the same token milliseconds
+   * apart. If a rotated token is replayed while its replacement is still
+   * alive and fresh, we treat it as the benign race it is and mint a sibling
+   * token in the same family instead of nuking the session. Replays after
+   * the window — or of tokens whose replacement is already dead — remain a
+   * hard theft signal.
    */
   refresh({ refreshToken }, ctx = {}) {
     const hash = this.tokens.hashRefreshToken(refreshToken);
@@ -222,6 +230,18 @@ export class AuthService {
     }
 
     if (stored.isRevoked) {
+      if (this.isBenignRotationRace(stored)) {
+        // Rotated milliseconds ago and its replacement is still healthy —
+        // classic multi-tab / racing-retry refresh. Share the session
+        // instead of revoking it.
+        this.audit.record({
+          userId: stored.user_id,
+          action: 'auth.refresh_grace',
+          metadata: { familyId: stored.family_id },
+          ctx,
+        });
+        return this.issueSiblingSession(stored, owner, ctx);
+      }
       // REUSE DETECTED — revoke the entire rotation family.
       this.refreshTokens.revokeFamily(stored.family_id);
       this.audit.record({
@@ -269,6 +289,56 @@ export class AuthService {
     });
     this.audit.record({ userId: user.id, action: 'auth.refresh', metadata: { familyId: stored.family_id, newTokenId: rotated.id }, ctx });
 
+    return {
+      accessToken,
+      refreshToken: token,
+      tokenType: 'Bearer',
+      expiresIn: this.config.accessTokenTtlSec,
+      user: user.toJSON(),
+    };
+  }
+
+  /**
+   * True when a REVOKED refresh token was rotated within the grace window and
+   * the token that replaced it is still live. Those two facts together mean
+   * "two clients raced the same rotation", not "someone is replaying a stolen
+   * token": an attacker who merely copied an old token cannot pass the second
+   * check once the legit client has moved on, and after `refreshGraceSec`
+   * even a live replacement no longer saves the replay.
+   */
+  isBenignRotationRace(stored) {
+    if (!this.config.refreshGraceSec) return false;
+    if (!stored.replaced_by) return false; // revoked without rotation (logout etc.)
+    if (!stored.revoked_at) return false;
+    const revokedMs = new Date(stored.revoked_at).getTime();
+    if (!Number.isFinite(revokedMs)) return false;
+    if (Date.now() - revokedMs > this.config.refreshGraceSec * 1000) return false;
+    const replacement = this.refreshTokens.findById(stored.replaced_by);
+    return !!replacement && replacement.isUsable && replacement.family_id === stored.family_id;
+  }
+
+  /** Mint one more live token inside an existing family (grace path only). */
+  issueSiblingSession(stored, owner, ctx = {}) {
+    const user = owner;
+    if (!user) {
+      this.refreshTokens.revokeFamily(stored.family_id);
+      throw new UnauthorizedError('Account no longer exists', 'UNAUTHORIZED');
+    }
+    user.roles = this.rolesFor(user);
+    const { token, tokenHash } = this.tokens.generateRefreshToken();
+    this.refreshTokens.create({
+      userId: user.id,
+      tokenHash,
+      familyId: stored.family_id,
+      ttlSec: this.tokens.refreshTtl,
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
+    const accessToken = this.tokens.signAccessToken({
+      userId: user.id,
+      role: user.role,
+      tokenVersion: user.token_version,
+    });
     return {
       accessToken,
       refreshToken: token,

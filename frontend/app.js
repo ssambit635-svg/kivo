@@ -131,19 +131,35 @@
     showAuth();
     return new Error('Session expired — please sign in again.');
   }
+  /* Single-flight refresh: several requests can 401 together (the dashboard
+   * loads many widgets in parallel). ONE refresh request at a time — every
+   * waiter shares the same result. Concurrent refreshes used to trip the
+   * server's reuse detection and revoke the whole session seconds after
+   * sign-in; this is the client half of that fix (the server now also has a
+   * grace window for rotation races). */
+  var refreshInFlight=null;
   function refreshSession(){
     if(!state.tokens || !state.tokens.refreshToken) return Promise.resolve(false);
-    return fetch('/api/auth/refresh',{
+    if(refreshInFlight) return refreshInFlight;
+    var presented=state.tokens.refreshToken;
+    refreshInFlight=fetch('/api/auth/refresh',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({refreshToken:state.tokens.refreshToken}),
+      body:JSON.stringify({refreshToken:presented}),
     }).then(function(res){
       if(!res.ok) return false;
       return res.json().then(function(body){
-        saveTokens({accessToken:body.accessToken, refreshToken:body.refreshToken});
-        return true;
+        // Only apply if the session did not change while we were in flight
+        // (a fresh sign-in must never be overwritten by a stale refresh).
+        if(state.tokens && state.tokens.refreshToken===presented && body.accessToken){
+          saveTokens({accessToken:body.accessToken, refreshToken:body.refreshToken});
+          return true;
+        }
+        return !!state.tokens;
       });
-    }).catch(function(){ return false; });
+    }).catch(function(){ return false; })
+      .finally(function(){ refreshInFlight=null; });
+    return refreshInFlight;
   }
   function apiUpload(path, formData, allowRetry){
     var headers={};
@@ -234,6 +250,21 @@
     var em=$('in-email');
     if(em && rem && !em.value) em.value=rem;
   }
+  /* While a saved session is being proven, the auth card shows an honest
+   * "restoring" state instead of pretending the user is signed out. */
+  function setRestoreBusy(on){
+    var submit=$('auth-submit'), status=$('connection-status');
+    if(on){
+      if(submit){ submit.disabled=true; submit.dataset.restore='1'; submit.textContent='Opening your kivo…'; }
+      if(status) status.textContent='Restoring your session…';
+    }else{
+      if(submit && submit.dataset.restore==='1'){
+        submit.disabled=false; delete submit.dataset.restore;
+        submit.textContent=(authRole==='doctor')?(authMode==='login'?'Open doctor console':'Create doctor account'):(authMode==='login'?'Sign in':'Create account');
+      }
+      if(status && status.textContent==='Restoring your session…') status.textContent='';
+    }
+  }
   function showDash(){
     var av=$('auth-view'), dv=$('dash-view'), ub=$('userbox'), cv=$('care-view');
     if(av) av.classList.add('hidden');
@@ -260,6 +291,32 @@
   var sessionListeners=[], memberListeners=[];
   function notifySession(){ sessionListeners.forEach(function(cb){ try{ cb(state.user); }catch(e){} }); }
   function notifyMember(){ memberListeners.forEach(function(cb){ try{ cb(state.member); }catch(e){} }); }
+
+  /* Sign-in with patience: on a sleeping cloud (Render free tier wakes in
+   * 30–60 s) the first attempts fail with pure network errors. Retry ONLY
+   * those, a handful of times, with honest progress — credential errors,
+   * lockouts and validation failures surface instantly. Every retry re-runs
+   * the same single sign-in call; nothing sensitive is ever replayed twice
+   * on success. */
+  var WAKE_TRIES=8;
+  function statusLine(msg){
+    var n=$('connection-status'); if(n) n.textContent=msg||'';
+  }
+  function withWakeRetry(run){
+    var tries=0;
+    function once(){
+      tries+=1;
+      if(tries>1) statusLine('Waking the kivo cloud… attempt '+tries+' of '+WAKE_TRIES);
+      return run().catch(function(err){
+        var network=err instanceof TypeError && navigator.onLine!==false;
+        if(network && tries<WAKE_TRIES){
+          return new Promise(function(r){ setTimeout(r,3000); }).then(once);
+        }
+        throw err;
+      });
+    }
+    return window.KivoConnection.ensureReady().then(once);
+  }
 
   function handoffToDoctorConsole(){
     try{ sessionStorage.setItem('kivo.role-handoff', JSON.stringify(state.tokens)); }catch(e){}
@@ -310,7 +367,7 @@
         return;
       }
       var btn=$('auth-submit'); if(btn) btn.disabled=true;
-      window.KivoConnection.ensureReady().then(function(){
+      withWakeRetry(function(){
         var fd=new FormData();
         fd.append('email', email);
         fd.append('displayName', name);
@@ -344,7 +401,7 @@
         return;
       }
       var btn2=$('auth-submit'); if(btn2) btn2.disabled=true;
-      window.KivoConnection.ensureReady().then(function(){
+      withWakeRetry(function(){
         return api('/auth/doctor-login',{method:'POST', body:{email:email, password:password, registrationNo:regno}}, false);
       }).then(function(session){
         saveTokens({accessToken:session.accessToken, refreshToken:session.refreshToken});
@@ -361,7 +418,7 @@
     var btn3=$('auth-submit'); if(btn3) btn3.disabled=true;
     var mode=authMode;
     var displayName=$('in-name').value.trim()||email.split('@')[0];
-    var promise=window.KivoConnection.ensureReady().then(function(){
+    var promise=withWakeRetry(function(){
       if(mode==='login'){
         return api('/auth/login',{method:'POST', body:{email:email, password:password}}, false);
       }
@@ -373,11 +430,9 @@
         if(errBox){ errBox.textContent='This is a doctor account — add your registration number to open console.'; errBox.classList.remove('hidden'); }
         return null;
       }
-      saveTokens({accessToken:session.accessToken, refreshToken:session.refreshToken});
-      state.user=session.user;
-      notifySession();
-      return bootDashboard();
+      return applySession(session);
     }).catch(function(err){
+      statusLine('');
       var msg=err instanceof TypeError?'Cannot connect — check internet.':(err.message||'Please try again.');
       // make error more helpful for lockout
       if(err.body && err.body.error && err.body.error.code==='ACCOUNT_LOCKED'){
@@ -387,9 +442,39 @@
     }).finally(function(){ if(btn3) btn3.disabled=false; });
   }
 
+  /* A sign-in (or restore) is only real once the UI fully commits to the new
+   * account: wipe every trace of the previous one, swap screens at once, then
+   * load fresh data. This is what stops the old demo account's widgets from
+   * lingering on screen after someone signs in with their own profile. */
+  function resetSessionState(){
+    state.member=null; state.score=null; state.miles=null; state.reports=null;
+    state.selectedDay=null; state.insights=null; state.intel=null; state.trends=null;
+    state.risk=null; state.guidance=null; state.meds=null; state.summary=null;
+    state.observations=null; state.reminders=null; state.askSuggestions=null;
+    state.chat=[];
+    ['score-body','miles-body','reports-body','insights-body','intel-body',
+     'simulate-result','scenarios-result','ask-chat','ask-suggestions',
+     'obs-list','reminders-list','storage-info','profile-body','care-teaser',
+    ].forEach(function(id){ var n=$(id); if(n) n.innerHTML=''; });
+    if(window.MtCare && typeof window.MtCare.reset==='function'){ try{ window.MtCare.reset(); }catch(e){} }
+  }
+  function applySession(session){
+    saveTokens({accessToken:session.accessToken, refreshToken:session.refreshToken});
+    resetSessionState();
+    state.user=session.user;
+    statusLine(''); // clear "waking cloud" progress — we are in.
+    notifySession();
+    showDash();                 // instant screen change — no stale auth flash
+    var mn=$('member-name'), ms=$('member-sub');
+    if(mn) mn.textContent='Loading…';
+    if(ms) ms.textContent='your kivo health';
+    return bootDashboard();
+  }
+
   function onLogout(){
     var rt=state.tokens && state.tokens.refreshToken;
     clearTokens();
+    resetSessionState();
     state.user=null; state.member=null;
     notifySession();
     showAuth();
@@ -1013,8 +1098,11 @@
   var refreshInterval=null;
   function startPersistentSession(){
     if(refreshInterval) clearInterval(refreshInterval);
-    // refresh every 10 min while app open
+    // refresh every 10 min while the app is open AND visible — hidden tabs
+    // must not rotate tokens on their own (the visibility handler below
+    // catches up the moment the tab returns).
     refreshInterval=setInterval(function(){
+      if(document.visibilityState!=='visible') return;
       if(state.tokens && state.tokens.refreshToken){
         refreshSession().then(function(ok){ if(!ok){ /* ignore */ } });
       }
@@ -1118,11 +1206,23 @@
     syncAuthCopy();
 
     if(state.tokens && state.tokens.accessToken){
+      // RESTORE: prove the saved session is still real before trusting it.
+      // If the proof fails, the dead tokens are CLEARED — a stale session must
+      // never keep resurrecting the previous (e.g. demo) account.
+      var myAccess=state.tokens.accessToken;
+      setRestoreBusy(true);
       api('/auth/me').then(function(me){
+        if(!state.tokens || state.tokens.accessToken!==myAccess) return null; // signed out / re-signed-in meanwhile
         state.user=me.user; notifySession();
         if(me.user && me.user.accountType==='doctor'){ handoffToDoctorConsole(); return null; }
         return bootDashboard();
-      }).catch(function(){ showAuth(); });
+      }).catch(function(){
+        if(!state.tokens || state.tokens.accessToken!==myAccess) return; // a newer sign-in already took over
+        clearTokens();
+        resetSessionState();
+        state.user=null;
+        showAuth();
+      }).finally(function(){ setRestoreBusy(false); });
     }else{
       showAuth();
     }

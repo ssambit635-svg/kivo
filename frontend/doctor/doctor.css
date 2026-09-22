@@ -61,6 +61,56 @@
 .doc-note{ background:#FFFBEB; border:1px dashed #FDE68A; color:#92400E; border-radius:12px; padding:10px 12px; font-size:12.5px; line-height:1.5; }
 .doc-empty{ padding:24px; text-align:center; color:var(--muted); background:var(--card-2); border:1px dashed var(--line); border-radius:16px; }
 
+/* Dashboard hero — clinical greeting strip */
+.doc-hero{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:linear-gradient(135deg,#0F766E 0%,#0E7490 68%,#4F46E5 130%);
+  border:0;color:#fff;overflow:hidden;position:relative;
+}
+.doc-hero::after{
+  content:'';position:absolute;right:-46px;top:-58px;width:170px;height:170px;border-radius:50%;
+  background:rgba(255,255,255,.10);pointer-events:none;
+}
+.doc-hero-main{ min-width:0; }
+.doc-hero-hi{ margin:0 0 2px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.78); }
+.doc-hero-name{ margin:0;font-size:22px;font-weight:900;letter-spacing:-.02em;color:#fff; }
+.doc-hero-sub{ margin:3px 0 0;font-size:12.5px;color:rgba(255,255,255,.85);font-weight:600; }
+.doc-hero-side{ display:flex;flex-direction:column;align-items:flex-end;gap:6px;position:relative;z-index:1; }
+.doc-hero-side .chip.teal{ background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.35); }
+.doc-hero-side .chip.grey{ background:rgba(255,255,255,.12);color:rgba(255,255,255,.92);border-color:rgba(255,255,255,.3); }
+
+/* Priority tint for the "waiting" tile */
+.doc-tile.tone-amber{ background:linear-gradient(135deg,#FFFFFF,#FEF3C7); border-color:#FDE68A; }
+.doc-tile.tone-amber strong{ color:var(--amber); }
+
+/* Quick actions */
+.doc-quick{ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0 16px; }
+.doc-qa{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px 6px;
+  font:inherit;font-size:11px;font-weight:800;color:var(--ink-2);cursor:pointer;transition:all .2s;
+}
+.doc-qa .btn-ic{ color:var(--doc-accent); }
+.doc-qa:hover{ border-color:#99F6E0;background:var(--teal-ghost);transform:translateY(-1px);box-shadow:var(--shadow-sm); }
+
+/* Earnings snapshot */
+.doc-money{ display:flex;align-items:baseline;gap:8px;margin:6px 0 12px; }
+.doc-money strong{ font-size:30px;font-weight:900;letter-spacing:-.03em;color:var(--doc-accent); }
+.doc-money span{ font-size:12px;color:var(--muted);font-weight:600; }
+.doc-bar-row{ display:flex;align-items:center;gap:10px;margin-bottom:8px; }
+.doc-bar-label{ width:110px;flex:none;font-size:12px;color:var(--muted);font-weight:700; }
+.doc-bar{ flex:1;height:10px;border-radius:9999px;background:var(--bg-2);overflow:hidden; }
+.doc-bar i{ display:block;height:100%;border-radius:9999px; }
+.doc-bar i.teal{ background:linear-gradient(90deg,#0F766E,#14B8A6); }
+.doc-bar i.gold{ background:linear-gradient(90deg,#D97706,#F59E0B); }
+.doc-bar-row b{ min-width:64px;text-align:right;font-size:12.5px;font-weight:800;color:var(--ink-2); }
+
+/* Ranked shorts */
+.doc-video-rank{
+  flex:none;width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--gold-soft);color:var(--gold);font-size:13px;font-weight:900;
+}
+
 /* Consultation queue */
 .doc-consult{
   display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
@@ -87,6 +137,7 @@
 .gap-list li{ margin-bottom:6px; }
 .gap-why{ color:var(--muted); font-size:11.5px; display:block; margin-top:2px; }
 .doc-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.chip.gold{ background:var(--gold-soft); color:var(--gold); border-color:#FDE68A; }
 
 /* Medicine draft */
 .med-suggest{ border:1px solid #E0E7FF; background:linear-gradient(135deg,#EEF2FF,#F5F3FF); border-radius:16px; padding:14px; margin-bottom:10px; }

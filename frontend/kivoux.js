@@ -731,6 +731,52 @@
       host.appendChild(bodyCard);
     }
 
+    /* ---- Emergency & safety — the card every health app should have ----
+     * Lives on-device only (same store as the rest of personalization):
+     * blood group, allergies and one-tap emergency dialling that works
+     * even when the appointment is with a stranger holding your phone. */
+    var safety = document.createElement('section');
+    safety.className = 'card widget';
+    var pAny = loadProfile() || {};
+    safety.innerHTML =
+      '<div class="widget-head"><span class="widget-ic ic-rose">' + Icons.svg('alert-triangle', 19) + '</span>' +
+      '<div><h2>Emergency &amp; safety</h2><p class="muted">first thing a responder asks for</p></div></div>' +
+      '<div class="profile-grid">' +
+      '<div class="ob-field"><label>Blood group</label><select id="ef-blood" style="width:100%">' +
+      ['—', 'A+', 'A−', 'B+', 'B−', 'O+', 'O−', 'AB+', 'AB−'].map(function (g) {
+        return '<option value="' + g + '"' + (pAny.bloodGroup === g ? ' selected' : '') + '>' + g + '</option>';
+      }).join('') +
+      '</select></div>' +
+      '<div class="ob-field"><label>Emergency contact</label><input id="ef-contact" type="text" inputmode="tel" placeholder="Name · 98xxxxxxxx" value="' + escapeHTML(pAny.emergencyContact || '') + '" style="width:100%" /></div>' +
+      '</div>' +
+      '<div class="ob-field" style="margin-top:10px"><label>Allergies &amp; conditions (visible to doctors you consult)</label>' +
+      '<input id="ef-allergies" type="text" placeholder="e.g. Penicillin, asthma" value="' + escapeHTML(pAny.allergies || '') + '" style="width:100%" /></div>' +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">' +
+      '<button class="btn primary" id="ef-sos" type="button">' + Icons.svg('bell', 16) + '&nbsp;SOS call</button>' +
+      '<span class="muted" style="align-self:center;font-size:11.5px">Saved on this device — no account stores it.</span>' +
+      '</div>';
+    host.appendChild(safety);
+    var efSave = function (patch) {
+      var cur = loadProfile() || {};
+      var next = Object.assign({}, cur, patch);
+      saveProfile(next);
+    };
+    var efBlood = safety.querySelector('#ef-blood');
+    if (efBlood) efBlood.addEventListener('change', function () { efSave({ bloodGroup: efBlood.value === '—' ? '' : efBlood.value }); if (App && App.toast) App.toast('Blood group saved'); });
+    var efContact = safety.querySelector('#ef-contact');
+    if (efContact) efContact.addEventListener('change', function () { efSave({ emergencyContact: efContact.value.trim() }); if (App && App.toast) App.toast('Emergency contact saved'); });
+    var efAllergies = safety.querySelector('#ef-allergies');
+    if (efAllergies) efAllergies.addEventListener('change', function () { efSave({ allergies: efAllergies.value.trim() }); });
+    var efSos = safety.querySelector('#ef-sos');
+    if (efSos) {
+      efSos.addEventListener('click', function () {
+        var cur = loadProfile() || {};
+        var num = String(cur.emergencyContact || '').match(/(\+?\d[\d\s-]{6,})/);
+        var tel = num ? num[1].replace(/[\s-]/g, '') : '112'; // India universal emergency
+        location.href = 'tel:' + tel;
+      });
+    }
+
     var actions = document.createElement('section');
     actions.className = 'card widget';
     actions.innerHTML = '<div class="widget-head"><span class="widget-ic ic-indigo">' + Icons.svg('user', 19) + '</span>' +

@@ -248,7 +248,7 @@ all running in CI on every push.
 
 ```mermaid
 flowchart TB
-    A["1 · TRANSPORT<br/>HTTPS everywhere · HSTS · strict-CSP<br/>Permissions-Policy lockdown · /api no-store"] --> B["2 · ACCESS<br/>scrypt KDF · JWT 15-min access · rotating refresh tokens<br/>SHA-256 at rest · reuse ⇒ family revoked · lockout"]
+    A["1 · TRANSPORT<br/>HTTPS everywhere · HSTS · strict-CSP<br/>Permissions-Policy lockdown · /api no-store"] --> B["2 · ACCESS<br/>scrypt KDF · JWT 15-min access · rotating refresh tokens<br/>SHA-256 at rest · late replay ⇒ family revoked<br/>45 s grace forgives multi-tab rotation races · lockout"]
     B --> C["3 · AUTHORIZATION<br/>PolicyService · roles re-read per request<br/>member isolation · consent-scoped doctor grants<br/>admins cannot read health data"]
     C --> D["4 · ABUSE<br/>per-bucket rate limits · 1 MB JSON / 10 MB upload caps<br/>MIME allowlist · SecurityMonitor auto-blocks abusive IPs 15 min"]
     D --> E["5 · DATA<br/>parameterized SQL everywhere · existence-hiding 404s<br/>no secrets in responses · audit trail with request-ids<br/>Ask-the-Twin stores intent + length — never question text"]
@@ -275,7 +275,14 @@ flowchart TB
   Password change / logout-all / admin-disable **bumps the version → old tokens die immediately**.
 - **Refresh tokens** — opaque 48-byte random, **SHA-256 hashed at rest**, **rotated on every use**.
   Presenting a rotated token = theft signal → the **whole token family is revoked** +
-  `auth.refresh_reuse_detected` audit event.
+  `auth.refresh_reuse_detected` audit event. One deliberate exception: a replay of a token
+  rotated **within the last 45 s whose replacement is still live** is the classic multi-tab /
+  racing-retry refresh, so it is forgiven with a sibling session (`REFRESH_GRACE_SEC`, `0`
+  disables it). Replays after the window — or of tokens whose replacement is already dead —
+  still nuke the family, so stolen-token replay remains a hard kill.
+- **Client single-flight** — the patient app and doctor console coalesce concurrent 401-retries
+  into **one** refresh call (waiters share the result), so the dashboard's parallel widget
+  loads can never race each other into a self-inflicted revocation seconds after sign-in.
 - **Brute force** — 5 failed logins → 15-min lockout; unknown emails still pay a scrypt verify
   (timing-blunting); every outcome is audit-logged.
 - **Production boot** — the config **refuses to start** without a real `JWT_SECRET`
