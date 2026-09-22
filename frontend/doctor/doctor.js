@@ -108,18 +108,31 @@
       });
     });
   }
+  /* Single-flight refresh: the dashboard fires overview, consultations,
+   * videos and earnings together — when the access token has just expired,
+   * ALL of them must share ONE refresh call. Racing refreshes used to trip
+   * reuse detection and revoke the whole session seconds after sign-in. */
+  var refreshInFlight=null;
   function refreshSession(){
     if(!state.tokens || !state.tokens.refreshToken) return Promise.resolve(false);
-    return fetch('/api/auth/refresh',{
+    if(refreshInFlight) return refreshInFlight;
+    var presented=state.tokens.refreshToken;
+    refreshInFlight=fetch('/api/auth/refresh',{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({refreshToken:state.tokens.refreshToken}),
+      body:JSON.stringify({refreshToken:presented}),
     }).then(function(res){
       if(!res.ok) return false;
       return res.json().then(function(body){
-        saveTokens({accessToken:body.accessToken, refreshToken:body.refreshToken});
-        return true;
+        // never overwrite a newer sign-in / handoff with a stale refresh
+        if(state.tokens && state.tokens.refreshToken===presented && body.accessToken){
+          saveTokens({accessToken:body.accessToken, refreshToken:body.refreshToken});
+          return true;
+        }
+        return !!state.tokens;
       });
-    }).catch(function(){ return false; });
+    }).catch(function(){ return false; })
+      .finally(function(){ refreshInFlight=null; });
+    return refreshInFlight;
   }
 
   /* Auth */
@@ -334,26 +347,141 @@
     else if(state.view==='earnings') host.appendChild(renderEarnings());
     else host.appendChild(renderProfile());
   }
+  function greetingWord(){
+    var h=new Date().getHours();
+    if(h<5) return 'Working late';
+    if(h<12) return 'Good morning';
+    if(h<17) return 'Good afternoon';
+    return 'Good evening';
+  }
   function renderDashboard(){
-    var wrap=el('div'); var o=state.overview||{queue:{}, reach:{}, topVideos:[]};
+    var wrap=el('div');
+    var o=state.overview||{};
+    var d=o.doctor||{};
+    var q=o.queue||{};
+    var reach=o.reach||(state.earnings&&state.earnings.activity)||{};
+    var earnings=state.earnings;
+
+    /* ---- hero greeting ---- */
+    var hero=el('section',{class:'doc-card doc-hero'});
+    var heroMain=el('div',{class:'doc-hero-main'});
+    heroMain.appendChild(el('p',{class:'doc-hero-hi', text:greetingWord()+' · '+shortDate(new Date().toISOString())}));
+    heroMain.appendChild(el('h2',{class:'doc-hero-name', text:d.fullName||'Doctor'}));
+    heroMain.appendChild(el('p',{class:'doc-hero-sub', text:[d.headline, d.city].filter(Boolean).join(' · ')||'kivo doctor network'}));
+    hero.appendChild(heroMain);
+    var heroSide=el('div',{class:'doc-hero-side'});
+    if(o.verification&&o.verification.label) heroSide.appendChild(el('span',{class:'chip teal', text:o.verification.label}));
+    if(d.rating&&d.rating.count>0){
+      var star=el('span',{class:'chip gold', title:d.rating.count+' patient ratings'});
+      star.appendChild(icon('star',13)); star.appendChild(document.createTextNode(' '+(Math.round(d.rating.average*10)/10)+' ('+d.rating.count+')'));
+      heroSide.appendChild(star);
+    }
+    if(d.consultFeeInr!=null) heroSide.appendChild(el('span',{class:'chip grey', text:'₹'+d.consultFeeInr+' consult'}));
+    hero.appendChild(heroSide);
+    wrap.appendChild(hero);
+
+    /* ---- stat tiles ---- */
+    var waiting=(Number(q.requested)||0)+(Number(q.inReview)||0);
     var tiles=el('div',{class:'doc-tiles'});
-    var tile=function(value,label){ var t=el('div',{class:'doc-tile'}); t.appendChild(el('strong',{text:String(value)})); t.appendChild(el('span',{text:label})); return t; };
-    tiles.appendChild(tile(o.queue.requested||0,'consults waiting')); tiles.appendChild(tile(o.queue.answered||0,'answered')); tiles.appendChild(tile(o.reach.views||0,'short views')); tiles.appendChild(tile(Math.round((o.reach.watchSeconds||0)/60)+'m','watched')); wrap.appendChild(tiles);
-    var money=el('div',{class:'doc-card'}); var earnings=state.earnings;
-    money.appendChild(el('h3',{text:'This month'}));
-    if(earnings){
-      money.appendChild(el('p',{class:'muted', text:'Consultations '+rsFromPaise(earnings.totals.consultationSharePaise)+' · Shorts pool '+rsFromPaise(earnings.totals.videoPoolSharePaise)+' · Total '+rsFromPaise(earnings.totals.totalPaise)}));
-      var why=el('ul',{class:'doc-explain'}); (earnings.revenueModel.explainer||[]).forEach(function(line){ why.appendChild(el('li',{text:line})); }); money.appendChild(why); money.appendChild(el('p',{class:'muted', text:earnings.payoutNote}));
-    }else{ money.appendChild(el('p',{class:'muted', text:'Earnings appear once patient subscribes or consults.'})); }
+    var tile=function(value,label,tone){ var t=el('div',{class:'doc-tile'+(tone?' tone-'+tone:'')}); t.appendChild(el('strong',{text:String(value)})); t.appendChild(el('span',{text:label})); return t; };
+    tiles.appendChild(tile(waiting,'waiting for you', waiting>0?'amber':null));
+    tiles.appendChild(tile(Number(q.answered)||0,'consults answered'));
+    tiles.appendChild(tile(Number(reach.views)||0,'short views'));
+    tiles.appendChild(tile(Math.round((Number(reach.watchSeconds)||0)/60)+'m','patient watch time'));
+    wrap.appendChild(tiles);
+
+    /* ---- quick actions ---- */
+    var quick=el('div',{class:'doc-quick'});
+    var qa=function(icName,label,onClick){ var b=el('button',{class:'doc-qa', type:'button'}); b.appendChild(icon(icName,17)); b.appendChild(el('span',{text:label})); b.addEventListener('click',onClick); return b; };
+    quick.appendChild(qa('message-square','Review queue',function(){ setView('consults'); }));
+    quick.appendChild(qa('video','Record a short',function(){ setView('studio'); }));
+    quick.appendChild(qa('wallet','Earnings',function(){ setView('earnings'); }));
+    quick.appendChild(qa('send','Invite a patient',function(){
+      var link=location.origin+'/app/';
+      var done=function(){ toast('Patient app link copied — share it with your patients.'); };
+      if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(done,function(){ toast(link); }); }
+      else toast(link);
+    }));
+    wrap.appendChild(quick);
+
+    /* ---- needs attention: the live queue ---- */
+    var attention=el('div',{class:'doc-card'});
+    var attHead=el('div',{class:'doc-row'});
+    attHead.appendChild(el('h3',{text:'Needs your attention'}));
+    var openQueue=el('button',{class:'btn ghost sm', type:'button'},['Open queue']);
+    openQueue.addEventListener('click',function(){ setView('consults'); });
+    attHead.appendChild(openQueue);
+    attention.appendChild(attHead);
+    var pending=state.consultations.filter(function(c){ return ['requested','in_review'].indexOf(c.status)>=0; }).slice(0,5);
+    if(!pending.length){
+      attention.appendChild(el('p',{class:'doc-empty', text:'All clear — no consultations waiting. Publish a short or invite patients while the queue is quiet.'}));
+    }else{
+      pending.forEach(function(c){ attention.appendChild(consultRow(c)); });
+    }
+    wrap.appendChild(attention);
+
+    /* ---- earnings snapshot ---- */
+    var money=el('div',{class:'doc-card'});
+    var mHead=el('div',{class:'doc-row'});
+    mHead.appendChild(el('h3',{text:'This month'}));
+    var seeEarnings=el('button',{class:'btn ghost sm', type:'button'},['Details']);
+    seeEarnings.addEventListener('click',function(){ setView('earnings'); });
+    mHead.appendChild(seeEarnings);
+    money.appendChild(mHead);
+    if(earnings&&earnings.totals){
+      var big=el('div',{class:'doc-money'});
+      big.appendChild(el('strong',{text:rsFromPaise(earnings.totals.totalPaise)}));
+      big.appendChild(el('span',{text:'earned in '+(earnings.period||'this period')}));
+      money.appendChild(big);
+      var max=Math.max(Number(earnings.totals.consultationSharePaise)||0, Number(earnings.totals.videoPoolSharePaise)||0, 1);
+      var bar=function(label,paise,toneClass){
+        var row=el('div',{class:'doc-bar-row'});
+        row.appendChild(el('span',{class:'doc-bar-label', text:label}));
+        var track=el('div',{class:'doc-bar'}); var fill=el('i',{class:toneClass||'', style:'width:'+Math.max(3,Math.round((Number(paise)||0)/max*100))+'%'}); track.appendChild(fill);
+        row.appendChild(track);
+        row.appendChild(el('b',{text:rsFromPaise(paise)}));
+        return row;
+      };
+      money.appendChild(bar('Consultations',earnings.totals.consultationSharePaise,'teal'));
+      money.appendChild(bar('Shorts pool',earnings.totals.videoPoolSharePaise,'gold'));
+      if(earnings.totals.pendingPaise>0) money.appendChild(el('p',{class:'muted', text:rsFromPaise(earnings.totals.pendingPaise)+' pending payout'}));
+      if(earnings.payoutNote) money.appendChild(el('p',{class:'muted', text:earnings.payoutNote}));
+    }else{
+      money.appendChild(el('p',{class:'doc-empty', text:'Earnings appear once patients consult you or watch your shorts.'}));
+    }
     wrap.appendChild(money);
+
+    /* ---- best performing shorts ---- */
     if(o.topVideos&&o.topVideos.length){
       var top=el('div',{class:'doc-card'}); top.appendChild(el('h3',{text:'Best performing shorts'}));
-      o.topVideos.forEach(function(v){ var row=el('div',{class:'doc-video-row'}); row.appendChild(el('span',{class:'doc-video-thumb'})); var main=el('div',{class:'doc-video-main'}); main.appendChild(el('strong',{text:v.title})); main.appendChild(el('span',{class:'doc-video-stats', text:v.viewCount+' views · '+Math.round(v.watchSeconds/60)+' min watched'})); row.appendChild(main); top.appendChild(row); }); wrap.appendChild(top);
+      o.topVideos.slice(0,4).forEach(function(v,i){
+        var row=el('div',{class:'doc-video-row'});
+        row.appendChild(el('span',{class:'doc-video-rank', text:String(i+1)}));
+        var main=el('div',{class:'doc-video-main'});
+        main.appendChild(el('strong',{text:v.title}));
+        main.appendChild(el('span',{class:'doc-video-stats', text:(v.viewCount||0)+' views · '+Math.round((v.watchSeconds||0)/60)+' min watched'+(v.isPreview?' · preview':'')}));
+        row.appendChild(main);
+        top.appendChild(row);
+      });
+      wrap.appendChild(top);
     }
-    var queue=el('div',{class:'doc-card'}); queue.appendChild(el('h3',{text:'Waiting for you'}));
-    var pending=state.consultations.filter(function(c){ return ['requested','in_review'].indexOf(c.status)>=0; }).slice(0,4);
-    if(!pending.length) queue.appendChild(el('p',{class:'doc-empty', text:'No open consultations right now.'}));
-    pending.forEach(function(c){ queue.appendChild(consultRow(c)); }); wrap.appendChild(queue); return wrap;
+
+    /* ---- practice pulse: profile completeness nudge ---- */
+    var missing=[];
+    if(!d.bio) missing.push('a short bio');
+    if(!d.clinicName) missing.push('your clinic name');
+    if(!d.qualifications||!d.qualifications.length) missing.push('your qualifications');
+    if(!d.languages||!d.languages.length) missing.push('languages you speak');
+    if(missing.length){
+      var nudge=el('div',{class:'doc-card doc-note'});
+      nudge.appendChild(el('strong',{text:'Complete your profile'}));
+      nudge.appendChild(el('p',{class:'muted', text:'Patients book more when they can see '+missing.join(', ')+'. Open Profile to finish it.'}));
+      var goProfile=el('button',{class:'btn ghost sm', type:'button', style:'margin-top:8px'},['Open profile']);
+      goProfile.addEventListener('click',function(){ setView('profile'); });
+      nudge.appendChild(goProfile);
+      wrap.appendChild(nudge);
+    }
+    return wrap;
   }
   function consultRow(c){
     var row=el('button',{class:'doc-consult', type:'button'});

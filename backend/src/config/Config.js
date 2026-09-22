@@ -23,6 +23,14 @@ export class Config {
     // at least once a month never asks for a password again. Signing out —
     // or the server revoking the family — is what ends the session.
     this.refreshTokenTtlSec = Number(env.REFRESH_TOKEN_TTL_SEC || 30 * 24 * 3600); // 30 days
+    // Grace window for token rotation races. A real client fires one refresh at
+    // a time, but several tabs / racing retries can present the same refresh
+    // token within milliseconds of each other. Replaying a token that was
+    // rotated *within this window* — while its replacement is still alive — is
+    // treated as the benign race it is, not as theft. Replays after the window
+    // (or of tokens whose replacement is already dead) still revoke the whole
+    // family. 0 disables the grace entirely.
+    this.refreshGraceSec = Number(env.REFRESH_GRACE_SEC || 45);
     // Easier sign-in in real app: more tries, shorter lockout.
     // Tests keep strict 5-attempt contract; dev/prod get 8 attempts / 2 min.
     // Security stays: refresh token reuse still revokes family, rate limiter still protects.

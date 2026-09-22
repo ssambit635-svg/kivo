@@ -138,21 +138,66 @@ describe('refresh-token rotation & reuse detection', () => {
     expect(r1.body.refreshToken).not.toBe(session.refreshToken);
     expect(r1.body.accessToken).not.toBe(session.accessToken);
 
-    // replaying the previous token is reuse... but it was rotated → theft signal
-    const replay = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: session.refreshToken });
+    // Replay within the grace window is a BENIGN rotation race (multi-tab /
+    // racing retries): a sibling session is issued, nobody is revoked.
+    const grace = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: session.refreshToken });
+    expect(grace.status).toBe(200);
+    expect(grace.body.refreshToken).toBeTruthy();
+    expect(grace.body.refreshToken).not.toBe(r1.body.refreshToken);
+    // the rotation from step 1 must still be alive after the grace replay
+    const stillAlive = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: r1.body.refreshToken });
+    expect(stillAlive.status).toBe(200);
+  });
+
+  it('replaying a rotated token AFTER the grace window is theft → REFRESH_REUSED', async () => {
+    const s2 = await registerUser(request, ctx.app, { email: 'grace@mt.test' });
+    const r1 = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: s2.refreshToken });
+    expect(r1.status).toBe(200);
+    // Age the rotation past the grace window (only the clock lies in tests).
+    ctx.container.refreshTokenRepository.db.run(
+      `UPDATE refresh_tokens SET revoked_at = ? WHERE token_hash = ?`,
+      new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      ctx.container.tokenService.hashRefreshToken(s2.refreshToken),
+    );
+    const replay = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: s2.refreshToken });
     expect(replay.status).toBe(401);
     expect(replay.body.error.code).toBe('REFRESH_REUSED');
   });
 
+  it('a CONCURRENT burst of refreshes (the multi-tab race) keeps the session alive', async () => {
+    const s3 = await registerUser(request, ctx.app, { email: 'burst@mt.test' });
+    const body = { refreshToken: s3.refreshToken };
+    // Fire three refreshes at once — exactly what racing 401-retries used to
+    // do. Before the grace window the losers revoked the winner's brand-new
+    // token and the whole session died within seconds of signing in.
+    const burst = await Promise.all([
+      request(ctx.app).post('/api/auth/refresh').send(body),
+      request(ctx.app).post('/api/auth/refresh').send(body),
+      request(ctx.app).post('/api/auth/refresh').send(body),
+    ]);
+    expect(burst.every((r) => r.status === 200)).toBe(true);
+    // The winner's rotated token must still be usable afterwards.
+    const next = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: burst[0].body.refreshToken });
+    expect(next.status).toBe(200);
+    // ...and the account has no reuse-detection event from this burst.
+    const reuseEvents = ctx.container.auditLogRepository.list({ action: 'auth.refresh_reuse_detected' });
+    expect(reuseEvents.items.every((e) => e.toJSON().user_id !== s3.user.id)).toBe(true);
+  });
+
   it('reuse detection nukes the WHOLE token family (new token also dies)', async () => {
     // after the theft signal above, even the legitimately rotated token is dead
-    const s2 = await login(request, ctx.app, 'rotation@mt.test', STRONG_PASSWORD);
-    const r = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: s2.body.refreshToken });
+    const s4 = await login(request, ctx.app, 'grace@mt.test', STRONG_PASSWORD);
+    const r = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: s4.body.refreshToken });
     const rotated = r.body.refreshToken;
     // legitimate rotation works...
     expect(r.status).toBe(200);
-    // ...simulate theft: attacker replays the OLD token
-    await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: s2.body.refreshToken });
+    // ...simulate theft: attacker replays the OLD token long after rotation
+    ctx.container.refreshTokenRepository.db.run(
+      `UPDATE refresh_tokens SET revoked_at = ? WHERE token_hash = ?`,
+      new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      ctx.container.tokenService.hashRefreshToken(s4.body.refreshToken),
+    );
+    await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: s4.body.refreshToken });
     // → the full family, including the freshest token, must be revoked
     const after = await request(ctx.app).post('/api/auth/refresh').send({ refreshToken: rotated });
     expect(after.status).toBe(401);

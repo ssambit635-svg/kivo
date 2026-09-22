@@ -83,7 +83,11 @@ async function startServer() {
     PORT = actualPort;
     BASE = `http://127.0.0.1:${PORT}`;
     server = spawn('node', ['--disable-warning=ExperimentalWarning', 'src/server.js'], {
-      env: { ...process.env, PORT: String(PORT), DB_PATH: dbPath, UPLOAD_DIR: uploadDir, JWT_SECRET, NODE_ENV: 'development' },
+      // REFRESH_GRACE_SEC=0 puts refresh back in strict-theft mode: the reuse
+      // checks below replay a rotated token SEQUENTIALLY (which the grace
+      // window would rightly forgive as a benign multi-tab race). The grace
+      // behavior itself is covered by tests/integration/auth.test.js.
+      env: { ...process.env, PORT: String(PORT), DB_PATH: dbPath, UPLOAD_DIR: uploadDir, JWT_SECRET, NODE_ENV: 'development', REFRESH_GRACE_SEC: '0' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     server.stdout.on('data', () => {});
