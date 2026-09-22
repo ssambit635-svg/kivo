@@ -109,15 +109,6 @@
       set('[data-strip-range]', rangeText(entry) || "your report's range");
       set('[data-strip-loinc]', entry.loinc || '—');
     });
-
-    // The weave's rhythm chips show the same curated ranges as the cards.
-    document.querySelectorAll('[data-weave-range]').forEach((node) => {
-      const entry = markers[node.getAttribute('data-weave-range')];
-      if (entry) {
-        const t = rangeText(entry);
-        if (t) node.textContent = t;
-      }
-    });
   }
 
   function loadProductData() {
@@ -432,49 +423,21 @@
         });
 
         // 1. The weave — pinned glowing-threads interlude (was the circle
-        //    opening). The live canvas runs itself (threads.js); scrub only
-        //    reveals the type and morphs the weave via KivoThreads.setScroll:
-        //    strands rise, multiply and tighten while the section is held.
-        gsap.set('.weave-filler', { clipPath: 'inset(0 0 100% 0)' });
-        const weaveTl = gsap.timeline({
-          defaults: { ease: 'none' },
-          scrollTrigger: {
-            trigger: '#weaveSection',
-            start: 'top top',
-            end: '+=150%',
-            pin: true,
-            scrub: 1,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              const weave = window.KivoThreads && window.KivoThreads.get();
-              if (weave) weave.setScroll(Math.max(0, (self.progress - 0.18) / 0.82));
-            },
+        //    opening), pure lines: no copy, no chips. The live canvas runs
+        //    itself (threads.js); scroll only morphs the weave via
+        //    KivoThreads.setScroll — strands rise, multiply and tighten
+        //    while the section is held.
+        ScrollTrigger.create({
+          trigger: '#weaveSection',
+          start: 'top top',
+          end: '+=150%',
+          pin: true,
+          anticipatePin: 1,
+          onUpdate: (self) => {
+            const weave = window.KivoThreads && window.KivoThreads.get();
+            if (weave) weave.setScroll(Math.max(0, (self.progress - 0.18) / 0.82));
           },
         });
-        weaveTl.fromTo('.weave-meta',
-          { opacity: 0 },
-          { opacity: 1, duration: 0.25, ease: 'power2.out' },
-          0
-        );
-        weaveTl.to('.weave-filler', {
-          clipPath: 'inset(0 0 0% 0)',
-          duration: 0.45,
-          ease: 'power1.inOut',
-        }, 0.06);
-        weaveTl.fromTo('.weave-moods',
-          { opacity: 0, y: 22 },
-          { opacity: 1, y: 0, ease: 'power2.out', duration: 0.35 },
-          0.3
-        );
-        weaveTl.fromTo('.weave-hint',
-          { opacity: 0 },
-          { opacity: 1, duration: 0.3, ease: 'power2.out' },
-          0.42
-        );
-      } else {
-        // Reduced motion: the weave still renders one calm static frame
-        gsap.set('.weave-filler', { clipPath: 'inset(0 0 0% 0)' });
       }
 
       // 2. Pinned twin section right after the weave
@@ -545,40 +508,20 @@
         }
       );
 
-      // Section 4: The weave — pinned threads interlude; on touch the finger
-      // itself steers the pinch point (threads.js pointer events).
-      gsap.set('.weave-filler', { clipPath: 'inset(0 0 100% 0)' });
-      const mobWeaveTl = gsap.timeline({
-        defaults: { ease: 'none' },
-        scrollTrigger: {
-          trigger: '#weaveSection',
-          start: 'top top',
-          end: '+=120%',
-          pin: true,
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            const weave = window.KivoThreads && window.KivoThreads.get();
-            if (weave) weave.setScroll(Math.max(0, (self.progress - 0.2) / 0.8));
-          },
+      // Section 4: The weave — pinned threads interlude, pure lines: no
+      // copy, no chips. On touch the finger itself steers the pinch point
+      // (threads.js pointer events).
+      ScrollTrigger.create({
+        trigger: '#weaveSection',
+        start: 'top top',
+        end: '+=120%',
+        pin: true,
+        anticipatePin: 1,
+        onUpdate: (self) => {
+          const weave = window.KivoThreads && window.KivoThreads.get();
+          if (weave) weave.setScroll(Math.max(0, (self.progress - 0.2) / 0.8));
         },
       });
-      mobWeaveTl.to('.weave-filler', {
-        clipPath: 'inset(0 0 0% 0)',
-        duration: 0.45,
-        ease: 'power1.inOut',
-      }, 0.1);
-      mobWeaveTl.fromTo('.weave-moods',
-        { opacity: 0, y: 16 },
-        { opacity: 1, y: 0, ease: 'power2.out', duration: 0.35 },
-        0.3
-      );
-      mobWeaveTl.fromTo('.weave-hint',
-        { opacity: 0 },
-        { opacity: 1, duration: 0.3, ease: 'power2.out' },
-        0.42
-      );
 
       // Section 5: Mobile Intelligence Twin Section
       gsap.utils.toArray('.twin-para p, .twin-featureElements').forEach((el) => {
@@ -753,27 +696,6 @@
       scrollTrigger: { trigger: '.footer-bottom', start: 'top 60%' },
     });
   }
-
-  /* ---------- the weave: marker rhythm chips ----------------------------
-   * Each chip re-tunes the live thread weave (colors + tempo) via the
-   * KivoThreads handle. Ranges shown on the chips are filled from the live
-   * lab dictionary in applyDictionary — never typed in here. */
-  (function initWeaveMoods() {
-    const chips = document.querySelectorAll('.weave-mood');
-    if (!chips.length) return;
-    chips.forEach((chip) => {
-      chip.addEventListener('click', () => {
-        const key = chip.getAttribute('data-mood');
-        chips.forEach((c) => {
-          const on = c === chip;
-          c.classList.toggle('weave-mood--on', on);
-          c.setAttribute('aria-pressed', String(on));
-        });
-        const weave = window.KivoThreads && window.KivoThreads.get();
-        if (weave) weave.setMood(key);
-      });
-    });
-  })();
 
   /* ---------- refresh after assets ---------- */
   window.addEventListener('load', () => ScrollTrigger.refresh());
